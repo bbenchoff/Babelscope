@@ -25,7 +25,7 @@ DISPLAY_HEIGHT = 32
 DISPLAY_SIZE = DISPLAY_WIDTH * DISPLAY_HEIGHT
 REGISTER_COUNT = 16
 STACK_SIZE = 16
-ROM_SIZE = 3584  # 4KB - 512 bytes (interpreter space)
+ROM_SIZE = 3584  # 4KB - 512 bytes (interpreter space)  
 MAX_CYCLES = 1000  # Reduced for batch processing
 
 # Batch configuration - Conservative for stability
