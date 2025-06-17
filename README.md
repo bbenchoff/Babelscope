@@ -3,7 +3,7 @@ Massively parallel emulator framework for computational space exploration
 
 ## ✨ What It Does
 
-Babelscope treats executable code as a search space. Each GPU thread becomes a virtual 6502-based microcomputer, running a small ROM for thousands of clock cycles, and reporting behavioral fingerprints: I/O patterns, memory access, TIA signal structure, and system stability.
+Babelscope treats executable code as a search space. Each GPU thread becomes a virtual 6507-based microcomputer, running a small ROM for thousands of clock cycles, and reporting behavioral fingerprints: I/O patterns, memory access, TIA signal structure, and system stability.
 
 Rather than hand-authoring software, Babelscope **searches for it**.
 
