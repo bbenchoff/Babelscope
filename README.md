@@ -1,57 +1,118 @@
 # Babelscope
-Massively parallel emulator framework for computational space exploration
 
-## ✨ What It Does
+**Computational Archaeology for the CHIP-8**
 
-Babelscope treats executable code as a search space. Each GPU thread becomes a virtual 6507-based microcomputer, running a small ROM for thousands of clock cycles, and reporting behavioral fingerprints: I/O patterns, memory access, TIA signal structure, and system stability.
+Babelscope generates billions of random CHIP-8 programs and runs them in parallel on GPU hardware to find accidental algorithms, graphics demos, and proto-games hidden in the vast space of random machine code.
 
-Rather than hand-authoring software, Babelscope **searches for it**.
+## What Does This Do?
 
----
+Instead of writing programs, Babelscope **discovers** them by:
 
-## 🚀 Features
+1. **Generating pure random data** (3584 bytes each) 
+2. **Testing millions simultaneously** on GPU using a massively parallel CHIP-8 emulator
+3. **Finding the ones that work** - programs that don't crash and produce visual output
+4. **Saving the interesting ones** with screenshots for analysis
 
-- GPU-accelerated 6507 CPU emulation with per-thread state
-- Lightweight TIA and RIOT emulation based on NTSC timing models
-- ROM generation and mutation directly on the GPU
-- Output filtering for "interesting" behaviors: TIA register hits, VSYNC/VBLANK control, etc.
-- Extensible scoring/detection framework for emergent structure and stability
+Think of it as pointing a telescope at the infinite library of possible programs and cataloging the strange objects you find.
 
----
+## Results
 
-## 📦 Use Cases
+Out of millions of random byte sequences, Babelscope finds programs that:
+- Draw structured graphics patterns
+- Create animations and visual effects  
+- Run stable loops without crashing
+- Occasionally respond to input (accidental proto-games!)
 
-- Discover unexpected visual effects, logic loops, or audio states from random ROMs
-- Explore software behavior as a computational search space
-- Fuzz micro-architectures in parallel
-- Experiment with evolutionary design, emergent logic, or "aesthetics of code"
+These aren't hand-coded - they're random data that accidentally works as CHIP-8 programs.
 
----
+## Quick Start
 
-## ⚡ Status
+**Generate and test random programs:**
+```bash
+python test_random_roms.py --continuous --batch-size 15000 --save-interesting
+```
 
-**Pre-alpha.** Building core components:
-- 6507 instruction set emulation in CUDA
-- TIA emulation driven by NTSC scanline clock
-- Basic runtime framework and filtering pipeline
+**View discovered programs:**
+```bash
+python view_interesting_roms.py
+```
 
----
+## Requirements
 
-## 🧠 Philosophy
+- Python 3.8+
+- CuPy (for GPU acceleration)
+- PIL (for screenshots)
+- CUDA-capable GPU
 
-Babelscope is a computational telescope.  
-Instead of stargazing, it scans the program universe.
+## How It Works
 
----
+### The Generator
+`generators/random_chip8_generator.py` - Creates pure random data on GPU
+- No heuristics, no intelligence
+- Just 3584 bytes of random noise per "ROM"
+- Generated in parallel across thousands of GPU threads
 
-## 📜 License
+### The Emulator  
+`emulators/mega_kernel_chip8.py` - Massively parallel CHIP-8 emulator
+- Runs 100,000+ instances simultaneously on GPU
+- Each thread emulates a complete CHIP-8 system
+- 350+ million instructions per second throughput
 
-TBD – Likely MIT or BSD.
+### The Explorer
+`test_random_roms.py` - Finds programs that accidentally work
+- Tests random programs for crashes vs. completion
+- Identifies visual output and structured patterns
+- Saves interesting discoveries with screenshots
 
----
+### The Viewer
+`view_interesting_roms.py` - Interactive exploration of discoveries
+- Loads found programs in CHIP-8 emulator windows
+- Test for input responsiveness
+- See what random data accidentally created
 
-## 🔗 Related
+## Architecture
 
-- [nv6502](https://github.com/krocki/nv6502) – GPU-based 6502 core used as a base reference
-- [CuPy](https://cupy.dev/) – Used for CUDA kernel management and interop
-- [Stella](https://stella-emu.github.io/) – Canonical Atari 2600 emulator (for reference/debugging)
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Random Data   │───▶│  Mega-Kernel     │───▶│   Interesting   │
+│   Generator     │    │  CHIP-8 Emulator │    │   ROMs + PNGs   │ 
+│                 │    │                  │    │                 │
+│ • Pure randomness│    │ • 100K+ parallel│    │ • Working programs│
+│ • GPU-generated │    │ • 350M+ inst/sec│    │ • Visual output  │
+│ • No filtering  │    │ • Crash detection│    │ • Screenshots    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+## Performance
+
+- **Generation**: 100,000+ random ROMs per second
+- **Testing**: 350+ million CHIP-8 instructions per second  
+- **Discovery rate**: ~0.01-0.1% of random data produces "interesting" programs
+- **Scalability**: Nearly linear scaling with GPU cores until memory saturation
+
+## Files
+
+- `generators/random_chip8_generator.py` - Pure random ROM generation
+- `emulators/mega_kernel_chip8.py` - Massively parallel CHIP-8 emulator
+- `emulators/chip8.py` - Single-instance emulator for interactive testing
+- `test_random_roms.py` - Main discovery pipeline
+- `view_interesting_roms.py` - Interactive ROM viewer
+
+## License
+
+```
+           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+                    MODIFIED FOR NERDS 
+                   Version 3, April 2025
+
+Everyone is permitted to copy and distribute verbatim or modified
+copies of this license document, and changing it is allowed as long
+as the name is changed.
+ 
+           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+  TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+
+ 0. You just DO WHAT THE FUCK YOU WANT TO.
+
+ 1. Anyone who complains about this license is a nerd.
+```
