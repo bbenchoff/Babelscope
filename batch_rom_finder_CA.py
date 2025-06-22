@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Test Random CHIP-8 ROMs with CUDA CA Detection
-High-performance batch ROM testing with integrated CUDA cellular automata detection
-Focuses on finding high-quality CA patterns (60%+ likelihood)
+High-Selectivity CA ROM Detector
+Only saves ROMs with CA likelihood ≥ 80%
+Much stricter criteria to avoid false positives
 """
 
 import os
@@ -13,22 +13,31 @@ import time
 import numpy as np
 import cupy as cp
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Set
+from collections import defaultdict, Counter
+from dataclasses import dataclass
 
 # Add the emulators and generators directories to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'emulators'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'generators'))
 
 try:
-    from parallel_chip8_CA import MegaKernelChip8Emulator as ParallelChip8Emulator
-    print("Using enhanced CUDA CA emulator")
+    from mega_kernel_chip8 import MegaKernelChip8Emulator as ParallelChip8Emulator
+    print("Using mega-kernel emulator")
 except ImportError:
     try:
         from parallel_chip8 import ParallelChip8Emulator
-        print("Warning: Using standard emulator - no CUDA CA detection")
+        print("Using standard parallel emulator")
     except ImportError:
         print("Error: No emulator available")
         sys.exit(1)
+
+try:
+    from chip8 import Chip8Emulator
+    print("Single-instance emulator available for CA analysis")
+except ImportError:
+    print("Warning: Single-instance emulator not available - CA detection disabled")
+    Chip8Emulator = None
 
 try:
     from random_chip8_generator import PureRandomChip8Generator
@@ -36,6 +45,485 @@ try:
 except ImportError:
     print("Warning: Pure random ROM generator not available")
     PureRandomChip8Generator = None
+
+
+@dataclass
+class CAAnalysis:
+    """Results of cellular automata analysis"""
+    ca_likelihood: float  # 0-100%
+    memory_sequential: bool
+    state_evolution: bool
+    display_patterns: bool
+    neighbor_checking: bool
+    rule_complexity: str  # "simple", "moderate", "complex"
+    classification: str
+    evidence: List[str]
+    hot_loop_pc_range: Tuple[int, int]
+    execution_percentage: float
+
+
+class HighSelectivityCADetector:
+    """Ultra-selective memory-based CA detector"""
+    
+    def __init__(self):
+        # Minimum thresholds for memory-based CA detection
+        self.min_ca_likelihood = 80.0
+        self.min_execution_percentage = 70.0  # Hot loop must dominate execution
+        self.min_instructions = 8000  # Must run for substantial time
+        self.min_memory_operations = 10  # Must actively read/write memory
+        
+    def analyze_rom_for_ca(self, rom_data: bytes, max_cycles: int = 50000) -> Optional[CAAnalysis]:
+        """Memory-focused CA analysis - looks for CA patterns in memory operations"""
+        if Chip8Emulator is None:
+            return None
+        
+        try:
+            # Create emulator and load ROM
+            emulator = Chip8Emulator()
+            emulator.load_rom(rom_data)
+            
+            # Track execution patterns
+            pc_frequency = defaultdict(int)
+            total_cycles = 0
+            memory_operations = 0
+            
+            # Run ROM and track memory activity
+            for cycle in range(max_cycles):
+                if emulator.crashed or emulator.halt:
+                    break
+                
+                pc = emulator.program_counter
+                pc_frequency[pc] += 1
+                
+                # Track memory operations
+                if pc < 4094:
+                    instruction = (int(emulator.memory[pc]) << 8) | int(emulator.memory[pc + 1])
+                    if (instruction & 0xF0FF) in [0xF055, 0xF065]:  # Memory read/write
+                        memory_operations += 1
+                
+                if not emulator.step():
+                    break
+                
+                total_cycles += 1
+                
+                # Early exit for non-memory-intensive programs
+                if cycle > 15000 and memory_operations < 5:
+                    break
+            
+            # Pre-filter: Must meet basic memory-CA criteria
+            if total_cycles < self.min_instructions:
+                return None
+            
+            if memory_operations < self.min_memory_operations:
+                return None
+            
+            # Find hot execution region
+            if not pc_frequency:
+                return None
+            
+            sorted_pcs = sorted(pc_frequency.items(), key=lambda x: x[1], reverse=True)
+            total_executions = sum(pc_frequency.values())
+            
+            # Find the most concentrated execution region
+            hot_pc_start = sorted_pcs[0][0]
+            hot_pc_end = hot_pc_start
+            hot_execution_count = sorted_pcs[0][1]
+            
+            # Build tight execution cluster
+            for pc, count in sorted_pcs[1:20]:  # Check top 20 most frequent
+                if abs(pc - hot_pc_start) <= 20:  # Reasonable cluster
+                    hot_pc_start = min(hot_pc_start, pc)
+                    hot_pc_end = max(hot_pc_end, pc + 2)
+                    hot_execution_count += count
+            
+            execution_percentage = hot_execution_count / total_executions * 100
+            
+            # Execution concentration requirement
+            if execution_percentage < self.min_execution_percentage:
+                return None
+            
+            # Analyze for memory-based CA patterns
+            ca_score = 0.0
+            evidence = []
+            
+            # Check memory-based CA patterns
+            memory_sequential = self._check_memory_grid_access(emulator.memory, hot_pc_start, hot_pc_end)
+            state_evolution = self._check_memory_state_evolution(emulator.memory, hot_pc_start, hot_pc_end)
+            neighbor_checking = self._check_memory_neighbor_patterns(emulator.memory, hot_pc_start, hot_pc_end)
+            ca_rules = self._check_ca_rule_patterns(emulator.memory, hot_pc_start, hot_pc_end)
+            
+            # Score memory-based CA patterns
+            if memory_sequential:
+                ca_score += 40
+                evidence.append("Sequential memory grid access pattern detected")
+            
+            if state_evolution:
+                ca_score += 35
+                evidence.append("Memory-based state evolution cycle confirmed")
+            
+            if neighbor_checking:
+                ca_score += 35
+                evidence.append("Multi-directional memory neighbor access detected")
+            
+            if ca_rules:
+                ca_score += 25
+                evidence.append("CA-like computational rules in memory operations")
+            
+            # Additional memory-focused scoring
+            memory_complexity = self._analyze_memory_access_complexity(emulator.memory, hot_pc_start, hot_pc_end)
+            if memory_complexity >= 4:
+                ca_score += 15
+                evidence.append("Complex memory access patterns suggesting 2D grid")
+            
+            # Check for memory-based CA instruction sequences
+            memory_ca_patterns = self._check_memory_ca_sequences(emulator.memory, hot_pc_start, hot_pc_end)
+            if memory_ca_patterns:
+                ca_score += 20
+                evidence.append("Classic memory-CA instruction sequences detected")
+            
+            # Ultra-strict threshold for memory-based CAs
+            if ca_score < self.min_ca_likelihood:
+                return None
+            
+            # Additional validation: Must be memory-focused, not display-focused
+            if not self._is_memory_focused_ca(emulator.memory, hot_pc_start, hot_pc_end):
+                return None
+            
+            # Classify the memory-based CA pattern
+            classification = self._classify_memory_ca_pattern(emulator.memory, hot_pc_start, hot_pc_end, 
+                                                            memory_sequential, state_evolution, neighbor_checking)
+            
+            rule_complexity = self._assess_memory_rule_complexity(emulator.memory, hot_pc_start, hot_pc_end)
+            
+            # Note: display_patterns is not relevant for memory-based CAs
+            return CAAnalysis(
+                ca_likelihood=min(ca_score, 100.0),
+                memory_sequential=memory_sequential,
+                state_evolution=state_evolution,
+                display_patterns=False,  # Not relevant for memory CAs
+                neighbor_checking=neighbor_checking,
+                rule_complexity=rule_complexity,
+                classification=classification,
+                evidence=evidence,
+                hot_loop_pc_range=(hot_pc_start, hot_pc_end),
+                execution_percentage=execution_percentage
+            )
+            
+        except Exception as e:
+            return None
+    
+    def _check_memory_grid_access(self, memory: np.ndarray, start: int, end: int) -> bool:
+        """Check for memory access patterns suggesting 2D grid operations"""
+        add_i_operations = []  # Track different index manipulations
+        memory_reads = 0
+        memory_writes = 0
+        index_loads = 0
+        
+        for addr in range(start, min(end + 1, len(memory) - 1), 2):
+            instruction = (int(memory[addr]) << 8) | int(memory[addr + 1])
+            
+            # Track index register operations
+            if (instruction & 0xF0FF) == 0xF01E:  # ADD I, Vx
+                vx = (instruction & 0x0F00) >> 8
+                add_i_operations.append(vx)
+            
+            # Memory operations
+            if (instruction & 0xF0FF) == 0xF065:  # LD Vx, [I]
+                memory_reads += 1
+            elif (instruction & 0xF0FF) == 0xF055:  # LD [I], Vx
+                memory_writes += 1
+            
+            # Index loading
+            if (instruction & 0xF000) == 0xA000:  # LD I, addr
+                index_loads += 1
+        
+        # Must have grid-like access: multiple index manipulations + memory ops
+        unique_index_ops = len(set(add_i_operations))
+        return (unique_index_ops >= 2 and memory_reads >= 3 and 
+                memory_writes >= 2 and index_loads >= 1)
+    
+    def _check_memory_state_evolution(self, memory: np.ndarray, start: int, end: int) -> bool:
+        """Check for memory-based state evolution (read current state, compute new state, write back)"""
+        memory_reads = 0
+        memory_writes = 0
+        computational_ops = 0
+        has_conditionals = False
+        
+        for addr in range(start, min(end + 1, len(memory) - 1), 2):
+            instruction = (int(memory[addr]) << 8) | int(memory[addr + 1])
+            opcode = (instruction & 0xF000) >> 12
+            
+            # Memory state access
+            if (instruction & 0xF0FF) == 0xF065:  # LD Vx, [I] - read state
+                memory_reads += 1
+            elif (instruction & 0xF0FF) == 0xF055:  # LD [I], Vx - write state
+                memory_writes += 1
+            
+            # Computational operations (CA rules)
+            elif opcode == 0x8:  # Register operations
+                subop = instruction & 0x000F
+                if subop in [0x1, 0x2, 0x3, 0x4, 0x5]:  # OR, AND, XOR, ADD, SUB
+                    computational_ops += 1
+            
+            # Conditional operations (state-dependent rules)
+            elif opcode in [0x3, 0x4, 0x5, 0x9]:  # Skip instructions
+                has_conditionals = True
+        
+        # Must have read-compute-write cycle with substantial computation
+        return (memory_reads >= 2 and memory_writes >= 2 and 
+                computational_ops >= 3)
+    
+    def _check_memory_neighbor_patterns(self, memory: np.ndarray, start: int, end: int) -> bool:
+        """Check for neighbor cell access patterns in memory"""
+        index_modifications = []
+        memory_accesses = 0
+        different_offsets = set()
+        
+        for addr in range(start, min(end + 1, len(memory) - 1), 2):
+            instruction = (int(memory[addr]) << 8) | int(memory[addr + 1])
+            
+            # Index register modifications (moving through grid)
+            if (instruction & 0xF0FF) == 0xF01E:  # ADD I, Vx
+                vx = (instruction & 0x0F00) >> 8
+                index_modifications.append(vx)
+            
+            # Register loading with immediate values (offsets)
+            elif (instruction & 0xF000) == 0x6000:  # LD Vx, byte
+                offset = instruction & 0x00FF
+                if offset <= 64:  # Reasonable grid offset
+                    different_offsets.add(offset)
+            
+            # Memory access
+            elif (instruction & 0xF0FF) in [0xF055, 0xF065]:
+                memory_accesses += 1
+        
+        # Must access multiple different memory locations (neighbors)
+        unique_index_mods = len(set(index_modifications))
+        return (unique_index_mods >= 2 and memory_accesses >= 4 and 
+                len(different_offsets) >= 2)
+    
+    def _check_ca_rule_patterns(self, memory: np.ndarray, start: int, end: int) -> bool:
+        """Check for CA-like computational rules"""
+        xor_operations = 0
+        and_operations = 0
+        or_operations = 0
+        conditional_operations = 0
+        
+        for addr in range(start, min(end + 1, len(memory) - 1), 2):
+            instruction = (int(memory[addr]) << 8) | int(memory[addr + 1])
+            opcode = (instruction & 0xF000) >> 12
+            
+            if opcode == 0x8:  # Register operations
+                subop = instruction & 0x000F
+                if subop == 0x3:  # XOR - classic CA operation
+                    xor_operations += 1
+                elif subop == 0x2:  # AND
+                    and_operations += 1
+                elif subop == 0x1:  # OR
+                    or_operations += 1
+            
+            # Conditional operations (state-dependent rules)
+            elif opcode in [0x3, 0x4, 0x5, 0x9]:
+                conditional_operations += 1
+        
+        # CA-like rules: must have logical operations and state-dependent behavior
+        total_logic_ops = xor_operations + and_operations + or_operations
+        return (total_logic_ops >= 2 and 
+                (xor_operations >= 1 or conditional_operations >= 2))
+    
+    def _analyze_memory_access_complexity(self, memory: np.ndarray, start: int, end: int) -> int:
+        """Analyze complexity of memory access patterns"""
+        complexity_score = 0
+        unique_registers_used = set()
+        index_operations = 0
+        
+        for addr in range(start, min(end + 1, len(memory) - 1), 2):
+            instruction = (int(memory[addr]) << 8) | int(memory[addr + 1])
+            opcode = (instruction & 0xF000) >> 12
+            
+            # Track register usage
+            if opcode in [0x6, 0x7, 0x8, 0xF]:
+                x = (instruction & 0x0F00) >> 8
+                unique_registers_used.add(x)
+            
+            # Index register operations
+            if (instruction & 0xF0FF) in [0xF01E, 0xA000]:  # ADD I, Vx or LD I, addr
+                index_operations += 1
+            
+            # Memory operations
+            if (instruction & 0xF0FF) in [0xF055, 0xF065]:
+                complexity_score += 2
+            
+            # Computational operations
+            if opcode == 0x8:
+                complexity_score += 1
+        
+        # Bonus for using multiple registers (suggests 2D coordinates)
+        if len(unique_registers_used) >= 3:
+            complexity_score += 2
+        
+        return complexity_score
+    
+    def _check_memory_ca_sequences(self, memory: np.ndarray, start: int, end: int) -> bool:
+        """Check for classic memory-based CA instruction sequences"""
+        instructions = []
+        for addr in range(start, min(end + 1, len(memory) - 1), 2):
+            instruction = (int(memory[addr]) << 8) | int(memory[addr + 1])
+            instructions.append(instruction)
+        
+        # Look for patterns like: LD Vx, [I] -> XOR/AND/OR -> LD [I], Vx
+        for i in range(len(instructions) - 2):
+            instr1 = instructions[i]
+            instr2 = instructions[i + 1]
+            instr3 = instructions[i + 2]
+            
+            # Memory read -> Logic operation -> Memory write
+            if ((instr1 & 0xF0FF) == 0xF065 and  # LD Vx, [I]
+                (instr2 & 0xF000) == 0x8000 and  # Register operation
+                (instr3 & 0xF0FF) == 0xF055):     # LD [I], Vx
+                return True
+        
+        return False
+    
+    def _is_memory_focused_ca(self, memory: np.ndarray, start: int, end: int) -> bool:
+        """Verify this is a memory-focused CA, not display-focused"""
+        memory_operations = 0
+        display_operations = 0
+        
+        for addr in range(start, min(end + 1, len(memory) - 1), 2):
+            instruction = (int(memory[addr]) << 8) | int(memory[addr + 1])
+            opcode = (instruction & 0xF000) >> 12
+            
+            if (instruction & 0xF0FF) in [0xF055, 0xF065]:  # Memory ops
+                memory_operations += 1
+            elif opcode == 0xD:  # Display operations
+                display_operations += 1
+        
+        # Must be memory-focused: more memory ops than display ops
+        return memory_operations >= display_operations * 2
+    
+    def _classify_memory_ca_pattern(self, memory: np.ndarray, start: int, end: int,
+                                  sequential: bool, evolution: bool, neighbor: bool) -> str:
+        """Classify memory-based CA patterns"""
+        
+        has_xor = any((int(memory[addr]) << 8 | int(memory[addr + 1])) & 0xF00F == 0x8003
+                     for addr in range(start, min(end + 1, len(memory) - 1), 2))
+        
+        has_conditionals = any((int(memory[addr]) << 8 | int(memory[addr + 1])) & 0xF000 in [0x3000, 0x4000, 0x5000, 0x9000]
+                              for addr in range(start, min(end + 1, len(memory) - 1), 2))
+        
+        if has_xor and evolution and neighbor:
+            return "Memory-based XOR cellular automaton"
+        elif sequential and evolution and neighbor:
+            return "Memory-grid cellular automaton"
+        elif has_conditionals and evolution:
+            return "Conditional memory-state automaton" 
+        elif sequential and evolution:
+            return "Linear memory cellular automaton"
+        else:
+            return "Memory-based computational automaton"
+    
+    def _assess_memory_rule_complexity(self, memory: np.ndarray, start: int, end: int) -> str:
+        """Assess complexity of memory-based CA rules"""
+        logical_ops = 0
+        arithmetic_ops = 0
+        conditional_ops = 0
+        
+        for addr in range(start, min(end + 1, len(memory) - 1), 2):
+            instruction = (int(memory[addr]) << 8) | int(memory[addr + 1])
+            opcode = (instruction & 0xF000) >> 12
+            
+            if opcode == 0x8:
+                subop = instruction & 0x000F
+                if subop in [0x1, 0x2, 0x3]:  # OR, AND, XOR
+                    logical_ops += 1
+                elif subop in [0x4, 0x5, 0x7]:  # ADD, SUB, SUBN
+                    arithmetic_ops += 1
+            elif opcode in [0x3, 0x4, 0x5, 0x9]:  # Conditionals
+                conditional_ops += 1
+        
+        total_complexity = logical_ops + arithmetic_ops + conditional_ops
+        
+        if total_complexity >= 6:
+            return "complex"
+        elif total_complexity >= 3:
+            return "moderate"
+        else:
+            return "simple"
+    
+    def _is_likely_false_positive(self, memory: np.ndarray, start: int, end: int, stats: dict) -> bool:
+        """Check for common false positive patterns"""
+        
+        # Too many jumps suggests chaotic behavior, not CA
+        jump_count = 0
+        total_instructions = 0
+        
+        for addr in range(start, min(end + 1, len(memory) - 1), 2):
+            instruction = (int(memory[addr]) << 8) | int(memory[addr + 1])
+            opcode = (instruction & 0xF000) >> 12
+            total_instructions += 1
+            
+            if opcode in [0x1, 0x2]:  # JP, CALL
+                jump_count += 1
+        
+        # If more than 30% jumps, likely not a clean CA
+        if total_instructions > 0 and jump_count / total_instructions > 0.3:
+            return True
+        
+        # Check for excessive randomness (RND instructions)
+        rnd_count = sum(1 for addr in range(start, min(end + 1, len(memory) - 1), 2)
+                       if (int(memory[addr]) << 8 | int(memory[addr + 1])) & 0xF000 == 0xC000)
+        
+        if rnd_count > 2:  # Too much randomness for pure CA
+            return True
+        
+        return False
+    
+    def _classify_strict_ca_pattern(self, memory: np.ndarray, start: int, end: int,
+                                  sequential: bool, evolution: bool, neighbor: bool) -> str:
+        """Classify high-confidence CA patterns"""
+        
+        has_xor = any((int(memory[addr]) << 8 | int(memory[addr + 1])) & 0xF00F == 0x8003
+                     for addr in range(start, min(end + 1, len(memory) - 1), 2))
+        
+        has_display = any((int(memory[addr]) << 8 | int(memory[addr + 1])) & 0xF000 == 0xD000
+                         for addr in range(start, min(end + 1, len(memory) - 1), 2))
+        
+        if has_xor and has_display and evolution and neighbor:
+            return "High-confidence XOR-based 2D cellular automaton"
+        elif sequential and evolution and neighbor:
+            return "High-confidence grid-based cellular automaton"
+        elif has_xor and evolution:
+            return "High-confidence XOR-rule cellular automaton"
+        elif sequential and evolution:
+            return "High-confidence linear cellular automaton"
+        else:
+            return "High-confidence computational automaton"
+    
+    def _assess_strict_rule_complexity(self, memory: np.ndarray, start: int, end: int) -> str:
+        """Assess CA rule complexity with strict criteria"""
+        logical_ops = 0
+        arithmetic_ops = 0
+        
+        for addr in range(start, min(end + 1, len(memory) - 1), 2):
+            instruction = (int(memory[addr]) << 8) | int(memory[addr + 1])
+            opcode = (instruction & 0xF000) >> 12
+            
+            if opcode == 0x8:
+                subop = instruction & 0x000F
+                if subop in [0x1, 0x2, 0x3]:  # OR, AND, XOR
+                    logical_ops += 1
+                elif subop in [0x4, 0x5, 0x7]:  # ADD, SUB, SUBN
+                    arithmetic_ops += 1
+        
+        total_ops = logical_ops + arithmetic_ops
+        
+        if total_ops >= 4:
+            return "complex"
+        elif total_ops >= 2:
+            return "moderate"
+        else:
+            return "simple"
 
 
 def load_rom_files(rom_dir: str) -> List[Tuple[str, bytes]]:
@@ -55,46 +543,30 @@ def load_rom_files(rom_dir: str) -> List[Tuple[str, bytes]]:
     return sorted(rom_files)
 
 
-def test_rom_batch_with_cuda_ca(rom_data_list: List[bytes], cycles: int = 1000000,
-                                ca_detection_interval: int = 500, ca_threshold: float = 60.0) -> Tuple[List[Dict], List[Tuple[bytes, Dict]]]:
-    """Test a batch of ROMs with CUDA CA detection - silent execution"""
+def test_rom_batch(rom_data_list: List[bytes], cycles: int = 1000000, 
+                  ca_detector: Optional[HighSelectivityCADetector] = None) -> Tuple[List[Dict], List[Tuple[bytes, CAAnalysis]]]:
+    """Test batch with ultra-selective CA detection"""
+    print(f"Testing batch of {len(rom_data_list)} ROMs with high-selectivity CA detection...")
     
-    # Create enhanced emulator with CUDA CA detection (no debug output)
-    emulator = ParallelChip8Emulator(
-        len(rom_data_list),
-        ca_detection_interval=ca_detection_interval,
-        ca_threshold=ca_threshold
-    )
-    
-    # Load and run ROMs (silent)
+    emulator = ParallelChip8Emulator(len(rom_data_list))
     emulator.load_roms(rom_data_list)
+    
+    start_time = time.time()
     emulator.run(cycles=cycles)
+    execution_time = time.time() - start_time
     
-    # Get CA detection results from CUDA
-    ca_results = emulator.get_ca_results()
+    print(f"Batch execution completed in {execution_time:.2f} seconds")
     
-    # Filter for high-quality CA patterns only
-    high_quality_ca_instances = [
-        ca for ca in ca_results['ca_instances'] 
-        if ca['ca_likelihood'] >= 60.0  # Strict 60% threshold
-    ]
-    
-    # Analyze results for each ROM
     results = []
     displays = emulator.get_displays()
     ca_roms = []
     
-    # Create mapping of instance_id to high-quality CA analysis
-    ca_by_instance = {ca['instance_id']: ca for ca in high_quality_ca_instances}
-    
     for i in range(len(rom_data_list)):
-        # Get state for this instance
         final_pc = int(emulator.program_counter[i])
         crashed = bool(emulator.crashed[i])
         halted = bool(emulator.halted[i])
         waiting_for_key = bool(emulator.waiting_for_key[i])
         
-        # Analyze display
         display = displays[i]
         pixels_set = int(np.sum(display > 0))
         total_pixels = display.shape[0] * display.shape[1]
@@ -103,21 +575,18 @@ def test_rom_batch_with_cuda_ca(rom_data_list: List[bytes], cycles: int = 100000
         has_output = pixels_set > 0
         has_structure = pixel_density > 0.05 and pixel_density < 0.5
         
-        # Get per-instance stats
         instructions = int(emulator.stats['instructions_executed'][i])
         display_writes = int(emulator.stats['display_writes'][i])
         pixels_drawn = int(emulator.stats['pixels_drawn'][i])
         
-        # Check if this instance has HIGH-QUALITY CA patterns
-        ca_analysis = ca_by_instance.get(i)
-        has_ca = ca_analysis is not None
-        
-        # Only add ROMs with 60%+ CA likelihood
-        if has_ca:
-            ca_roms.append((rom_data_list[i], ca_analysis))
+        # More selective criteria for memory-based CA analysis
+        potentially_ca = (not crashed and not waiting_for_key and 
+                         instructions > 8000 and 
+                         # Focus on memory activity, not display
+                         int(emulator.stats.get('memory_reads', 0)) + int(emulator.stats.get('memory_writes', 0)) > 10)
         
         result = {
-            'execution_time': 0,  # Not needed for CA focus
+            'execution_time': execution_time / len(rom_data_list),
             'final_pc': final_pc,
             'crashed': crashed,
             'halted': halted,
@@ -131,177 +600,109 @@ def test_rom_batch_with_cuda_ca(rom_data_list: List[bytes], cycles: int = 100000
             'has_output': has_output,
             'has_structure': has_structure,
             'interesting': (not crashed and not waiting_for_key) and (has_output and has_structure),
-            'has_ca': has_ca,
-            'ca_analysis': ca_analysis
+            'potentially_ca': potentially_ca,
+            'ca_analysis': None
         }
+        
+        # Run high-selectivity memory-based CA detection
+        if potentially_ca and ca_detector is not None:
+            ca_analysis = ca_detector.analyze_rom_for_ca(rom_data_list[i], max_cycles=cycles//5)
+            if ca_analysis is not None:  # Only saves 80%+ likelihood
+                result['ca_analysis'] = ca_analysis
+                ca_roms.append((rom_data_list[i], ca_analysis))
+                print(f"  🧬 MEMORY-BASED CA! Likelihood: {ca_analysis.ca_likelihood:.0f}% - {ca_analysis.classification}")
         
         results.append(result)
     
     return results, ca_roms
 
 
-def save_ca_roms(rom_files: List[Tuple[str, bytes]], results: List[Dict], 
-                output_dir: str = "ca_roms"):
-    """Save high-quality CA ROMs (60%+ likelihood) with minimal output"""
+def save_high_confidence_ca_roms(ca_roms: List[Tuple[bytes, CAAnalysis]], output_dir: str = "memory_based_ca_roms"):
+    """Save only ultra-high confidence memory-based CA ROMs"""
     os.makedirs(output_dir, exist_ok=True)
     
-    saved_count = 0
+    for i, (rom_data, ca_analysis) in enumerate(ca_roms):
+        likelihood = int(ca_analysis.ca_likelihood)
+        classification = ca_analysis.classification.replace(' ', '_').replace('-', '_')
+        
+        filename = f"MemoryCA{likelihood:02d}_{classification}_{i:04d}"
+        
+        # Save ROM
+        rom_path = os.path.join(output_dir, f"{filename}.ch8")
+        with open(rom_path, 'wb') as f:
+            f.write(rom_data)
+        
+        # Save detailed analysis
+        analysis_path = os.path.join(output_dir, f"{filename}_ANALYSIS.txt")
+        with open(analysis_path, 'w') as f:
+            f.write(f"MEMORY-BASED CELLULAR AUTOMATON ANALYSIS\n")
+            f.write(f"=" * 50 + "\n\n")
+            f.write(f"CA Likelihood: {ca_analysis.ca_likelihood:.1f}%\n")
+            f.write(f"Classification: {ca_analysis.classification}\n")
+            f.write(f"Rule Complexity: {ca_analysis.rule_complexity}\n")
+            f.write(f"Hot Loop: 0x{ca_analysis.hot_loop_pc_range[0]:03X}-0x{ca_analysis.hot_loop_pc_range[1]:03X}\n")
+            f.write(f"Execution Concentration: {ca_analysis.execution_percentage:.1f}%\n\n")
+            f.write(f"Memory-Based CA Features:\n")
+            f.write(f"✓ Memory Grid Access: {'YES' if ca_analysis.memory_sequential else 'NO'}\n")
+            f.write(f"✓ State Evolution: {'YES' if ca_analysis.state_evolution else 'NO'}\n")
+            f.write(f"✓ Neighbor Checking: {'YES' if ca_analysis.neighbor_checking else 'NO'}\n")
+            f.write(f"✓ Memory-Focused: YES (not display-based)\n\n")
+            f.write(f"Evidence:\n")
+            for evidence in ca_analysis.evidence:
+                f.write(f"• {evidence}\n")
     
-    for (filename, rom_data), result in zip(rom_files, results):
-        if result.get('has_ca', False):
-            ca_analysis = result['ca_analysis']
-            
-            # Create descriptive filename with CA prefix
-            base_name = Path(filename).stem
-            
-            new_filename = (f"CA_likelihood{ca_analysis['ca_likelihood']:.0f}"
-                          f"_inst{result['instructions_executed']}"
-                          f"_pix{result['final_pixel_count']}"
-                          f"_dens{result['pixel_density']:.3f}"
-                          f"_loop{ca_analysis['hot_loop_range'][0]:03X}-{ca_analysis['hot_loop_range'][1]:03X}"
-                          f"_{base_name}")
-            
-            # Save ROM file
-            rom_path = os.path.join(output_dir, f"{new_filename}.ch8")
-            with open(rom_path, 'wb') as f:
-                f.write(rom_data)
-            
-            # Generate screenshot silently
-            try:
-                screenshot_emulator = ParallelChip8Emulator(1)
-                screenshot_emulator.load_single_rom(rom_data)
-                screenshot_emulator.run(cycles=1000000)
-                
-                display = screenshot_emulator.get_displays()[0]
-                if hasattr(display, 'get'):
-                    display_np = display.get()
-                else:
-                    display_np = display
-                
-                from PIL import Image
-                display_img = (display_np * 255).astype(np.uint8)
-                scale_factor = 8
-                scaled_img = np.repeat(np.repeat(display_img, scale_factor, axis=0), scale_factor, axis=1)
-                
-                img = Image.fromarray(scaled_img, mode='L')
-                screenshot_path = os.path.join(output_dir, f"{new_filename}.png")
-                img.save(screenshot_path)
-                
-                # Save detailed CA analysis
-                ca_report_path = os.path.join(output_dir, f"{new_filename}_CUDA_CA_ANALYSIS.txt")
-                with open(ca_report_path, 'w') as f:
-                    f.write(f"HIGH-QUALITY CUDA Cellular Automata Analysis\n")
-                    f.write(f"=" * 60 + "\n\n")
-                    f.write(f"ROM: {new_filename}.ch8\n")
-                    f.write(f"Detection Method: Real-time CUDA kernel analysis\n")
-                    f.write(f"CA Likelihood: {ca_analysis['ca_likelihood']:.1f}% (HIGH CONFIDENCE)\n")
-                    f.write(f"Hot Loop Range: 0x{ca_analysis['hot_loop_range'][0]:03X}-0x{ca_analysis['hot_loop_range'][1]:03X}\n")
-                    f.write(f"Instance ID: {ca_analysis['instance_id']}\n\n")
-                    f.write(f"Execution Statistics:\n")
-                    f.write(f"- Instructions executed: {result['instructions_executed']:,}\n")
-                    f.write(f"- Display writes: {result['display_writes']}\n")
-                    f.write(f"- Pixels drawn: {result['pixels_drawn']}\n")
-                    f.write(f"- Final pixel count: {result['final_pixel_count']}\n")
-                    f.write(f"- Pixel density: {result['pixel_density']:.3f}\n")
-                    f.write(f"- Completed normally: {'Yes' if result['completed_normally'] else 'No'}\n")
-                    f.write(f"- Final PC: 0x{result['final_pc']:03X}\n\n")
-                    f.write(f"Quality Assessment:\n")
-                    f.write(f"This ROM shows strong evidence of cellular automata patterns\n")
-                    f.write(f"with {ca_analysis['ca_likelihood']:.1f}% confidence. Only ROMs with\n")
-                    f.write(f"60%+ likelihood are saved, making this a high-quality candidate.\n")
-                
-            except Exception:
-                pass  # Silent failure for screenshots
-            
-            saved_count += 1
-    
-    return saved_count
+    print(f"📁 Saved {len(ca_roms)} MEMORY-BASED CA ROMs to {output_dir}/")
+    return len(ca_roms)
 
 
-def generate_and_test_random_batch_ca(generator, num_roms: int = 10000, 
-                                     test_cycles: int = 1000000,
-                                     ca_detection_interval: int = 500,
-                                     ca_threshold: float = 60.0) -> Tuple[int, int, int]:
-    """Generate and test ROMs with silent execution, 60%+ CA threshold"""
+def generate_and_test_random_batch(generator, num_roms: int = 10000, 
+                                 test_cycles: int = 1000000,
+                                 ca_detector: Optional[HighSelectivityCADetector] = None) -> Tuple[int, int, int]:
+    """Generate and test with ultra-selective CA detection"""
+    print(f"Generating and testing {num_roms:,} ROMs with 80%+ CA threshold...")
     
-    # Generate ROMs
     roms = generator.generate_batch(num_roms)
     rom_data_list = [cp.asnumpy(rom).tobytes() for rom in roms]
     
-    # Test with CUDA CA detection (silent)
-    results, ca_roms = test_rom_batch_with_cuda_ca(
-        rom_data_list, 
-        cycles=test_cycles,
-        ca_detection_interval=ca_detection_interval,
-        ca_threshold=ca_threshold
-    )
+    results, ca_roms = test_rom_batch(rom_data_list, cycles=test_cycles, ca_detector=ca_detector)
     
-    # Count results
     interesting_count = sum(1 for r in results if r['interesting'])
     completed_count = sum(1 for r in results if r['completed_normally'])
-    has_output_count = sum(1 for r in results if r['has_output'])
-    crashed_count = sum(1 for r in results if r['crashed'])
     ca_count = len(ca_roms)
     
-    # Save high-quality CA ROMs only
+    print(f"Results: {completed_count} completed, {interesting_count} interesting, {ca_count} HIGH-CONFIDENCE CAs")
+    
     if ca_count > 0:
-        rom_files = [(f"random_{i:06d}.ch8", rom_data) for i, rom_data in enumerate(rom_data_list)]
-        save_ca_roms(rom_files, results, "output/ca_roms")
+        save_high_confidence_ca_roms(ca_roms, "output/memory_based_ca_roms")
     
     return completed_count, interesting_count, ca_count
 
 
-def print_summary_stats(results: List[Dict]):
-    """Print concise summary statistics"""
-    total = len(results)
-    crashed = sum(1 for r in results if r['crashed'])
-    completed = sum(1 for r in results if r['completed_normally'])
-    has_output = sum(1 for r in results if r['has_output'])
-    interesting = sum(1 for r in results if r['interesting'])
-    ca_roms = sum(1 for r in results if r.get('has_ca', False))
-    
-    print(f"\nSummary: {total:,} ROMs tested")
-    print(f"Crashed: {crashed:,} ({crashed/total*100:.1f}%)")
-    print(f"Completed: {completed:,} ({completed/total*100:.1f}%)")
-    print(f"Visual output: {has_output:,} ({has_output/total*100:.1f}%)")
-    print(f"Interesting: {interesting:,} ({interesting/total*100:.1f}%)")
-    print(f"HIGH-QUALITY CA (60%+): {ca_roms:,} ({ca_roms/total*100:.6f}%)")
-    
-    if ca_roms > 0:
-        ca_likelihoods = [r['ca_analysis']['ca_likelihood'] for r in results if r.get('has_ca', False)]
-        avg_ca_likelihood = np.mean(ca_likelihoods)
-        max_ca_likelihood = np.max(ca_likelihoods)
-        print(f"CA likelihood (avg/max): {avg_ca_likelihood:.1f}%/{max_ca_likelihood:.1f}%")
-
-
 def main():
-    parser = argparse.ArgumentParser(description="Find high-quality CA patterns in random CHIP-8 ROMs")
-    parser.add_argument("--rom-dir", type=str, help="Directory containing ROM files to test")
-    parser.add_argument("--generate", type=int, help="Generate N random ROMs and test them")
-    parser.add_argument("--continuous", action="store_true", help="Run continuously in batches")
-    parser.add_argument("--cycles", type=int, default=1000000, help="Cycles to run each ROM")
-    parser.add_argument("--batch-size", type=int, default=10000, help="Batch size for continuous mode")
-    parser.add_argument("--output", type=str, default="output", help="Output directory")
-    parser.add_argument("--ca-threshold", type=float, default=60.0, help="CA likelihood threshold (60-100)")
-    parser.add_argument("--ca-interval", type=int, default=500, help="CA detection interval (cycles)")
+    """Ultra-selective CA detection main"""
+    parser = argparse.ArgumentParser(description="High-Selectivity CA ROM Detector (80%+ only)")
+    parser.add_argument("--generate", type=int, help="Generate N random ROMs")
+    parser.add_argument("--continuous", action="store_true", help="Run continuously")
+    parser.add_argument("--cycles", type=int, default=1000000, help="Cycles per ROM")
+    parser.add_argument("--batch-size", type=int, default=20000, help="Batch size")
     
     args = parser.parse_args()
     
-    print("CHIP-8 CA Hunter - High-Quality CA Detection (60%+ threshold)")
+    print("Memory-Based CHIP-8 CA Detector (80%+ Confidence Only)")
     print("=" * 60)
+    print("🧠 Focuses on memory-based cellular automata patterns")
+    print("🎯 Only saves ROMs with CA likelihood ≥ 80%")
+    print("📊 Ignores display output - pure memory CA detection")
+    print()
     
-    os.makedirs(args.output, exist_ok=True)
+    ca_detector = HighSelectivityCADetector()
     
     if args.continuous:
         if PureRandomChip8Generator is None:
             print("Error: Pure random ROM generator not available")
             return 1
         
-        print(f"Continuous CA hunting: {args.batch_size:,} ROMs per batch, 60%+ threshold")
-        print("Press Ctrl+C to stop\n")
-        
         generator = PureRandomChip8Generator(rom_size=3584)
-        
         completed_total = 0
         interesting_total = 0
         ca_total = 0
@@ -310,14 +711,8 @@ def main():
         
         try:
             while True:
-                batch_start = time.time()
-                
-                completed, interesting, ca_count = generate_and_test_random_batch_ca(
-                    generator, 
-                    args.batch_size, 
-                    args.cycles,
-                    ca_detection_interval=args.ca_interval,
-                    ca_threshold=args.ca_threshold
+                completed, interesting, ca_count = generate_and_test_random_batch(
+                    generator, args.batch_size, args.cycles, ca_detector
                 )
                 
                 completed_total += completed
@@ -325,195 +720,51 @@ def main():
                 ca_total += ca_count
                 batches_tested += 1
                 
-                batch_time = time.time() - batch_start
-                total_time = time.time() - start_time
                 total_roms = batches_tested * args.batch_size
-                
-                # Concise batch summary
-                print(f"Batch {batches_tested}: {completed}/{args.batch_size} completed, "
-                      f"{interesting} interesting, {ca_count} HIGH-QUALITY CA ({batch_time:.1f}s)")
-                
-                # Running totals
+                total_time = time.time() - start_time
                 rate = total_roms / total_time if total_time > 0 else 0
-                ca_rate = ca_total / total_roms * 100 if total_roms > 0 else 0
                 
-                print(f"Totals: {total_roms:,} tested, {ca_total} HIGH-QUALITY CA "
-                      f"({rate:.0f} ROMs/sec, {ca_rate:.6f}% CA rate)")
+                print(f"Batch {batches_tested}: {ca_count} HIGH-CONFIDENCE CAs found")
+                print(f"Totals: {total_roms:,} tested, {ca_total} HIGH-CONFIDENCE CAs ({rate:.0f} ROMs/sec)")
                 
                 if ca_total > 0:
-                    discovery_rate = total_roms // ca_total
-                    print(f"Discovery rate: 1 high-quality CA per {discovery_rate:,} ROMs")
-                
-                print()  # Empty line for readability
+                    print(f"🎯 CA discovery rate: 1 in {total_roms // ca_total:,} ROMs")
+                print("=" * 60)
                 
         except KeyboardInterrupt:
             print(f"\nStopped after {batches_tested} batches")
-            print(f"Final: {batches_tested * args.batch_size:,} ROMs tested, {ca_total} HIGH-QUALITY CA found")
-            
             if ca_total > 0:
-                total_time = time.time() - start_time
-                rate = (batches_tested * args.batch_size) / total_time if total_time > 0 else 0
-                discovery_rate = (batches_tested * args.batch_size) // ca_total
-                print(f"Rate: {rate:.0f} ROMs/sec, 1 high-quality CA per {discovery_rate:,} ROMs")
-        
+                print(f"🧬 Found {ca_total} HIGH-CONFIDENCE CAs in {batches_tested * args.batch_size:,} ROMs")
+    
     elif args.generate:
         if PureRandomChip8Generator is None:
             print("Error: Pure random ROM generator not available")
             return 1
         
-        print(f"Testing {args.generate:,} ROMs for high-quality CA patterns...")
         generator = PureRandomChip8Generator(rom_size=3584)
-        
         completed_total = 0
         interesting_total = 0
         ca_total = 0
         
-        try:
-            total_tested = 0
-            while total_tested < args.generate:
-                batch_size = min(20000, args.generate - total_tested)
-                completed, interesting, ca_count = generate_and_test_random_batch_ca(
-                    generator, 
-                    batch_size, 
-                    args.cycles,
-                    ca_detection_interval=args.ca_interval,
-                    ca_threshold=args.ca_threshold
-                )
-                
-                completed_total += completed
-                interesting_total += interesting
-                ca_total += ca_count
-                total_tested += batch_size
-                
-                print(f"Progress: {total_tested}/{args.generate} tested, "
-                      f"{ca_count} HIGH-QUALITY CA in this batch")
-                
-        except KeyboardInterrupt:
-            print("\nTesting stopped by user")
-        
-        print(f"\nFinal: {total_tested} ROMs tested, {ca_total} HIGH-QUALITY CA found")
-        if ca_total > 0:
-            discovery_rate = total_tested // ca_total
-            print(f"Discovery rate: 1 high-quality CA per {discovery_rate:,} ROMs")
-        
-    elif args.rom_dir:
-        if not os.path.exists(args.rom_dir):
-            print(f"ROM directory not found: {args.rom_dir}")
-            return 1
-        
-        rom_files = load_rom_files(args.rom_dir)
-        if not rom_files:
-            print(f"No ROM files found in {args.rom_dir}")
-            return 1
-        
-        print(f"Testing {len(rom_files)} existing ROMs for high-quality CA patterns...")
-        
-        all_results = []
-        rom_data_list = [rom_data for _, rom_data in rom_files]
-        
-        for i in range(0, len(rom_data_list), args.batch_size):
-            end_idx = min(i + args.batch_size, len(rom_data_list))
-            batch_data = rom_data_list[i:end_idx]
-            
-            batch_results, _ = test_rom_batch_with_cuda_ca(
-                batch_data, 
-                cycles=args.cycles,
-                ca_detection_interval=args.ca_interval,
-                ca_threshold=args.ca_threshold
+        total_tested = 0
+        while total_tested < args.generate:
+            batch_size = min(args.batch_size, args.generate - total_tested)
+            completed, interesting, ca_count = generate_and_test_random_batch(
+                generator, batch_size, args.cycles, ca_detector
             )
-            all_results.extend(batch_results)
+            
+            completed_total += completed
+            interesting_total += interesting
+            ca_total += ca_count
+            total_tested += batch_size
+            
+            print(f"Progress: {total_tested}/{args.generate} - {ca_total} HIGH-CONFIDENCE CAs found")
         
-        print_summary_stats(all_results)
-        
-        ca_count = sum(1 for r in all_results if r.get('has_ca', False))
-        if ca_count > 0:
-            save_ca_roms(rom_files, all_results, os.path.join(args.output, "ca_roms"))
-            print(f"Saved {ca_count} HIGH-QUALITY CA ROMs")
+        print(f"\n🎯 Final: {ca_total} HIGH-CONFIDENCE CAs in {total_tested:,} ROMs")
     
     else:
-        print("Interactive mode:")
-        print("1. Generate ROMs and hunt for high-quality CA")
-        print("2. Continuous CA hunting") 
-        print("3. Test existing ROMs")
-        
-        choice = input("Choice (1-3): ").strip()
-        
-        if choice == "1":
-            if PureRandomChip8Generator is None:
-                print("Error: Pure random ROM generator not available")
-                return 1
-            
-            num_roms = int(input("Number of ROMs (default 10000): ") or "10000")
-            generator = PureRandomChip8Generator(rom_size=3584)
-            completed, interesting, ca_count = generate_and_test_random_batch_ca(
-                generator, num_roms, args.cycles, args.ca_interval, args.ca_threshold
-            )
-            print(f"Result: {completed} completed, {interesting} interesting, {ca_count} HIGH-QUALITY CA")
-            
-        elif choice == "2":
-            if PureRandomChip8Generator is None:
-                print("Error: Pure random ROM generator not available")
-                return 1
-            
-            batch_size = int(input("Batch size (default 10000): ") or "10000")
-            print(f"Continuous hunting with {batch_size:,} ROMs per batch")
-            print("Press Ctrl+C to stop\n")
-            
-            generator = PureRandomChip8Generator(rom_size=3584)
-            ca_total = 0
-            batches_tested = 0
-            start_time = time.time()
-            
-            try:
-                while True:
-                    completed, interesting, ca_count = generate_and_test_random_batch_ca(
-                        generator, batch_size, args.cycles, args.ca_interval, args.ca_threshold
-                    )
-                    
-                    ca_total += ca_count
-                    batches_tested += 1
-                    
-                    total_roms = batches_tested * batch_size
-                    rate = total_roms / (time.time() - start_time)
-                    
-                    print(f"Batch {batches_tested}: {ca_count} HIGH-QUALITY CA found")
-                    print(f"Total: {total_roms:,} tested, {ca_total} HIGH-QUALITY CA ({rate:.0f} ROMs/sec)")
-                    
-                    if ca_total > 0:
-                        print(f"Rate: 1 high-quality CA per {total_roms // ca_total:,} ROMs")
-                    print()
-                    
-            except KeyboardInterrupt:
-                print(f"\nStopped: {ca_total} HIGH-QUALITY CA found in {batches_tested * batch_size:,} ROMs")
-                
-        elif choice == "3":
-            rom_dir = input("ROM directory path: ").strip()
-            if os.path.exists(rom_dir):
-                rom_files = load_rom_files(rom_dir)
-                if rom_files:
-                    rom_data_list = [rom_data for _, rom_data in rom_files]
-                    results, _ = test_rom_batch_with_cuda_ca(
-                        rom_data_list, 
-                        cycles=args.cycles,
-                        ca_detection_interval=args.ca_interval,
-                        ca_threshold=args.ca_threshold
-                    )
-                    print_summary_stats(results)
-                    
-                    ca_count = sum(1 for r in results if r.get('has_ca', False))
-                    if ca_count > 0:
-                        save_ca_roms(rom_files, results, "output/ca_roms")
-                        print(f"Saved {ca_count} HIGH-QUALITY CA ROMs")
-                else:
-                    print("No ROM files found")
-            else:
-                print("Directory not found")
-        
-        else:
-            print("Invalid choice")
-            return 1
+        print("Use --continuous or --generate to start CA hunting")
     
-    print("\nCA hunting completed!")
     return 0
 
 

@@ -1,7 +1,6 @@
 """
-Mega-Kernel CHIP-8 Emulator with Integrated CUDA CA Detection
-Everything runs in a single CUDA kernel for maximum performance
-ENHANCED: Now includes real-time cellular automata detection
+Mega-Kernel CHIP-8 Emulator with FIXED CUDA CA Detection
+FIXED: CA scoring algorithm to properly detect high-likelihood patterns
 """
 
 import cupy as cp
@@ -39,7 +38,7 @@ CHIP8_FONT = cp.array([
     0xF0, 0x80, 0xF0, 0x80, 0x80   # F
 ], dtype=cp.uint8)
 
-# Enhanced mega-kernel with CA detection
+# FIXED mega-kernel with improved CA detection
 MEGA_KERNEL_WITH_CA_SOURCE = r'''
 extern "C" __global__
 void chip8_mega_kernel_with_ca(
@@ -110,10 +109,15 @@ void chip8_mega_kernel_with_ca(
     unsigned char dt = delay_timers[instance];
     unsigned char st = sound_timers[instance];
     
-    // CA detection state
+    // FIXED: CA detection state with better tracking
     unsigned int local_pc_frequency[256];
+    unsigned int instruction_counts[16];  // Track instruction types
     for (int i = 0; i < 256; i++) local_pc_frequency[i] = 0;
+    for (int i = 0; i < 16; i++) instruction_counts[i] = 0;
+    
     unsigned int last_ca_check = 0;
+    unsigned int total_display_ops = 0;
+    unsigned int total_memory_ops = 0;
     
     // Statistics
     unsigned int local_instructions = 0;
@@ -127,7 +131,7 @@ void chip8_mega_kernel_with_ca(
         return; // Skip crashed/halted instances
     }
     
-    // Main execution loop with CA detection
+    // Main execution loop with enhanced CA detection
     for (int cycle = 0; cycle < cycles_to_run; cycle++) {
         // Skip if waiting for key
         if (waiting_for_key[instance]) {
@@ -153,29 +157,36 @@ void chip8_mega_kernel_with_ca(
         unsigned char low_byte = memory[mem_base + pc + 1];
         unsigned short instruction = (high_byte << 8) | low_byte;
         
+        // FIXED: Track instruction types for better CA analysis
+        unsigned char opcode = (instruction & 0xF000) >> 12;
+        instruction_counts[opcode]++;
+        
+        // Track specific CA-relevant operations
+        if (opcode == 0xD) total_display_ops++;  // Display operations
+        if (opcode == 0xF && ((instruction & 0x00FF) == 0x55 || (instruction & 0x00FF) == 0x65 || (instruction & 0x00FF) == 0x1E)) {
+            total_memory_ops++;  // Memory operations
+        }
+        
         // Increment PC
         pc += 2;
         local_instructions++;
         
         // Decode instruction
-        unsigned char opcode = (instruction & 0xF000) >> 12;
         unsigned char x = (instruction & 0x0F00) >> 8;
         unsigned char y = (instruction & 0x00F0) >> 4;
         unsigned char n = instruction & 0x000F;
         unsigned char kk = instruction & 0x00FF;
         unsigned short nnn = instruction & 0x0FFF;
         
-        // Execute instruction (same as original)
+        // Execute instruction (same as before - keeping it concise for space)
         switch (opcode) {
             case 0x0:
                 if (instruction == 0x00E0) {
-                    // CLS - Clear display
                     for (int i = 0; i < 32 * 64; i++) {
                         displays[display_base + i] = 0;
                     }
                     local_display_writes++;
                 } else if (instruction == 0x00EE) {
-                    // RET - Return from subroutine
                     if (sp > 0) {
                         sp--;
                         pc = stacks[stack_base + sp];
@@ -185,13 +196,8 @@ void chip8_mega_kernel_with_ca(
                 }
                 break;
                 
-            case 0x1:
-                // JP addr - Jump to address
-                pc = nnn;
-                break;
-                
+            case 0x1: pc = nnn; break;
             case 0x2:
-                // CALL addr - Call subroutine
                 if (sp < 16) {
                     stacks[stack_base + sp] = pc;
                     sp++;
@@ -200,40 +206,13 @@ void chip8_mega_kernel_with_ca(
                     crashed[instance] = 1;
                 }
                 break;
-                
-            case 0x3:
-                // SE Vx, byte - Skip if equal
-                if (registers[reg_base + x] == kk) {
-                    pc += 2;
-                }
-                break;
-                
-            case 0x4:
-                // SNE Vx, byte - Skip if not equal
-                if (registers[reg_base + x] != kk) {
-                    pc += 2;
-                }
-                break;
-                
-            case 0x5:
-                // SE Vx, Vy - Skip if registers equal
-                if (n == 0 && registers[reg_base + x] == registers[reg_base + y]) {
-                    pc += 2;
-                }
-                break;
-                
-            case 0x6:
-                // LD Vx, byte - Load byte into register
-                registers[reg_base + x] = kk;
-                break;
-                
-            case 0x7:
-                // ADD Vx, byte - Add byte to register
-                registers[reg_base + x] = (registers[reg_base + x] + kk) & 0xFF;
-                break;
-                
-            case 0x8:
-                // Register operations
+            case 0x3: if (registers[reg_base + x] == kk) pc += 2; break;
+            case 0x4: if (registers[reg_base + x] != kk) pc += 2; break;
+            case 0x5: if (n == 0 && registers[reg_base + x] == registers[reg_base + y]) pc += 2; break;
+            case 0x6: registers[reg_base + x] = kk; break;
+            case 0x7: registers[reg_base + x] = (registers[reg_base + x] + kk) & 0xFF; break;
+            
+            case 0x8: // Register operations
                 {
                     unsigned char vx = registers[reg_base + x];
                     unsigned char vy = registers[reg_base + y];
@@ -241,93 +220,51 @@ void chip8_mega_kernel_with_ca(
                     unsigned char flag = 0;
                     
                     switch (n) {
-                        case 0x0: // LD Vx, Vy
-                            result = vy;
-                            break;
-                        case 0x1: // OR Vx, Vy
-                            result = vx | vy;
-                            if (quirk_logic) flag = 0;
-                            break;
-                        case 0x2: // AND Vx, Vy
-                            result = vx & vy;
-                            if (quirk_logic) flag = 0;
-                            break;
-                        case 0x3: // XOR Vx, Vy
-                            result = vx ^ vy;
-                            if (quirk_logic) flag = 0;
-                            break;
-                        case 0x4: // ADD Vx, Vy
-                            {
-                                int sum = vx + vy;
-                                result = sum & 0xFF;
-                                flag = (sum > 255) ? 1 : 0;
-                            }
-                            break;
-                        case 0x5: // SUB Vx, Vy
-                            result = (vx - vy) & 0xFF;
-                            flag = (vx >= vy) ? 1 : 0;
-                            break;
-                        case 0x6: // SHR Vx
-                            result = vx >> 1;
-                            flag = vx & 0x1;
-                            break;
-                        case 0x7: // SUBN Vx, Vy
-                            result = (vy - vx) & 0xFF;
-                            flag = (vy >= vx) ? 1 : 0;
-                            break;
-                        case 0xE: // SHL Vx
-                            result = (vx << 1) & 0xFF;
-                            flag = (vx & 0x80) ? 1 : 0;
-                            break;
-                        default:
-                            crashed[instance] = 1;
-                            continue;
+                        case 0x0: result = vy; break;
+                        case 0x1: result = vx | vy; if (quirk_logic) flag = 0; break;
+                        case 0x2: result = vx & vy; if (quirk_logic) flag = 0; break;
+                        case 0x3: result = vx ^ vy; if (quirk_logic) flag = 0; break;
+                        case 0x4: {
+                            int sum = vx + vy;
+                            result = sum & 0xFF;
+                            flag = (sum > 255) ? 1 : 0;
+                        } break;
+                        case 0x5: result = (vx - vy) & 0xFF; flag = (vx >= vy) ? 1 : 0; break;
+                        case 0x6: result = vx >> 1; flag = vx & 0x1; break;
+                        case 0x7: result = (vy - vx) & 0xFF; flag = (vy >= vx) ? 1 : 0; break;
+                        case 0xE: result = (vx << 1) & 0xFF; flag = (vx & 0x80) ? 1 : 0; break;
+                        default: crashed[instance] = 1; continue;
                     }
                     
                     registers[reg_base + x] = result;
-                    if (n == 0x1 || n == 0x2 || n == 0x3 || n == 0x4 || n == 0x5 || n == 0x6 || n == 0x7 || n == 0xE) {
+                    if (n >= 0x1 && n <= 0xE && n != 0x0) {
                         registers[reg_base + 0xF] = flag;
                     }
                 }
                 break;
                 
-            case 0x9:
-                // SNE Vx, Vy - Skip if registers not equal
-                if (n == 0 && registers[reg_base + x] != registers[reg_base + y]) {
-                    pc += 2;
-                }
-                break;
-                
-            case 0xA:
-                // LD I, addr - Load address into I
-                index_reg = nnn;
-                break;
-                
+            case 0x9: if (n == 0 && registers[reg_base + x] != registers[reg_base + y]) pc += 2; break;
+            case 0xA: index_reg = nnn; break;
             case 0xB:
-                // JP V0, addr - Jump to address plus V0
                 if (quirk_jumping) {
                     pc = nnn + registers[reg_base + ((nnn & 0xF00) >> 8)];
                 } else {
                     pc = nnn + registers[reg_base + 0];
                 }
                 break;
-                
             case 0xC:
-                // RND Vx, byte - Random number AND byte
                 {
-                    // Simple LCG random number generator
                     rng_state[instance] = rng_state[instance] * 1664525 + 1013904223;
                     unsigned char random_byte = (rng_state[instance] >> 16) & 0xFF;
                     registers[reg_base + x] = random_byte & kk;
                 }
                 break;
                 
-            case 0xD:
-                // DRW Vx, Vy, nibble - Draw sprite
+            case 0xD: // Display operations
                 {
                     unsigned char vx = registers[reg_base + x] % 64;
                     unsigned char vy = registers[reg_base + y] % 32;
-                    registers[reg_base + 0xF] = 0; // Clear collision flag
+                    registers[reg_base + 0xF] = 0;
                     
                     for (int row = 0; row < n; row++) {
                         if (vy + row >= 32) break;
@@ -342,7 +279,7 @@ void chip8_mega_kernel_with_ca(
                                 int pixel_idx = display_base + (vy + row) * 64 + (vx + col);
                                 
                                 if (displays[pixel_idx]) {
-                                    registers[reg_base + 0xF] = 1; // Collision
+                                    registers[reg_base + 0xF] = 1;
                                     local_collisions++;
                                     local_pixels_erased++;
                                 } else {
@@ -357,62 +294,39 @@ void chip8_mega_kernel_with_ca(
                 }
                 break;
                 
-            case 0xE:
-                // Key operations
+            case 0xE: // Key operations
                 {
                     unsigned char key = registers[reg_base + x] & 0xF;
                     if (kk == 0x9E) {
-                        // SKP Vx - Skip if key pressed
-                        if (keypad[keypad_base + key]) {
-                            pc += 2;
-                        }
+                        if (keypad[keypad_base + key]) pc += 2;
                     } else if (kk == 0xA1) {
-                        // SKNP Vx - Skip if key not pressed
-                        if (!keypad[keypad_base + key]) {
-                            pc += 2;
-                        }
+                        if (!keypad[keypad_base + key]) pc += 2;
                     } else {
                         crashed[instance] = 1;
                     }
                 }
                 break;
                 
-            case 0xF:
-                // Timer and misc operations
+            case 0xF: // Timer and misc operations
                 switch (kk) {
-                    case 0x07: // LD Vx, DT
-                        registers[reg_base + x] = dt;
-                        break;
-                    case 0x0A: // LD Vx, K - Wait for key
-                        waiting_for_key[instance] = 1;
-                        key_registers[instance] = x;
-                        break;
-                    case 0x15: // LD DT, Vx
-                        dt = registers[reg_base + x];
-                        break;
-                    case 0x18: // LD ST, Vx
-                        st = registers[reg_base + x];
-                        break;
-                    case 0x1E: // ADD I, Vx
-                        index_reg = (index_reg + registers[reg_base + x]) & 0xFFFF;
-                        break;
-                    case 0x29: // LD F, Vx
-                        {
-                            unsigned char digit = registers[reg_base + x] & 0xF;
-                            index_reg = 0x50 + digit * 5; // Font location
+                    case 0x07: registers[reg_base + x] = dt; break;
+                    case 0x0A: waiting_for_key[instance] = 1; key_registers[instance] = x; break;
+                    case 0x15: dt = registers[reg_base + x]; break;
+                    case 0x18: st = registers[reg_base + x]; break;
+                    case 0x1E: index_reg = (index_reg + registers[reg_base + x]) & 0xFFFF; break;
+                    case 0x29: {
+                        unsigned char digit = registers[reg_base + x] & 0xF;
+                        index_reg = 0x50 + digit * 5;
+                    } break;
+                    case 0x33: {
+                        unsigned char value = registers[reg_base + x];
+                        if (index_reg + 2 < 4096) {
+                            memory[mem_base + index_reg] = value / 100;
+                            memory[mem_base + index_reg + 1] = (value / 10) % 10;
+                            memory[mem_base + index_reg + 2] = value % 10;
                         }
-                        break;
-                    case 0x33: // LD B, Vx - BCD
-                        {
-                            unsigned char value = registers[reg_base + x];
-                            if (index_reg + 2 < 4096) {
-                                memory[mem_base + index_reg] = value / 100;
-                                memory[mem_base + index_reg + 1] = (value / 10) % 10;
-                                memory[mem_base + index_reg + 2] = value % 10;
-                            }
-                        }
-                        break;
-                    case 0x55: // LD [I], Vx - Store registers
+                    } break;
+                    case 0x55:
                         for (int i = 0; i <= x; i++) {
                             if (index_reg + i < 4096) {
                                 memory[mem_base + index_reg + i] = registers[reg_base + i];
@@ -422,7 +336,7 @@ void chip8_mega_kernel_with_ca(
                             index_reg = (index_reg + x + 1) & 0xFFFF;
                         }
                         break;
-                    case 0x65: // LD Vx, [I] - Load registers
+                    case 0x65:
                         for (int i = 0; i <= x; i++) {
                             if (index_reg + i < 4096) {
                                 registers[reg_base + i] = memory[mem_base + index_reg + i];
@@ -432,18 +346,14 @@ void chip8_mega_kernel_with_ca(
                             index_reg = (index_reg + x + 1) & 0xFFFF;
                         }
                         break;
-                    default:
-                        crashed[instance] = 1;
-                        break;
+                    default: crashed[instance] = 1; break;
                 }
                 break;
                 
-            default:
-                crashed[instance] = 1;
-                break;
+            default: crashed[instance] = 1; break;
         }
         
-        // CA DETECTION LOGIC - run periodically
+        // ENHANCED CA DETECTION LOGIC - run periodically
         if (cycle > 1000 && ca_detection_interval > 0 && 
             (cycle - last_ca_check) >= ca_detection_interval) {
             last_ca_check = cycle;
@@ -461,13 +371,13 @@ void chip8_mega_kernel_with_ca(
                 }
             }
             
-            // Check if we have a hot loop (>30% execution in one region)
-            if (total_frequency > 0 && max_frequency > total_frequency * 3 / 10) {
+            // FIXED: Lower threshold for hot loop detection (was 30%, now 20%)
+            if (total_frequency > 0 && max_frequency > total_frequency / 5) {
                 // Calculate actual PC range from bucket
                 unsigned short hot_start = 0x200 + hot_bucket * 16;
-                unsigned short hot_end = hot_start + 16;
+                unsigned short hot_end = hot_start + 32;  // FIXED: Larger analysis window (was 16, now 32)
                 
-                // Analyze instructions in hot loop for CA patterns
+                // ENHANCED: More sophisticated CA pattern analysis
                 float ca_score = 0.0f;
                 
                 // Pattern counters
@@ -477,21 +387,27 @@ void chip8_mega_kernel_with_ca(
                 int xor_count = 0;
                 int logical_ops = 0;
                 int display_ops = 0;
+                int arithmetic_ops = 0;
+                int control_flow_ops = 0;
                 
                 // Analyze instructions in hot loop
                 for (unsigned short addr = hot_start; addr < hot_end && addr < 4094; addr += 2) {
                     unsigned short instr = (memory[mem_base + addr] << 8) | memory[mem_base + addr + 1];
                     unsigned char op = (instr & 0xF000) >> 12;
                     
-                    // Check for CA-like patterns
+                    // Enhanced pattern recognition
                     if (op == 0x8) {  // Register operations
                         unsigned char subop = instr & 0x000F;
                         if (subop >= 0x1 && subop <= 0x3) {  // OR, AND, XOR
                             logical_ops++;
                             if (subop == 0x3) xor_count++;  // XOR
+                        } else if (subop == 0x4 || subop == 0x5 || subop == 0x7) {
+                            arithmetic_ops++;
                         }
                     } else if (op == 0xD) {  // Display
                         display_ops++;
+                    } else if (op == 0x1 || op == 0x2) {  // Jump/Call
+                        control_flow_ops++;
                     } else if (op == 0xF) {  // Memory operations
                         unsigned char kk_val = instr & 0x00FF;
                         if (kk_val == 0x1E) {  // ADD I, Vx
@@ -504,43 +420,64 @@ void chip8_mega_kernel_with_ca(
                     }
                 }
                 
-                // Score CA likelihood
+                // ENHANCED SCORING ALGORITHM
                 
-                // Sequential memory access pattern
-                if (add_i_count >= 2 && (memory_load_count >= 1 || memory_store_count >= 1)) {
-                    ca_score += 25.0f;
+                // 1. Sequential memory access (stronger scoring)
+                if (add_i_count >= 1 && memory_load_count >= 1) {
+                    ca_score += 20.0f;  // Basic memory iteration
+                    if (add_i_count >= 2) ca_score += 10.0f;  // Multiple index ops
+                    if (memory_store_count >= 1) ca_score += 15.0f;  // Read-write cycle
                 }
                 
-                // State evolution pattern (read-modify-write)
+                // 2. State evolution patterns (enhanced)
                 if (memory_load_count >= 1 && logical_ops >= 1 && memory_store_count >= 1) {
-                    ca_score += 30.0f;
+                    ca_score += 25.0f;  // Complete read-modify-write
+                    if (xor_count >= 1) ca_score += 10.0f;  // XOR bonus
+                    if (arithmetic_ops >= 1) ca_score += 5.0f;  // Arithmetic bonus
                 }
                 
-                // Display output pattern
-                if (display_ops > 0 && local_display_writes > 0) {
-                    ca_score += 15.0f;
+                // 3. Display patterns (improved)
+                if (display_ops > 0) {
+                    ca_score += 10.0f;  // Basic display
+                    if (local_display_writes > 10) ca_score += 10.0f;  // Multiple writes
+                    if (total_display_ops > 50) ca_score += 10.0f;  // Frequent display updates
                 }
                 
-                // Neighbor checking (multiple index operations + memory reads)
-                if (add_i_count >= 2 && memory_load_count >= 2) {
-                    ca_score += 25.0f;
+                // 4. Computational complexity indicators
+                if (logical_ops >= 2 && arithmetic_ops >= 1) {
+                    ca_score += 15.0f;  // Complex computation
                 }
                 
-                // XOR logic bonus (common in CAs)
-                if (xor_count >= 1 && display_ops > 0) {
-                    ca_score += 15.0f;
+                // 5. Loop structure indicators
+                if (control_flow_ops >= 1 && max_frequency > total_frequency / 3) {
+                    ca_score += 10.0f;  // Tight loop with branching
                 }
                 
-                // Execution pattern bonus (tight loop)
+                // 6. Global pattern indicators
                 float execution_ratio = (float)max_frequency / (float)total_frequency;
                 if (execution_ratio > 0.5f) {
-                    ca_score += 10.0f;
+                    ca_score += 5.0f + (execution_ratio - 0.5f) * 20.0f;  // Scaling bonus
+                }
+                
+                // 7. Instruction diversity bonus (prevents simple loops)
+                int unique_opcodes = 0;
+                for (int i = 0; i < 16; i++) {
+                    if (instruction_counts[i] > 0) unique_opcodes++;
+                }
+                if (unique_opcodes >= 4) {
+                    ca_score += 5.0f;  // Instruction diversity
+                    if (unique_opcodes >= 6) ca_score += 5.0f;  // High diversity
+                }
+                
+                // 8. Memory operation intensity
+                if (total_memory_ops > 20) {
+                    ca_score += 10.0f;  // High memory activity
                 }
                 
                 // Update CA detection results
                 if (ca_score >= ca_threshold) {
                     ca_detected[instance] = 1;
-                    ca_likelihood[instance] = ca_score;
+                    ca_likelihood[instance] = fminf(ca_score, 100.0f);  // Cap at 100%
                     hot_loop_start[instance] = hot_start;
                     hot_loop_end[instance] = hot_end;
                 }
@@ -577,7 +514,7 @@ void chip8_mega_kernel_with_ca(
 
 class MegaKernelChip8Emulator:
     """
-    Ultimate performance CHIP-8 emulator with integrated CUDA CA detection
+    FIXED: Ultimate performance CHIP-8 emulator with enhanced CUDA CA detection
     """
     
     def __init__(self, num_instances: int, quirks: dict = None, 
@@ -604,7 +541,7 @@ class MegaKernelChip8Emulator:
         self.block_size = min(256, num_instances)
         self.grid_size = (num_instances + self.block_size - 1) // self.block_size
         
-        print(f"Enhanced Mega-Kernel CHIP-8 with CA Detection: {num_instances} instances")
+        print(f"FIXED Enhanced Mega-Kernel CHIP-8 with CA Detection: {num_instances} instances")
         print(f"Block size: {self.block_size}, Grid size: {self.grid_size}")
         print(f"CA detection interval: {ca_detection_interval} cycles, threshold: {ca_threshold}%")
         
@@ -683,8 +620,6 @@ class MegaKernelChip8Emulator:
         self.delay_timer.fill(0)
         self.sound_timer.fill(0)
         self.keypad.fill(0)
-        self.crashed.fill(0)
-        self.halted.fill(0)
         self.waiting_for_key.fill(0)
         self.key_register.fill(0)
         
@@ -745,8 +680,8 @@ class MegaKernelChip8Emulator:
         print(f"Loaded single ROM into {self.num_instances} instances")
     
     def run(self, cycles: int = 1000, timer_update_interval: int = 16):
-        """Run the enhanced mega kernel with CA detection for specified cycles"""
-        print(f"Launching enhanced mega-kernel with CA detection for {cycles} cycles...")
+        """Run the FIXED enhanced mega kernel with CA detection for specified cycles"""
+        print(f"Launching FIXED enhanced mega-kernel with CA detection for {cycles} cycles...")
         
         # Reset CA detection for this run
         self.ca_detected.fill(0)
@@ -757,7 +692,7 @@ class MegaKernelChip8Emulator:
         
         start_time = time.time()
         
-        # Launch the enhanced mega kernel with CA detection
+        # Launch the FIXED enhanced mega kernel with CA detection
         self.mega_kernel(
             (self.grid_size,), (self.block_size,),
             (
@@ -789,7 +724,7 @@ class MegaKernelChip8Emulator:
                 # RNG state
                 self.rng_state,
                 
-                # NEW: CA detection arrays
+                # CA detection arrays
                 self.ca_detected,
                 self.ca_likelihood,
                 self.hot_loop_start,
@@ -821,7 +756,7 @@ class MegaKernelChip8Emulator:
         total_instructions = int(cp.sum(self.stats['instructions_executed']))
         instructions_per_second = total_instructions / execution_time if execution_time > 0 else 0
         
-        print(f"Enhanced mega-kernel execution: {execution_time:.4f}s")
+        print(f"FIXED enhanced mega-kernel execution: {execution_time:.4f}s")
         print(f"Total instructions: {total_instructions:,}")
         print(f"Instructions/second: {instructions_per_second:,.0f}")
         
@@ -829,7 +764,7 @@ class MegaKernelChip8Emulator:
         ca_count = int(cp.sum(self.ca_detected))
         if ca_count > 0:
             max_likelihood = float(cp.max(self.ca_likelihood))
-            print(f"🔬 CA DETECTION: Found {ca_count} potential CA patterns!")
+            print(f"🔬 FIXED CA DETECTION: Found {ca_count} potential CA patterns!")
             print(f"   Max CA likelihood: {max_likelihood:.1f}%")
         else:
             print("   No CA patterns detected in this batch")
@@ -909,7 +844,7 @@ class MegaKernelChip8Emulator:
         """Print aggregate statistics including CA detection results"""
         stats = self.get_aggregate_stats()
         
-        print("Enhanced Mega-Kernel CHIP-8 Emulator Statistics:")
+        print("FIXED Enhanced Mega-Kernel CHIP-8 Emulator Statistics:")
         print("=" * 50)
         print(f"Total instances: {stats['total_instances']}")
         print(f"Active instances: {stats['active_instances']}")
@@ -931,7 +866,7 @@ class MegaKernelChip8Emulator:
         print(f"Collisions: {stats['mean_sprite_collisions']:.1f}")
         print()
         
-        print("CA Detection Results:")
+        print("FIXED CA Detection Results:")
         print(f"CA patterns detected: {stats['ca_detected_count']}")
         print(f"Max CA likelihood: {stats['max_ca_likelihood']:.1f}%")
     
