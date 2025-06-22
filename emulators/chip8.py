@@ -218,272 +218,280 @@ class Chip8Emulator:
                     self.sound_timer -= 1
     
     def _execute_instruction(self, instruction: int) -> bool:
-        """Execute a single CHIP-8 instruction"""
-        # Ensure instruction is a regular Python int, not numpy int
-        instruction = int(instruction)
-        
-        # Decode instruction
-        opcode = (instruction & 0xF000) >> 12
-        x = (instruction & 0x0F00) >> 8
-        y = (instruction & 0x00F0) >> 4
-        n = instruction & 0x000F
-        kk = instruction & 0x00FF
-        nnn = instruction & 0x0FFF
-        
-        # Debug print for failing tests
-        if self.stats['instructions_executed'] < 20 or instruction == 0x0000:
-            msg = f"Executing: 0x{instruction:04X} at PC=0x{self.program_counter-2:03X}"
-            self.log_debug(msg)
-            msg2 = f"  Opcode: 0x{opcode:X}, x={x}, y={y}, n={n}, kk=0x{kk:02X}, nnn=0x{nnn:03X}"
-            self.log_debug(msg2)
+            """Execute a single CHIP-8 instruction"""
+            # Ensure instruction is a regular Python int, not numpy int
+            instruction = int(instruction)
             
-            # Also log register state
-            if self.stats['instructions_executed'] < 5:
-                reg_state = f"  Registers: V0-V7={[int(self.registers[i]) for i in range(8)]}"
-                self.log_debug(reg_state)
-                reg_state2 = f"            V8-VF={[int(self.registers[i]) for i in range(8, 16)]}"
-                self.log_debug(reg_state2)
-                idx_state = f"  I=0x{self.index_register:03X}, SP={self.stack_pointer}"
-                self.log_debug(idx_state)
-        
-        try:
-            if instruction == 0x00E0:  # CLS
-                self.display.fill(0)
-                self.pixel_touched.fill(False)
-                self.stats['display_clears'] += 1
-                self.stats['display_updates'] += 1
+            # Decode instruction
+            opcode = (instruction & 0xF000) >> 12
+            x = (instruction & 0x0F00) >> 8
+            y = (instruction & 0x00F0) >> 4
+            n = instruction & 0x000F
+            kk = instruction & 0x00FF
+            nnn = instruction & 0x0FFF
+            
+            # Debug print for failing tests - ONLY when debug file is set
+            if self.debug_file and (self.stats['instructions_executed'] < 20 or instruction == 0x0000):
+                msg = f"Executing: 0x{instruction:04X} at PC=0x{self.program_counter-2:03X}"
+                self.log_debug(msg)
+                msg2 = f"  Opcode: 0x{opcode:X}, x={x}, y={y}, n={n}, kk=0x{kk:02X}, nnn=0x{nnn:03X}"
+                self.log_debug(msg2)
                 
-            elif instruction == 0x00EE:  # RET
-                if self.stack_pointer > 0:
-                    self.stack_pointer -= 1
-                    self.program_counter = int(self.stack[self.stack_pointer])
-                    self.stats['returns'] += 1
+                # Also log register state
+                if self.stats['instructions_executed'] < 5:
+                    reg_state = f"  Registers: V0-V7={[int(self.registers[i]) for i in range(8)]}"
+                    self.log_debug(reg_state)
+                    reg_state2 = f"            V8-VF={[int(self.registers[i]) for i in range(8, 16)]}"
+                    self.log_debug(reg_state2)
+                    idx_state = f"  I=0x{self.index_register:03X}, SP={self.stack_pointer}"
+                    self.log_debug(idx_state)
+            
+            try:
+                if instruction == 0x00E0:  # CLS
+                    self.display.fill(0)
+                    self.pixel_touched.fill(False)
+                    self.stats['display_clears'] += 1
+                    self.stats['display_updates'] += 1
+                    
+                elif instruction == 0x00EE:  # RET
+                    if self.stack_pointer > 0:
+                        self.stack_pointer -= 1
+                        self.program_counter = int(self.stack[self.stack_pointer])
+                        self.stats['returns'] += 1
+                        self.stats['stack_operations'] += 1
+                    else:
+                        if self.debug_file:
+                            self.log_debug(f"ERROR: RET with empty stack at PC=0x{self.program_counter-2:03X}")
+                        self.crashed = True
+                        return False
+                
+                elif opcode == 0x0:  # SYS addr (should be ignored in modern interpreters)
+                    # Most modern interpreters ignore SYS instructions
+                    pass
+                        
+                elif opcode == 0x1:  # JP addr
+                    if nnn == self.program_counter - 2:
+                        # Only log infinite jump warning once, then set a flag to suppress further warnings
+                        if not hasattr(self, '_infinite_jump_warned') and self.debug_file:
+                            self.log_debug(f"WARNING: Infinite jump detected at PC=0x{self.program_counter-2:03X} (further warnings suppressed)")
+                            self._infinite_jump_warned = True
+                    self.program_counter = nnn
+                    self.stats['jumps_taken'] += 1
+                    
+                elif opcode == 0x2:  # CALL addr
+                    if self.stack_pointer >= STACK_SIZE:
+                        if self.debug_file:
+                            self.log_debug(f"ERROR: Stack overflow at PC=0x{self.program_counter-2:03X}")
+                        self.crashed = True
+                        return False
+                    self.stack[self.stack_pointer] = self.program_counter
+                    self.stack_pointer += 1
+                    self.program_counter = nnn
+                    self.stats['subroutine_calls'] += 1
                     self.stats['stack_operations'] += 1
-                else:
-                    self.log_debug(f"ERROR: RET with empty stack at PC=0x{self.program_counter-2:03X}")
-                    self.crashed = True
-                    return False
-            
-            elif opcode == 0x0:  # SYS addr (should be ignored in modern interpreters)
-                # Most modern interpreters ignore SYS instructions
-                pass
-                    
-            elif opcode == 0x1:  # JP addr
-                if nnn == self.program_counter - 2:
-                    # Only log infinite jump warning once, then set a flag to suppress further warnings
-                    if not hasattr(self, '_infinite_jump_warned'):
-                        self.log_debug(f"WARNING: Infinite jump detected at PC=0x{self.program_counter-2:03X} (further warnings suppressed)")
-                        self._infinite_jump_warned = True
-                self.program_counter = nnn
-                self.stats['jumps_taken'] += 1
-                
-            elif opcode == 0x2:  # CALL addr
-                if self.stack_pointer >= STACK_SIZE:
-                    self.log_debug(f"ERROR: Stack overflow at PC=0x{self.program_counter-2:03X}")
-                    self.crashed = True
-                    return False
-                self.stack[self.stack_pointer] = self.program_counter
-                self.stack_pointer += 1
-                self.program_counter = nnn
-                self.stats['subroutine_calls'] += 1
-                self.stats['stack_operations'] += 1
-                    
-            elif opcode == 0x3:  # SE Vx, byte
-                if int(self.registers[x]) == kk:
-                    self.program_counter += 2
-                self.stats['register_operations'] += 1
-                
-            elif opcode == 0x4:  # SNE Vx, byte
-                if int(self.registers[x]) != kk:
-                    self.program_counter += 2
-                self.stats['register_operations'] += 1
-                
-            elif opcode == 0x5:  # SE Vx, Vy
-                if n != 0:  # 5xy0 format check
-                    self.log_debug(f"ERROR: Invalid 5xy{n:X} instruction at PC=0x{self.program_counter-2:03X}")
-                    self.crashed = True
-                    return False
-                if int(self.registers[x]) == int(self.registers[y]):
-                    self.program_counter += 2
-                self.stats['register_operations'] += 1
-                
-            elif opcode == 0x6:  # LD Vx, byte
-                self.registers[x] = kk
-                self.stats['register_operations'] += 1
-                
-            elif opcode == 0x7:  # ADD Vx, byte
-                self.registers[x] = (int(self.registers[x]) + kk) & 0xFF
-                self.stats['arithmetic_operations'] += 1
-                self.stats['register_operations'] += 1
-                
-            elif opcode == 0x8:  # Register operations
-                self.stats['register_operations'] += 1
-                if n == 0x0:  # LD Vx, Vy
-                    self.registers[x] = self.registers[y]
-                elif n == 0x1:  # OR Vx, Vy
-                    self.registers[x] = int(self.registers[x]) | int(self.registers[y])
-                    self.registers[0xF] = 0  # VF should be reset
-                    self.stats['logical_operations'] += 1
-                elif n == 0x2:  # AND Vx, Vy
-                    self.registers[x] = int(self.registers[x]) & int(self.registers[y])
-                    self.registers[0xF] = 0  # VF should be reset
-                    self.stats['logical_operations'] += 1
-                elif n == 0x3:  # XOR Vx, Vy
-                    self.registers[x] = int(self.registers[x]) ^ int(self.registers[y])
-                    self.registers[0xF] = 0  # VF should be reset
-                    self.stats['logical_operations'] += 1
-                elif n == 0x4:  # ADD Vx, Vy
-                    # CRITICAL: Store operands BEFORE modifying VF
-                    vx_val = int(self.registers[x])
-                    vy_val = int(self.registers[y])
-                    result = vx_val + vy_val
-                    self.registers[x] = result & 0xFF
-                    self.registers[0xF] = 1 if result > 255 else 0
-                    self.stats['arithmetic_operations'] += 1
-                elif n == 0x5:  # SUB Vx, Vy
-                    # CRITICAL: Store operands BEFORE modifying VF
-                    vx_val = int(self.registers[x])
-                    vy_val = int(self.registers[y])
-                    self.registers[x] = (vx_val - vy_val) & 0xFF
-                    self.registers[0xF] = 1 if vx_val >= vy_val else 0  # NOT borrow
-                    self.stats['arithmetic_operations'] += 1
-                elif n == 0x6:  # SHR Vx {, Vy}
-                    # CRITICAL: Store operand BEFORE modifying VF
-                    vx_val = int(self.registers[x])
-                    self.registers[x] = vx_val >> 1
-                    self.registers[0xF] = vx_val & 0x1  # Shifted out bit
-                    self.stats['logical_operations'] += 1
-                elif n == 0x7:  # SUBN Vx, Vy
-                    # CRITICAL: Store operands BEFORE modifying VF
-                    vx_val = int(self.registers[x])
-                    vy_val = int(self.registers[y])
-                    self.registers[x] = (vy_val - vx_val) & 0xFF
-                    self.registers[0xF] = 1 if vy_val >= vx_val else 0  # NOT borrow
-                    self.stats['arithmetic_operations'] += 1
-                elif n == 0xE:  # SHL Vx {, Vy}
-                    # CRITICAL: Store operand BEFORE modifying VF
-                    vx_val = int(self.registers[x])
-                    self.registers[x] = (vx_val << 1) & 0xFF
-                    self.registers[0xF] = 1 if (vx_val & 0x80) else 0  # Shifted out bit
-                    self.stats['logical_operations'] += 1
-                else:
-                    self.log_debug(f"ERROR: Unknown 8xy{n:X} instruction at PC=0x{self.program_counter-2:03X}")
-                    self.crashed = True
-                    return False
-                    
-            elif opcode == 0x9:  # SNE Vx, Vy
-                if n != 0:  # 9xy0 format check
-                    self.log_debug(f"ERROR: Invalid 9xy{n:X} instruction at PC=0x{self.program_counter-2:03X}")
-                    self.crashed = True
-                    return False
-                if int(self.registers[x]) != int(self.registers[y]):
-                    self.program_counter += 2
-                self.stats['register_operations'] += 1
-                
-            elif opcode == 0xA:  # LD I, addr
-                self.index_register = nnn
-                self.stats['register_operations'] += 1
-                
-            elif opcode == 0xB:  # JP V0, addr (with jumping quirk)
-                if self.quirks['jumping']:
-                    # Modern quirk: use vX where X is the high nibble of nnn
-                    x = (nnn & 0xF00) >> 8
-                    self.program_counter = nnn + int(self.registers[x])
-                else:
-                    # Classic behavior: always use v0
-                    self.program_counter = nnn + int(self.registers[0])
-                self.stats['jumps_taken'] += 1
-                
-            elif opcode == 0xC:  # RND Vx, byte
-                random_byte = np.random.randint(0, 256)
-                self.registers[x] = random_byte & kk
-                self.stats['random_generations'] += 1
-                self.stats['register_operations'] += 1
-                
-            elif opcode == 0xD:  # DRW Vx, Vy, nibble
-                self._draw_sprite(x, y, n)
-                
-            elif opcode == 0xE:
-                self.stats['key_checks'] += 1
-                if kk == 0x9E:  # SKP Vx
-                    key_val = int(self.registers[x]) & 0xF
-                    if self.keypad[key_val]:
-                        self.program_counter += 2
-                elif kk == 0xA1:  # SKNP Vx
-                    key_val = int(self.registers[x]) & 0xF
-                    if not self.keypad[key_val]:
-                        self.program_counter += 2
-                else:
-                    self.log_debug(f"ERROR: Unknown Ex{kk:02X} instruction at PC=0x{self.program_counter-2:03X}")
-                    self.crashed = True
-                    return False
                         
-            elif opcode == 0xF:
-                if kk == 0x07:  # LD Vx, DT
-                    self.registers[x] = self.delay_timer
+                elif opcode == 0x3:  # SE Vx, byte
+                    if int(self.registers[x]) == kk:
+                        self.program_counter += 2
                     self.stats['register_operations'] += 1
-                elif kk == 0x0A:  # LD Vx, K
-                    self.waiting_for_key = True
-                    self.key_register = x
-                    self.stats['blocking_key_waits'] += 1
-                elif kk == 0x15:  # LD DT, Vx
-                    self.delay_timer = int(self.registers[x])
-                    self.stats['timer_sets'] += 1
-                elif kk == 0x18:  # LD ST, Vx
-                    self.sound_timer = int(self.registers[x])
-                    self.stats['timer_sets'] += 1
-                    if int(self.registers[x]) > 0:
-                        self.stats['sound_activations'] += 1
-                elif kk == 0x1E:  # ADD I, Vx
-                    # FIXED: Proper handling of index register addition with bounds checking
-                    new_value = self.index_register + int(self.registers[x])
-                    self.index_register = new_value & 0xFFFF  # Keep within 16-bit range
+                    
+                elif opcode == 0x4:  # SNE Vx, byte
+                    if int(self.registers[x]) != kk:
+                        self.program_counter += 2
+                    self.stats['register_operations'] += 1
+                    
+                elif opcode == 0x5:  # SE Vx, Vy
+                    if n != 0:  # 5xy0 format check
+                        if self.debug_file:
+                            self.log_debug(f"ERROR: Invalid 5xy{n:X} instruction at PC=0x{self.program_counter-2:03X}")
+                        self.crashed = True
+                        return False
+                    if int(self.registers[x]) == int(self.registers[y]):
+                        self.program_counter += 2
+                    self.stats['register_operations'] += 1
+                    
+                elif opcode == 0x6:  # LD Vx, byte
+                    self.registers[x] = kk
+                    self.stats['register_operations'] += 1
+                    
+                elif opcode == 0x7:  # ADD Vx, byte
+                    self.registers[x] = (int(self.registers[x]) + kk) & 0xFF
                     self.stats['arithmetic_operations'] += 1
-                elif kk == 0x29:  # LD F, Vx
-                    digit = int(self.registers[x]) & 0xF
-                    self.index_register = FONT_START + digit * 5
-                elif kk == 0x33:  # LD B, Vx
-                    value = int(self.registers[x])
-                    if self.index_register + 2 < MEMORY_SIZE:
-                        self.memory[self.index_register] = value // 100
-                        self.memory[self.index_register + 1] = (value // 10) % 10
-                        self.memory[self.index_register + 2] = value % 10
-                        self.stats['memory_writes'] += 3
-                elif kk == 0x55:  # LD [I], Vx (with memory quirk)
-                    for i in range(x + 1):
-                        if self.index_register + i < MEMORY_SIZE:
-                            self.memory[self.index_register + i] = int(self.registers[i])
-                    self.stats['memory_writes'] += x + 1
+                    self.stats['register_operations'] += 1
                     
-                    # Memory quirk: increment I register
-                    if self.quirks['memory']:
-                        self.index_register = (self.index_register + x + 1) & 0xFFFF
+                elif opcode == 0x8:  # Register operations
+                    self.stats['register_operations'] += 1
+                    if n == 0x0:  # LD Vx, Vy
+                        self.registers[x] = self.registers[y]
+                    elif n == 0x1:  # OR Vx, Vy
+                        self.registers[x] = int(self.registers[x]) | int(self.registers[y])
+                        self.registers[0xF] = 0  # VF should be reset
+                        self.stats['logical_operations'] += 1
+                    elif n == 0x2:  # AND Vx, Vy
+                        self.registers[x] = int(self.registers[x]) & int(self.registers[y])
+                        self.registers[0xF] = 0  # VF should be reset
+                        self.stats['logical_operations'] += 1
+                    elif n == 0x3:  # XOR Vx, Vy
+                        self.registers[x] = int(self.registers[x]) ^ int(self.registers[y])
+                        self.registers[0xF] = 0  # VF should be reset
+                        self.stats['logical_operations'] += 1
+                    elif n == 0x4:  # ADD Vx, Vy
+                        # CRITICAL: Store operands BEFORE modifying VF
+                        vx_val = int(self.registers[x])
+                        vy_val = int(self.registers[y])
+                        result = vx_val + vy_val
+                        self.registers[x] = result & 0xFF
+                        self.registers[0xF] = 1 if result > 255 else 0
+                        self.stats['arithmetic_operations'] += 1
+                    elif n == 0x5:  # SUB Vx, Vy
+                        # CRITICAL: Store operands BEFORE modifying VF
+                        vx_val = int(self.registers[x])
+                        vy_val = int(self.registers[y])
+                        self.registers[x] = (vx_val - vy_val) & 0xFF
+                        self.registers[0xF] = 1 if vx_val >= vy_val else 0  # NOT borrow
+                        self.stats['arithmetic_operations'] += 1
+                    elif n == 0x6:  # SHR Vx {, Vy}
+                        # CRITICAL: Store operand BEFORE modifying VF
+                        vx_val = int(self.registers[x])
+                        self.registers[x] = vx_val >> 1
+                        self.registers[0xF] = vx_val & 0x1  # Shifted out bit
+                        self.stats['logical_operations'] += 1
+                    elif n == 0x7:  # SUBN Vx, Vy
+                        # CRITICAL: Store operands BEFORE modifying VF
+                        vx_val = int(self.registers[x])
+                        vy_val = int(self.registers[y])
+                        self.registers[x] = (vy_val - vx_val) & 0xFF
+                        self.registers[0xF] = 1 if vy_val >= vx_val else 0  # NOT borrow
+                        self.stats['arithmetic_operations'] += 1
+                    elif n == 0xE:  # SHL Vx {, Vy}
+                        # CRITICAL: Store operand BEFORE modifying VF
+                        vx_val = int(self.registers[x])
+                        self.registers[x] = (vx_val << 1) & 0xFF
+                        self.registers[0xF] = 1 if (vx_val & 0x80) else 0  # Shifted out bit
+                        self.stats['logical_operations'] += 1
+                    else:
+                        if self.debug_file:
+                            self.log_debug(f"ERROR: Unknown 8xy{n:X} instruction at PC=0x{self.program_counter-2:03X}")
+                        self.crashed = True
+                        return False
                         
-                elif kk == 0x65:  # LD Vx, [I] (with memory quirk)
-                    for i in range(x + 1):
-                        if self.index_register + i < MEMORY_SIZE:
-                            self.registers[i] = int(self.memory[self.index_register + i])
-                    self.stats['memory_reads'] += x + 1
+                elif opcode == 0x9:  # SNE Vx, Vy
+                    if n != 0:  # 9xy0 format check
+                        if self.debug_file:
+                            self.log_debug(f"ERROR: Invalid 9xy{n:X} instruction at PC=0x{self.program_counter-2:03X}")
+                        self.crashed = True
+                        return False
+                    if int(self.registers[x]) != int(self.registers[y]):
+                        self.program_counter += 2
+                    self.stats['register_operations'] += 1
                     
-                    # Memory quirk: increment I register
-                    if self.quirks['memory']:
-                        self.index_register = (self.index_register + x + 1) & 0xFFFF
+                elif opcode == 0xA:  # LD I, addr
+                    self.index_register = nnn
+                    self.stats['register_operations'] += 1
+                    
+                elif opcode == 0xB:  # JP V0, addr (with jumping quirk)
+                    if self.quirks['jumping']:
+                        # Modern quirk: use vX where X is the high nibble of nnn
+                        x = (nnn & 0xF00) >> 8
+                        self.program_counter = nnn + int(self.registers[x])
+                    else:
+                        # Classic behavior: always use v0
+                        self.program_counter = nnn + int(self.registers[0])
+                    self.stats['jumps_taken'] += 1
+                    
+                elif opcode == 0xC:  # RND Vx, byte
+                    random_byte = np.random.randint(0, 256)
+                    self.registers[x] = random_byte & kk
+                    self.stats['random_generations'] += 1
+                    self.stats['register_operations'] += 1
+                    
+                elif opcode == 0xD:  # DRW Vx, Vy, nibble
+                    self._draw_sprite(x, y, n)
+                    
+                elif opcode == 0xE:
+                    self.stats['key_checks'] += 1
+                    if kk == 0x9E:  # SKP Vx
+                        key_val = int(self.registers[x]) & 0xF
+                        if self.keypad[key_val]:
+                            self.program_counter += 2
+                    elif kk == 0xA1:  # SKNP Vx
+                        key_val = int(self.registers[x]) & 0xF
+                        if not self.keypad[key_val]:
+                            self.program_counter += 2
+                    else:
+                        if self.debug_file:
+                            self.log_debug(f"ERROR: Unknown Ex{kk:02X} instruction at PC=0x{self.program_counter-2:03X}")
+                        self.crashed = True
+                        return False
+                            
+                elif opcode == 0xF:
+                    if kk == 0x07:  # LD Vx, DT
+                        self.registers[x] = self.delay_timer
+                        self.stats['register_operations'] += 1
+                    elif kk == 0x0A:  # LD Vx, K
+                        self.waiting_for_key = True
+                        self.key_register = x
+                        self.stats['blocking_key_waits'] += 1
+                    elif kk == 0x15:  # LD DT, Vx
+                        self.delay_timer = int(self.registers[x])
+                        self.stats['timer_sets'] += 1
+                    elif kk == 0x18:  # LD ST, Vx
+                        self.sound_timer = int(self.registers[x])
+                        self.stats['timer_sets'] += 1
+                        if int(self.registers[x]) > 0:
+                            self.stats['sound_activations'] += 1
+                    elif kk == 0x1E:  # ADD I, Vx
+                        # FIXED: Proper handling of index register addition with bounds checking
+                        new_value = self.index_register + int(self.registers[x])
+                        self.index_register = new_value & 0xFFFF  # Keep within 16-bit range
+                        self.stats['arithmetic_operations'] += 1
+                    elif kk == 0x29:  # LD F, Vx
+                        digit = int(self.registers[x]) & 0xF
+                        self.index_register = FONT_START + digit * 5
+                    elif kk == 0x33:  # LD B, Vx
+                        value = int(self.registers[x])
+                        if self.index_register + 2 < MEMORY_SIZE:
+                            self.memory[self.index_register] = value // 100
+                            self.memory[self.index_register + 1] = (value // 10) % 10
+                            self.memory[self.index_register + 2] = value % 10
+                            self.stats['memory_writes'] += 3
+                    elif kk == 0x55:  # LD [I], Vx (with memory quirk)
+                        for i in range(x + 1):
+                            if self.index_register + i < MEMORY_SIZE:
+                                self.memory[self.index_register + i] = int(self.registers[i])
+                        self.stats['memory_writes'] += x + 1
+                        
+                        # Memory quirk: increment I register
+                        if self.quirks['memory']:
+                            self.index_register = (self.index_register + x + 1) & 0xFFFF
+                            
+                    elif kk == 0x65:  # LD Vx, [I] (with memory quirk)
+                        for i in range(x + 1):
+                            if self.index_register + i < MEMORY_SIZE:
+                                self.registers[i] = int(self.memory[self.index_register + i])
+                        self.stats['memory_reads'] += x + 1
+                        
+                        # Memory quirk: increment I register
+                        if self.quirks['memory']:
+                            self.index_register = (self.index_register + x + 1) & 0xFFFF
+                    else:
+                        if self.debug_file:
+                            self.log_debug(f"ERROR: Unknown Fx{kk:02X} instruction at PC=0x{self.program_counter-2:03X}")
+                        self.crashed = True
+                        return False
                 else:
-                    self.log_debug(f"ERROR: Unknown Fx{kk:02X} instruction at PC=0x{self.program_counter-2:03X}")
+                    if self.debug_file:
+                        self.log_debug(f"ERROR: Unknown instruction 0x{instruction:04X} at PC=0x{self.program_counter-2:03X}")
                     self.crashed = True
                     return False
-            else:
-                self.log_debug(f"ERROR: Unknown instruction 0x{instruction:04X} at PC=0x{self.program_counter-2:03X}")
+                    
+            except Exception as e:
+                if self.debug_file:
+                    self.log_debug(f"EXCEPTION executing 0x{instruction:04X} at PC=0x{self.program_counter-2:03X}: {e}")
                 self.crashed = True
                 return False
                 
-        except Exception as e:
-            self.log_debug(f"EXCEPTION executing 0x{instruction:04X} at PC=0x{self.program_counter-2:03X}: {e}")
-            self.crashed = True
-            return False
-            
-        return True
-    
+            return True
     def _draw_sprite(self, x_reg: int, y_reg: int, height: int):
         """Draw a sprite at position (Vx, Vy) with given height"""
         # NOTE: Display wait quirk is complex and often causes more problems than it solves

@@ -1,6 +1,7 @@
 """
-Mega-Kernel CHIP-8 Emulator
+Mega-Kernel CHIP-8 Emulator with Integrated CUDA CA Detection
 Everything runs in a single CUDA kernel for maximum performance
+ENHANCED: Now includes real-time cellular automata detection
 """
 
 import cupy as cp
@@ -38,10 +39,10 @@ CHIP8_FONT = cp.array([
     0xF0, 0x80, 0xF0, 0x80, 0x80   # F
 ], dtype=cp.uint8)
 
-# The mega-kernel that does everything
-MEGA_KERNEL_SOURCE = r'''
+# Enhanced mega-kernel with CA detection
+MEGA_KERNEL_WITH_CA_SOURCE = r'''
 extern "C" __global__
-void chip8_mega_kernel(
+void chip8_mega_kernel_with_ca(
     // State arrays
     unsigned char* memory,              // [instances][4096]
     unsigned char* displays,            // [instances][32][64] 
@@ -70,10 +71,21 @@ void chip8_mega_kernel(
     // Random number state
     unsigned int* rng_state,            // [instances] - for RND instruction
     
+    // NEW: CA detection arrays
+    unsigned char* ca_detected,         // [instances] - boolean CA flag
+    float* ca_likelihood,               // [instances] - CA likelihood score
+    unsigned short* hot_loop_start,     // [instances] - start of hot loop
+    unsigned short* hot_loop_end,       // [instances] - end of hot loop
+    unsigned int* pc_frequency,         // [instances][256] - PC frequency buckets
+    
     // Execution parameters
     int num_instances,
     int cycles_to_run,
     int timer_update_interval,
+    
+    // CA detection parameters
+    int ca_detection_interval,          // How often to check for CA patterns
+    float ca_threshold,                 // Minimum CA likelihood to flag
     
     // Quirks
     int quirk_memory,
@@ -89,6 +101,7 @@ void chip8_mega_kernel(
     int reg_base = instance * 16;
     int stack_base = instance * 16;
     int keypad_base = instance * 16;
+    int pc_freq_base = instance * 256;  // 256 PC frequency buckets per instance
     
     // Local state (registers for better performance)
     unsigned short pc = program_counters[instance];
@@ -96,6 +109,11 @@ void chip8_mega_kernel(
     unsigned char sp = stack_pointers[instance];
     unsigned char dt = delay_timers[instance];
     unsigned char st = sound_timers[instance];
+    
+    // CA detection state
+    unsigned int local_pc_frequency[256];
+    for (int i = 0; i < 256; i++) local_pc_frequency[i] = 0;
+    unsigned int last_ca_check = 0;
     
     // Statistics
     unsigned int local_instructions = 0;
@@ -109,7 +127,7 @@ void chip8_mega_kernel(
         return; // Skip crashed/halted instances
     }
     
-    // Main execution loop
+    // Main execution loop with CA detection
     for (int cycle = 0; cycle < cycles_to_run; cycle++) {
         // Skip if waiting for key
         if (waiting_for_key[instance]) {
@@ -120,6 +138,14 @@ void chip8_mega_kernel(
         if (pc >= 4096 - 1) {
             crashed[instance] = 1;
             break;
+        }
+        
+        // Track PC frequency for CA detection (map PC to 0-255 range)
+        if (pc >= 0x200) {
+            unsigned char pc_bucket = (pc - 0x200) / 16;  // Map 0x200-0xFFF to 0-255
+            if (pc_bucket < 256) {
+                local_pc_frequency[pc_bucket]++;
+            }
         }
         
         // Fetch instruction
@@ -139,7 +165,7 @@ void chip8_mega_kernel(
         unsigned char kk = instruction & 0x00FF;
         unsigned short nnn = instruction & 0x0FFF;
         
-        // Execute instruction
+        // Execute instruction (same as original)
         switch (opcode) {
             case 0x0:
                 if (instruction == 0x00E0) {
@@ -417,6 +443,110 @@ void chip8_mega_kernel(
                 break;
         }
         
+        // CA DETECTION LOGIC - run periodically
+        if (cycle > 1000 && ca_detection_interval > 0 && 
+            (cycle - last_ca_check) >= ca_detection_interval) {
+            last_ca_check = cycle;
+            
+            // Find most frequent PC bucket (hot loop detection)
+            unsigned int max_frequency = 0;
+            unsigned char hot_bucket = 0;
+            unsigned int total_frequency = 0;
+            
+            for (int i = 0; i < 256; i++) {
+                total_frequency += local_pc_frequency[i];
+                if (local_pc_frequency[i] > max_frequency) {
+                    max_frequency = local_pc_frequency[i];
+                    hot_bucket = i;
+                }
+            }
+            
+            // Check if we have a hot loop (>30% execution in one region)
+            if (total_frequency > 0 && max_frequency > total_frequency * 3 / 10) {
+                // Calculate actual PC range from bucket
+                unsigned short hot_start = 0x200 + hot_bucket * 16;
+                unsigned short hot_end = hot_start + 16;
+                
+                // Analyze instructions in hot loop for CA patterns
+                float ca_score = 0.0f;
+                
+                // Pattern counters
+                int add_i_count = 0;
+                int memory_load_count = 0;
+                int memory_store_count = 0;
+                int xor_count = 0;
+                int logical_ops = 0;
+                int display_ops = 0;
+                
+                // Analyze instructions in hot loop
+                for (unsigned short addr = hot_start; addr < hot_end && addr < 4094; addr += 2) {
+                    unsigned short instr = (memory[mem_base + addr] << 8) | memory[mem_base + addr + 1];
+                    unsigned char op = (instr & 0xF000) >> 12;
+                    
+                    // Check for CA-like patterns
+                    if (op == 0x8) {  // Register operations
+                        unsigned char subop = instr & 0x000F;
+                        if (subop >= 0x1 && subop <= 0x3) {  // OR, AND, XOR
+                            logical_ops++;
+                            if (subop == 0x3) xor_count++;  // XOR
+                        }
+                    } else if (op == 0xD) {  // Display
+                        display_ops++;
+                    } else if (op == 0xF) {  // Memory operations
+                        unsigned char kk_val = instr & 0x00FF;
+                        if (kk_val == 0x1E) {  // ADD I, Vx
+                            add_i_count++;
+                        } else if (kk_val == 0x55) {  // LD [I], Vx
+                            memory_store_count++;
+                        } else if (kk_val == 0x65) {  // LD Vx, [I]
+                            memory_load_count++;
+                        }
+                    }
+                }
+                
+                // Score CA likelihood
+                
+                // Sequential memory access pattern
+                if (add_i_count >= 2 && (memory_load_count >= 1 || memory_store_count >= 1)) {
+                    ca_score += 25.0f;
+                }
+                
+                // State evolution pattern (read-modify-write)
+                if (memory_load_count >= 1 && logical_ops >= 1 && memory_store_count >= 1) {
+                    ca_score += 30.0f;
+                }
+                
+                // Display output pattern
+                if (display_ops > 0 && local_display_writes > 0) {
+                    ca_score += 15.0f;
+                }
+                
+                // Neighbor checking (multiple index operations + memory reads)
+                if (add_i_count >= 2 && memory_load_count >= 2) {
+                    ca_score += 25.0f;
+                }
+                
+                // XOR logic bonus (common in CAs)
+                if (xor_count >= 1 && display_ops > 0) {
+                    ca_score += 15.0f;
+                }
+                
+                // Execution pattern bonus (tight loop)
+                float execution_ratio = (float)max_frequency / (float)total_frequency;
+                if (execution_ratio > 0.5f) {
+                    ca_score += 10.0f;
+                }
+                
+                // Update CA detection results
+                if (ca_score >= ca_threshold) {
+                    ca_detected[instance] = 1;
+                    ca_likelihood[instance] = ca_score;
+                    hot_loop_start[instance] = hot_start;
+                    hot_loop_end[instance] = hot_end;
+                }
+            }
+        }
+        
         // Update timers periodically
         if (cycle % timer_update_interval == 0) {
             if (dt > 0) dt--;
@@ -437,15 +567,21 @@ void chip8_mega_kernel(
     pixels_drawn[instance] += local_pixels_drawn;
     pixels_erased[instance] += local_pixels_erased;
     sprite_collisions[instance] += local_collisions;
+    
+    // Copy local PC frequency to global memory
+    for (int i = 0; i < 256; i++) {
+        pc_frequency[pc_freq_base + i] = local_pc_frequency[i];
+    }
 }
 '''
 
 class MegaKernelChip8Emulator:
     """
-    Ultimate performance CHIP-8 emulator with everything in a single CUDA kernel
+    Ultimate performance CHIP-8 emulator with integrated CUDA CA detection
     """
     
-    def __init__(self, num_instances: int, quirks: dict = None):
+    def __init__(self, num_instances: int, quirks: dict = None, 
+                 ca_detection_interval: int = 1000, ca_threshold: float = 25.0):
         self.num_instances = num_instances
         
         # CHIP-8 Quirks configuration
@@ -457,20 +593,25 @@ class MegaKernelChip8Emulator:
             'logic': True,       
         }
         
-        # Compile the mega kernel
-        self.mega_kernel = cp.RawKernel(MEGA_KERNEL_SOURCE, 'chip8_mega_kernel')
+        # CA detection parameters
+        self.ca_detection_interval = ca_detection_interval
+        self.ca_threshold = ca_threshold
+        
+        # Compile the enhanced mega kernel
+        self.mega_kernel = cp.RawKernel(MEGA_KERNEL_WITH_CA_SOURCE, 'chip8_mega_kernel_with_ca')
         
         # Calculate optimal block/grid sizes
-        # This is optimized for the GTX 1070;
-        # Tested 128, 256, 512 block sizes, 256 had highest throughput
         self.block_size = min(256, num_instances)
         self.grid_size = (num_instances + self.block_size - 1) // self.block_size
         
-        print(f"Mega-Kernel CHIP-8: {num_instances} instances, block_size={self.block_size}, grid_size={self.grid_size}")
+        print(f"Enhanced Mega-Kernel CHIP-8 with CA Detection: {num_instances} instances")
+        print(f"Block size: {self.block_size}, Grid size: {self.grid_size}")
+        print(f"CA detection interval: {ca_detection_interval} cycles, threshold: {ca_threshold}%")
         
         # Initialize all state
         self._initialize_state()
         self._initialize_stats()
+        self._initialize_ca_detection()
     
     def _initialize_state(self):
         """Initialize all state arrays"""
@@ -519,6 +660,17 @@ class MegaKernelChip8Emulator:
             'sprite_collisions': cp.zeros(self.num_instances, dtype=cp.uint32),
         }
     
+    def _initialize_ca_detection(self):
+        """Initialize CA detection arrays"""
+        # CA detection results
+        self.ca_detected = cp.zeros(self.num_instances, dtype=cp.uint8)
+        self.ca_likelihood = cp.zeros(self.num_instances, dtype=cp.float32)
+        self.hot_loop_start = cp.zeros(self.num_instances, dtype=cp.uint16)
+        self.hot_loop_end = cp.zeros(self.num_instances, dtype=cp.uint16)
+        
+        # PC frequency tracking (instances x 256 buckets)
+        self.pc_frequency = cp.zeros((self.num_instances, 256), dtype=cp.uint32)
+    
     def reset(self):
         """Reset all instances"""
         self.memory.fill(0)
@@ -535,6 +687,13 @@ class MegaKernelChip8Emulator:
         self.halted.fill(0)
         self.waiting_for_key.fill(0)
         self.key_register.fill(0)
+        
+        # Reset CA detection
+        self.ca_detected.fill(0)
+        self.ca_likelihood.fill(0.0)
+        self.hot_loop_start.fill(0)
+        self.hot_loop_end.fill(0)
+        self.pc_frequency.fill(0)
         
         # Reload font
         font_data = cp.tile(CHIP8_FONT, (self.num_instances, 1))
@@ -586,12 +745,19 @@ class MegaKernelChip8Emulator:
         print(f"Loaded single ROM into {self.num_instances} instances")
     
     def run(self, cycles: int = 1000, timer_update_interval: int = 16):
-        """Run the mega kernel for specified cycles"""
-        print(f"Launching mega-kernel for {cycles} cycles...")
+        """Run the enhanced mega kernel with CA detection for specified cycles"""
+        print(f"Launching enhanced mega-kernel with CA detection for {cycles} cycles...")
+        
+        # Reset CA detection for this run
+        self.ca_detected.fill(0)
+        self.ca_likelihood.fill(0.0)
+        self.hot_loop_start.fill(0)
+        self.hot_loop_end.fill(0)
+        self.pc_frequency.fill(0)
         
         start_time = time.time()
         
-        # Launch the mega kernel
+        # Launch the enhanced mega kernel with CA detection
         self.mega_kernel(
             (self.grid_size,), (self.block_size,),
             (
@@ -623,10 +789,21 @@ class MegaKernelChip8Emulator:
                 # RNG state
                 self.rng_state,
                 
+                # NEW: CA detection arrays
+                self.ca_detected,
+                self.ca_likelihood,
+                self.hot_loop_start,
+                self.hot_loop_end,
+                self.pc_frequency,
+                
                 # Parameters
                 self.num_instances,
                 cycles,
                 timer_update_interval,
+                
+                # CA detection parameters
+                self.ca_detection_interval,
+                self.ca_threshold,
                 
                 # Quirks
                 1 if self.quirks['memory'] else 0,
@@ -644,9 +821,43 @@ class MegaKernelChip8Emulator:
         total_instructions = int(cp.sum(self.stats['instructions_executed']))
         instructions_per_second = total_instructions / execution_time if execution_time > 0 else 0
         
-        print(f"Mega-kernel execution: {execution_time:.4f}s")
+        print(f"Enhanced mega-kernel execution: {execution_time:.4f}s")
         print(f"Total instructions: {total_instructions:,}")
         print(f"Instructions/second: {instructions_per_second:,.0f}")
+        
+        # Report CA detection results
+        ca_count = int(cp.sum(self.ca_detected))
+        if ca_count > 0:
+            max_likelihood = float(cp.max(self.ca_likelihood))
+            print(f"🔬 CA DETECTION: Found {ca_count} potential CA patterns!")
+            print(f"   Max CA likelihood: {max_likelihood:.1f}%")
+        else:
+            print("   No CA patterns detected in this batch")
+    
+    def get_ca_results(self) -> Dict:
+        """Get CA detection results"""
+        ca_detected_np = cp.asnumpy(self.ca_detected).astype(bool)
+        ca_likelihood_np = cp.asnumpy(self.ca_likelihood)
+        hot_start_np = cp.asnumpy(self.hot_loop_start)
+        hot_end_np = cp.asnumpy(self.hot_loop_end)
+        
+        ca_instances = []
+        for i in range(self.num_instances):
+            if ca_detected_np[i]:
+                ca_instances.append({
+                    'instance_id': i,
+                    'ca_likelihood': float(ca_likelihood_np[i]),
+                    'hot_loop_range': (int(hot_start_np[i]), int(hot_end_np[i]))
+                })
+        
+        # Sort by likelihood (highest first)
+        ca_instances.sort(key=lambda x: x['ca_likelihood'], reverse=True)
+        
+        return {
+            'ca_detected_count': len(ca_instances),
+            'ca_instances': ca_instances,
+            'max_ca_likelihood': float(np.max(ca_likelihood_np)) if len(ca_instances) > 0 else 0.0
+        }
     
     def get_displays(self, instance_ids: Optional[List[int]] = None) -> cp.ndarray:
         """Get display data reshaped back to 2D"""
@@ -674,7 +885,7 @@ class MegaKernelChip8Emulator:
         return np.array(scaled_displays, dtype=np.uint8)
     
     def get_aggregate_stats(self) -> Dict[str, Union[int, float]]:
-        """Get aggregate statistics"""
+        """Get aggregate statistics including CA results"""
         aggregate = {}
         
         for key, arr in self.stats.items():
@@ -688,13 +899,17 @@ class MegaKernelChip8Emulator:
         aggregate['waiting_instances'] = int(cp.sum(self.waiting_for_key))
         aggregate['total_instances'] = self.num_instances
         
+        # Add CA detection stats
+        aggregate['ca_detected_count'] = int(cp.sum(self.ca_detected))
+        aggregate['max_ca_likelihood'] = float(cp.max(self.ca_likelihood))
+        
         return aggregate
     
     def print_aggregate_stats(self):
-        """Print aggregate statistics"""
+        """Print aggregate statistics including CA detection results"""
         stats = self.get_aggregate_stats()
         
-        print("Mega-Kernel CHIP-8 Emulator Statistics:")
+        print("Enhanced Mega-Kernel CHIP-8 Emulator Statistics:")
         print("=" * 50)
         print(f"Total instances: {stats['total_instances']}")
         print(f"Active instances: {stats['active_instances']}")
@@ -714,6 +929,11 @@ class MegaKernelChip8Emulator:
         print(f"Display writes: {stats['mean_display_writes']:.1f}")
         print(f"Pixels drawn: {stats['mean_pixels_drawn']:.1f}")
         print(f"Collisions: {stats['mean_sprite_collisions']:.1f}")
+        print()
+        
+        print("CA Detection Results:")
+        print(f"CA patterns detected: {stats['ca_detected_count']}")
+        print(f"Max CA likelihood: {stats['max_ca_likelihood']:.1f}%")
     
     def save_displays_as_pngs(self, output_dir: str, instance_ids: Optional[List[int]] = None, 
                              scale: int = 8, prefix: str = "display"):
