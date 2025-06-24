@@ -1,0 +1,122 @@
+
+CHIP-8 ROM DISASSEMBLY ANALYSIS
+============================================================
+ROM File: output/sorting/session_20250622_230319/roms/SORT_ASCENDING_B141D01_I10294_C9830_6347189d7545.ch8
+ROM Size: 133 bytes
+Instructions Found: 66
+
+DISCOVERY INFORMATION:
+Batch: 141
+Instance: 10294
+Direction: ascending
+Final Array: [0, 0, 0, 0, 0, 0, 0, 229]
+Operations: R:0 W:7 C:3 S:0
+
+SORT ARRAY ANALYSIS (0x300-0x307):
+References Found: 5
+Sort Array References:
+  $226: LD I, $FE0 ; Load FE0 into I
+  $234: LD I, $540 ; Load 540 into I
+  $242: LD I, $BDC ; Load BDC into I
+  $276: LD I, $A4F ; Load A4F into I
+  $282: LD I, $FA7 ; Load FA7 into I
+
+CONTROL FLOW ANALYSIS:
+Jumps: 9
+Calls: 6
+Branches: 11
+Loops: 4
+Loop Structures:
+  $24E -> $22E (backward jump)
+  $272 -> $050 (backward jump)
+  $27E -> $096 (backward jump)
+  $280 -> $20D (backward jump)
+
+COMPLETE DISASSEMBLY:
+========================================
+Address  Opcode  Mnemonic Operands           Description
+============================================================
+$200    $EA52   UNKNOWN  $EA52           ; Unknown Exxx instruction
+$202    $918A   UNKNOWN  $918A           ; Unknown 9xxx instruction
+$204    $DFF7   DRW      VF, VF, #7      ; Draw 7-byte sprite at VF, VF
+$206    $C97B   RND      V9, #7B         ; V9 = random & 7B
+$208    $63F0   LD       V3, #F0         ; Load 240 into V3
+$20A    $5524   UNKNOWN  $5524           ; Unknown 5xxx instruction
+$20C    $5EB3   UNKNOWN  $5EB3           ; Unknown 5xxx instruction
+$20E    $405E   SNE      V0, #5E         ; Skip if V0 != 94
+$210    $4FB6   SNE      VF, #B6         ; Skip if VF != 182
+$212    $4B8F   SNE      VB, #8F         ; Skip if VB != 143
+$214    $2640   CALL     $640            ; Call subroutine at 640
+$216    $2C3D   CALL     $C3D            ; Call subroutine at C3D
+$218    $0254   SYS      $254            ; System call to 254
+$21A    $C05B   RND      V0, #5B         ; V0 = random & 5B
+$21C    $93F6   UNKNOWN  $93F6           ; Unknown 9xxx instruction
+$21E    $6D06   LD       VD, #06         ; Load 6 into VD
+$220    $69BE   LD       V9, #BE         ; Load 190 into V9
+$222    $7617   ADD      V6, #17         ; Add 23 to V6
+$224    $C52A   RND      V5, #2A         ; V5 = random & 2A
+$226    $AFE0   LD       I, $FE0         ; Load FE0 into I
+$228    $869D   UNKNOWN  869D            ; Unknown 8xxx instruction
+$22A    $FF48   UNKNOWN  FF48            ; Unknown Fxxx instruction
+$22C    $BC89   JP       V0, $C89        ; Jump to V0 + C89
+$22E    $B7D0   JP       V0, $7D0        ; Jump to V0 + 7D0
+$230    $8F75   SUB      VF, V7          ; VF -= V7, VF = !borrow
+$232    $49B9   SNE      V9, #B9         ; Skip if V9 != 185
+$234    $A540   LD       I, $540         ; Load 540 into I
+$236    $C02E   RND      V0, #2E         ; V0 = random & 2E
+$238    $0A8A   SYS      $A8A            ; System call to A8A
+$23A    $3EEB   SE       VE, #EB         ; Skip if VE == 235
+$23C    $4158   SNE      V1, #58         ; Skip if V1 != 88
+$23E    $DC61   DRW      VC, V6, #1      ; Draw 1-byte sprite at VC, V6
+$240    $2927   CALL     $927            ; Call subroutine at 927
+$242    $ABDC   LD       I, $BDC         ; Load BDC into I
+$244    $736A   ADD      V3, #6A         ; Add 106 to V3
+$246    $53EB   UNKNOWN  $53EB           ; Unknown 5xxx instruction
+$248    $9853   UNKNOWN  $9853           ; Unknown 9xxx instruction
+$24A    $15B7   JP       $5B7            ; Jump to 5B7
+$24C    $26AE   CALL     $6AE            ; Call subroutine at 6AE
+$24E    $B22E   JP       V0, $22E        ; Jump to V0 + 22E
+$250    $2485   CALL     $485            ; Call subroutine at 485
+$252    $7C67   ADD      VC, #67         ; Add 103 to VC
+$254    $0CF9   SYS      $CF9            ; System call to CF9
+$256    $D2BC   DRW      V2, VB, #C      ; Draw 12-byte sprite at V2, VB
+$258    $13CF   JP       $3CF            ; Jump to 3CF
+$25A    $9C46   UNKNOWN  $9C46           ; Unknown 9xxx instruction
+$25C    $3E7A   SE       VE, #7A         ; Skip if VE == 122
+$25E    $45B9   SNE      V5, #B9         ; Skip if V5 != 185
+$260    $1F44   JP       $F44            ; Jump to F44
+$262    $7FA1   ADD      VF, #A1         ; Add 161 to VF
+$264    $83A8   UNKNOWN  83A8            ; Unknown 8xxx instruction
+$266    $9D82   UNKNOWN  $9D82           ; Unknown 9xxx instruction
+$268    $7503   ADD      V5, #03         ; Add 3 to V5
+$26A    $3656   SE       V6, #56         ; Skip if V6 == 86
+$26C    $F020   UNKNOWN  F020            ; Unknown Fxxx instruction
+$26E    $22C9   CALL     $2C9            ; Call subroutine at 2C9
+$270    $3F52   SE       VF, #52         ; Skip if VF == 82
+$272    $B050   JP       V0, $050        ; Jump to V0 + 050
+$274    $5F32   UNKNOWN  $5F32           ; Unknown 5xxx instruction
+$276    $AA4F   LD       I, $A4F         ; Load A4F into I
+$278    $F980   UNKNOWN  F980            ; Unknown Fxxx instruction
+$27A    $4C6D   SNE      VC, #6D         ; Skip if VC != 109
+$27C    $5DC6   UNKNOWN  $5DC6           ; Unknown 5xxx instruction
+$27E    $B096   JP       V0, $096        ; Jump to V0 + 096
+$280    $120D   JP       $20D            ; Jump to 20D
+$282    $AFA7   LD       I, $FA7         ; Load FA7 into I
+
+ALGORITHMIC ANALYSIS:
+==============================
+Instruction Distribution:
+  UNKNOWN :  16 (24.2%)
+  JP      :   9 (13.6%)
+  LD      :   8 (12.1%)
+  SNE     :   7 (10.6%)
+  CALL    :   6 ( 9.1%)
+  ADD     :   5 ( 7.6%)
+  RND     :   4 ( 6.1%)
+  SE      :   4 ( 6.1%)
+  DRW     :   3 ( 4.5%)
+  SYS     :   3 ( 4.5%)
+  SUB     :   1 ( 1.5%)
+
+Memory Operations: 13 (19.7%)
+Arithmetic Operations: 6 (9.1%)

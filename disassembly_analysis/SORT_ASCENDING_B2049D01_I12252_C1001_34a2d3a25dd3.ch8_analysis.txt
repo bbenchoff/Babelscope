@@ -1,0 +1,2058 @@
+
+CHIP-8 ROM DISASSEMBLY ANALYSIS
+============================================================
+ROM File: output/sorting/session_20250622_230319/roms/SORT_ASCENDING_B2049D01_I12252_C1001_34a2d3a25dd3.ch8
+ROM Size: 3584 bytes
+Instructions Found: 1792
+
+DISCOVERY INFORMATION:
+Batch: 2049
+Instance: 12252
+Direction: ascending
+Final Array: [1, 20, 33, 49, 51, 73, 116, 173]
+Operations: R:0 W:3 C:50 S:6
+
+SORT ARRAY ANALYSIS (0x300-0x307):
+References Found: 102
+Sort Array References:
+  $242: LD I, $B5C ; Load B5C into I
+  $280: LD I, $0BA ; Load 0BA into I
+  $284: LD I, $89F ; Load 89F into I
+  $28C: LD I, $47E ; Load 47E into I
+  $29A: LD I, $A1B ; Load A1B into I
+  $2A4: LD I, $5A0 ; Load 5A0 into I
+  $2A6: LD I, $C44 ; Load C44 into I
+  $2AE: LD I, $592 ; Load 592 into I
+  $2B8: LD I, $603 ; Load 603 into I
+  $2BE: LD I, $85D ; Load 85D into I
+  $310: LD I, $9DA ; Load 9DA into I
+  $340: LD I, $021 ; Load 021 into I
+  $388: LD I, $FFF ; Load FFF into I
+  $390: LD I, $236 ; Load 236 into I
+  $3AE: LD I, $D64 ; Load D64 into I
+  $3E4: LD I, $263 ; Load 263 into I
+  $41C: LD I, $1CA ; Load 1CA into I
+  $46A: LD I, $4FF ; Load 4FF into I
+  $494: LD I, $947 ; Load 947 into I
+  $49C: LD I, $6BB ; Load 6BB into I
+  $4CE: LD I, $C44 ; Load C44 into I
+  $4F4: LD I, $FDD ; Load FDD into I
+  $4FC: LD I, $D2C ; Load D2C into I
+  $5AC: LD I, $935 ; Load 935 into I
+  $5DC: LD I, $F01 ; Load F01 into I
+  $5EA: LD I, $1C0 ; Load 1C0 into I
+  $612: LD I, $A9D ; Load A9D into I
+  $614: LD I, $589 ; Load 589 into I
+  $630: LD I, $C05 ; Load C05 into I
+  $706: LD I, $0D9 ; Load 0D9 into I
+  $712: LD I, $9DF ; Load 9DF into I
+  $71A: LD I, $A1E ; Load A1E into I
+  $746: LD I, $8FB ; Load 8FB into I
+  $74C: LD I, $1CA ; Load 1CA into I
+  $776: LD I, $BC6 ; Load BC6 into I
+  $798: LD I, $491 ; Load 491 into I
+  $79A: LD I, $477 ; Load 477 into I
+  $7BC: LD I, $643 ; Load 643 into I
+  $7C6: LD I, $132 ; Load 132 into I
+  $7E8: LD I, $B9D ; Load B9D into I
+  $7F4: LD I, $2F9 ; Load 2F9 into I
+  $802: LD [I], V9 ; Store V0-V9 at I
+  $84E: LD I, $3E4 ; Load 3E4 into I
+  $862: LD I, $630 ; Load 630 into I
+  $876: LD I, $F0B ; Load F0B into I
+  $8AC: LD I, $06A ; Load 06A into I
+  $8E4: LD I, $22F ; Load 22F into I
+  $91E: LD I, $DC0 ; Load DC0 into I
+  $934: LD I, $9FC ; Load 9FC into I
+  $956: LD I, $F94 ; Load F94 into I
+  $96E: LD I, $AFA ; Load AFA into I
+  $986: LD I, $AB7 ; Load AB7 into I
+  $9C0: LD I, $6EE ; Load 6EE into I
+  $9C4: LD I, $28A ; Load 28A into I
+  $9DC: LD I, $746 ; Load 746 into I
+  $9F4: LD I, $0B6 ; Load 0B6 into I
+  $A6E: LD I, $E30 ; Load E30 into I
+  $A94: LD I, $046 ; Load 046 into I
+  $AC0: LD I, $0DD ; Load 0DD into I
+  $ACC: LD I, $9F4 ; Load 9F4 into I
+  $ADA: LD I, $236 ; Load 236 into I
+  $AEE: LD I, $120 ; Load 120 into I
+  $B18: LD I, $833 ; Load 833 into I
+  $B46: LD I, $83B ; Load 83B into I
+  $B5A: LD I, $928 ; Load 928 into I
+  $B9C: LD I, $34B ; Load 34B into I
+  $B9E: LD I, $CAE ; Load CAE into I
+  $BC6: LD I, $B13 ; Load B13 into I
+  $BE8: LD I, $0F6 ; Load 0F6 into I
+  $C1C: LD I, $8DD ; Load 8DD into I
+  $C42: LD I, $63F ; Load 63F into I
+  $C48: LD I, $574 ; Load 574 into I
+  $C64: LD I, $068 ; Load 068 into I
+  $D2A: LD I, $716 ; Load 716 into I
+  $D30: LD I, $358 ; Load 358 into I
+  $D4E: LD I, $487 ; Load 487 into I
+  $D7E: LD I, $521 ; Load 521 into I
+  $DBE: LD I, $DD1 ; Load DD1 into I
+  $DC2: LD I, $411 ; Load 411 into I
+  $DEC: LD I, $BB9 ; Load BB9 into I
+  $E00: LD I, $22C ; Load 22C into I
+  $E1C: LD I, $717 ; Load 717 into I
+  $E1E: LD I, $283 ; Load 283 into I
+  $E4C: LD I, $EAE ; Load EAE into I
+  $E4E: LD I, $B21 ; Load B21 into I
+  $E86: LD I, $A82 ; Load A82 into I
+  $E92: LD I, $668 ; Load 668 into I
+  $EAA: LD I, $F50 ; Load F50 into I
+  $EEA: LD I, $4A3 ; Load 4A3 into I
+  $EEE: LD I, $CDE ; Load CDE into I
+  $F18: LD I, $C61 ; Load C61 into I
+  $F54: LD I, $C16 ; Load C16 into I
+  $F6A: LD I, $BBE ; Load BBE into I
+  $F7C: LD I, $B4C ; Load B4C into I
+  $F8C: LD I, $E05 ; Load E05 into I
+  $F94: LD [I], V7 ; Store V0-V7 at I
+  $F98: LD I, $790 ; Load 790 into I
+  $FAE: LD I, $A35 ; Load A35 into I
+  $FBE: LD I, $A37 ; Load A37 into I
+  $FCA: LD I, $F15 ; Load F15 into I
+  $FD0: LD I, $741 ; Load 741 into I
+  $FFC: LD I, $AF3 ; Load AF3 into I
+
+CONTROL FLOW ANALYSIS:
+Jumps: 210
+Calls: 113
+Branches: 243
+Loops: 110
+Loop Structures:
+  $26E -> $0BC (backward jump)
+  $372 -> $364 (backward jump)
+  $3A4 -> $121 (backward jump)
+  $3EE -> $2CF (backward jump)
+  $430 -> $3E5 (backward jump)
+  $432 -> $2F6 (backward jump)
+  $448 -> $258 (backward jump)
+  $44C -> $111 (backward jump)
+  $48E -> $11B (backward jump)
+  $4D6 -> $2ED (backward jump)
+  $50C -> $482 (backward jump)
+  $542 -> $284 (backward jump)
+  $560 -> $402 (backward jump)
+  $59A -> $26A (backward jump)
+  $60A -> $5F9 (backward jump)
+  $626 -> $2C8 (backward jump)
+  $642 -> $3B0 (backward jump)
+  $6AC -> $52A (backward jump)
+  $6D8 -> $30E (backward jump)
+  $6F8 -> $44F (backward jump)
+  $70E -> $05E (backward jump)
+  $76C -> $624 (backward jump)
+  $782 -> $220 (backward jump)
+  $7BE -> $257 (backward jump)
+  $7C2 -> $2BD (backward jump)
+  $7CE -> $4F6 (backward jump)
+  $818 -> $062 (backward jump)
+  $850 -> $822 (backward jump)
+  $898 -> $40A (backward jump)
+  $8A2 -> $47D (backward jump)
+  $8A4 -> $58D (backward jump)
+  $8C8 -> $676 (backward jump)
+  $8D8 -> $04B (backward jump)
+  $8E8 -> $813 (backward jump)
+  $8EC -> $063 (backward jump)
+  $90C -> $173 (backward jump)
+  $92C -> $531 (backward jump)
+  $99C -> $3C9 (backward jump)
+  $9B4 -> $096 (backward jump)
+  $9BA -> $784 (backward jump)
+  $9BC -> $34E (backward jump)
+  $9DE -> $552 (backward jump)
+  $9F2 -> $347 (backward jump)
+  $A44 -> $900 (backward jump)
+  $A5A -> $9CE (backward jump)
+  $A5E -> $1EA (backward jump)
+  $A9E -> $67F (backward jump)
+  $AA4 -> $03D (backward jump)
+  $AB4 -> $55E (backward jump)
+  $AD6 -> $708 (backward jump)
+  $ADE -> $606 (backward jump)
+  $AE0 -> $3A7 (backward jump)
+  $B0E -> $60F (backward jump)
+  $B1E -> $816 (backward jump)
+  $B38 -> $8C7 (backward jump)
+  $B3A -> $16E (backward jump)
+  $B42 -> $8F1 (backward jump)
+  $B52 -> $721 (backward jump)
+  $B9A -> $469 (backward jump)
+  $BBA -> $53A (backward jump)
+  $BC2 -> $14F (backward jump)
+  $BE0 -> $275 (backward jump)
+  $BE2 -> $A5B (backward jump)
+  $BEE -> $0AE (backward jump)
+  $C02 -> $2A6 (backward jump)
+  $C20 -> $46B (backward jump)
+  $C2E -> $35A (backward jump)
+  $C38 -> $625 (backward jump)
+  $C3A -> $844 (backward jump)
+  $C3C -> $385 (backward jump)
+  $C56 -> $842 (backward jump)
+  $C5A -> $8FC (backward jump)
+  $C5E -> $69D (backward jump)
+  $CBA -> $ABA (backward jump)
+  $CD2 -> $499 (backward jump)
+  $CDE -> $275 (backward jump)
+  $CEA -> $CDC (backward jump)
+  $D06 -> $9FE (backward jump)
+  $D20 -> $92C (backward jump)
+  $D26 -> $233 (backward jump)
+  $D36 -> $500 (backward jump)
+  $D38 -> $2D5 (backward jump)
+  $D58 -> $8B2 (backward jump)
+  $D5C -> $197 (backward jump)
+  $D68 -> $BA0 (backward jump)
+  $D74 -> $14D (backward jump)
+  $D8A -> $32D (backward jump)
+  $D9A -> $536 (backward jump)
+  $DB2 -> $A37 (backward jump)
+  $DC6 -> $150 (backward jump)
+  $DD0 -> $A22 (backward jump)
+  $DDC -> $23B (backward jump)
+  $E46 -> $B32 (backward jump)
+  $E5E -> $742 (backward jump)
+  $E9E -> $0B1 (backward jump)
+  $EA4 -> $C5C (backward jump)
+  $EB6 -> $C06 (backward jump)
+  $EF2 -> $745 (backward jump)
+  $F06 -> $484 (backward jump)
+  $F0A -> $95A (backward jump)
+  $F0C -> $536 (backward jump)
+  $F34 -> $19B (backward jump)
+  $F84 -> $ECC (backward jump)
+  $F92 -> $A98 (backward jump)
+  $F96 -> $10B (backward jump)
+  $F9E -> $183 (backward jump)
+  $FD2 -> $CEA (backward jump)
+  $FEA -> $98F (backward jump)
+  $FEC -> $0C7 (backward jump)
+  $FF6 -> $24E (backward jump)
+
+COMPLETE DISASSEMBLY:
+========================================
+Address  Opcode  Mnemonic Operands           Description
+============================================================
+$200    $99C2   UNKNOWN  $99C2           ; Unknown 9xxx instruction
+$202    $62B0   LD       V2, #B0         ; Load 176 into V2
+$204    $2C32   CALL     $C32            ; Call subroutine at C32
+$206    $C612   RND      V6, #12         ; V6 = random & 12
+$208    $3208   SE       V2, #08         ; Skip if V2 == 8
+$20A    $F893   UNKNOWN  F893            ; Unknown Fxxx instruction
+$20C    $C265   RND      V2, #65         ; V2 = random & 65
+$20E    $BC83   JP       V0, $C83        ; Jump to V0 + C83
+$210    $BB68   JP       V0, $B68        ; Jump to V0 + B68
+$212    $C4F0   RND      V4, #F0         ; V4 = random & F0
+$214    $9C4D   UNKNOWN  $9C4D           ; Unknown 9xxx instruction
+$216    $762C   ADD      V6, #2C         ; Add 44 to V6
+$218    $5E6A   UNKNOWN  $5E6A           ; Unknown 5xxx instruction
+$21A    $8EB7   SUBN     VE, VB          ; VE = VB - VE, VF = !borrow
+$21C    $874E   SHL      V7              ; V7 <<= 1, VF = MSB
+$21E    $883A   UNKNOWN  883A            ; Unknown 8xxx instruction
+$220    $044C   SYS      $44C            ; System call to 44C
+$222    $17D3   JP       $7D3            ; Jump to 7D3
+$224    $B5D4   JP       V0, $5D4        ; Jump to V0 + 5D4
+$226    $0E6A   SYS      $E6A            ; System call to E6A
+$228    $734D   ADD      V3, #4D         ; Add 77 to V3
+$22A    $94FB   UNKNOWN  $94FB           ; Unknown 9xxx instruction
+$22C    $3066   SE       V0, #66         ; Skip if V0 == 102
+$22E    $4DCE   SNE      VD, #CE         ; Skip if VD != 206
+$230    $579D   UNKNOWN  $579D           ; Unknown 5xxx instruction
+$232    $B3EE   JP       V0, $3EE        ; Jump to V0 + 3EE
+$234    $3AA2   SE       VA, #A2         ; Skip if VA == 162
+$236    $074F   SYS      $74F            ; System call to 74F
+$238    $F2B9   UNKNOWN  F2B9            ; Unknown Fxxx instruction
+$23A    $3024   SE       V0, #24         ; Skip if V0 == 36
+$23C    $6DFC   LD       VD, #FC         ; Load 252 into VD
+$23E    $9908   UNKNOWN  $9908           ; Unknown 9xxx instruction
+$240    $D4C3   DRW      V4, VC, #3      ; Draw 3-byte sprite at V4, VC
+$242    $AB5C   LD       I, $B5C         ; Load B5C into I
+$244    $532F   UNKNOWN  $532F           ; Unknown 5xxx instruction
+$246    $3AFA   SE       VA, #FA         ; Skip if VA == 250
+$248    $1AD2   JP       $AD2            ; Jump to AD2
+$24A    $EF6F   UNKNOWN  $EF6F           ; Unknown Exxx instruction
+$24C    $722A   ADD      V2, #2A         ; Add 42 to V2
+$24E    $8AB3   XOR      VA, VB          ; VA ^= VB
+$250    $39D1   SE       V9, #D1         ; Skip if V9 == 209
+$252    $4592   SNE      V5, #92         ; Skip if V5 != 146
+$254    $C2C2   RND      V2, #C2         ; V2 = random & C2
+$256    $F745   UNKNOWN  F745            ; Unknown Fxxx instruction
+$258    $6059   LD       V0, #59         ; Load 89 into V0
+$25A    $55B7   UNKNOWN  $55B7           ; Unknown 5xxx instruction
+$25C    $31E4   SE       V1, #E4         ; Skip if V1 == 228
+$25E    $1E77   JP       $E77            ; Jump to E77
+$260    $4189   SNE      V1, #89         ; Skip if V1 != 137
+$262    $B6EA   JP       V0, $6EA        ; Jump to V0 + 6EA
+$264    $B382   JP       V0, $382        ; Jump to V0 + 382
+$266    $EA9A   UNKNOWN  $EA9A           ; Unknown Exxx instruction
+$268    $C7E7   RND      V7, #E7         ; V7 = random & E7
+$26A    $2CB5   CALL     $CB5            ; Call subroutine at CB5
+$26C    $6F9E   LD       VF, #9E         ; Load 158 into VF
+$26E    $10BC   JP       $0BC            ; Jump to 0BC
+$270    $8B00   LD       VB, V0          ; VB = V0
+$272    $D5B5   DRW      V5, VB, #5      ; Draw 5-byte sprite at V5, VB
+$274    $D606   DRW      V6, V0, #6      ; Draw 6-byte sprite at V6, V0
+$276    $863C   UNKNOWN  863C            ; Unknown 8xxx instruction
+$278    $88B4   ADD      V8, VB          ; V8 += VB, VF = carry
+$27A    $2A29   CALL     $A29            ; Call subroutine at A29
+$27C    $B58C   JP       V0, $58C        ; Jump to V0 + 58C
+$27E    $98C7   UNKNOWN  $98C7           ; Unknown 9xxx instruction
+$280    $A0BA   LD       I, $0BA         ; Load 0BA into I
+$282    $38A1   SE       V8, #A1         ; Skip if V8 == 161
+$284    $A89F   LD       I, $89F         ; Load 89F into I
+$286    $5E3E   UNKNOWN  $5E3E           ; Unknown 5xxx instruction
+$288    $688C   LD       V8, #8C         ; Load 140 into V8
+$28A    $2714   CALL     $714            ; Call subroutine at 714
+$28C    $A47E   LD       I, $47E         ; Load 47E into I
+$28E    $9E2A   UNKNOWN  $9E2A           ; Unknown 9xxx instruction
+$290    $0E14   SYS      $E14            ; System call to E14
+$292    $6789   LD       V7, #89         ; Load 137 into V7
+$294    $B42C   JP       V0, $42C        ; Jump to V0 + 42C
+$296    $3903   SE       V9, #03         ; Skip if V9 == 3
+$298    $3C52   SE       VC, #52         ; Skip if VC == 82
+$29A    $AA1B   LD       I, $A1B         ; Load A1B into I
+$29C    $6DA3   LD       VD, #A3         ; Load 163 into VD
+$29E    $80AD   UNKNOWN  80AD            ; Unknown 8xxx instruction
+$2A0    $688A   LD       V8, #8A         ; Load 138 into V8
+$2A2    $77CC   ADD      V7, #CC         ; Add 204 to V7
+$2A4    $A5A0   LD       I, $5A0         ; Load 5A0 into I
+$2A6    $AC44   LD       I, $C44         ; Load C44 into I
+$2A8    $CC73   RND      VC, #73         ; VC = random & 73
+$2AA    $0518   SYS      $518            ; System call to 518
+$2AC    $F5A4   UNKNOWN  F5A4            ; Unknown Fxxx instruction
+$2AE    $A592   LD       I, $592         ; Load 592 into I
+$2B0    $4CBF   SNE      VC, #BF         ; Skip if VC != 191
+$2B2    $511B   UNKNOWN  $511B           ; Unknown 5xxx instruction
+$2B4    $20D6   CALL     $0D6            ; Call subroutine at 0D6
+$2B6    $BA60   JP       V0, $A60        ; Jump to V0 + A60
+$2B8    $A603   LD       I, $603         ; Load 603 into I
+$2BA    $BC4A   JP       V0, $C4A        ; Jump to V0 + C4A
+$2BC    $4A75   SNE      VA, #75         ; Skip if VA != 117
+$2BE    $A85D   LD       I, $85D         ; Load 85D into I
+$2C0    $DF73   DRW      VF, V7, #3      ; Draw 3-byte sprite at VF, V7
+$2C2    $78A7   ADD      V8, #A7         ; Add 167 to V8
+$2C4    $D967   DRW      V9, V6, #7      ; Draw 7-byte sprite at V9, V6
+$2C6    $C78F   RND      V7, #8F         ; V7 = random & 8F
+$2C8    $3444   SE       V4, #44         ; Skip if V4 == 68
+$2CA    $9729   UNKNOWN  $9729           ; Unknown 9xxx instruction
+$2CC    $6546   LD       V5, #46         ; Load 70 into V5
+$2CE    $2DC0   CALL     $DC0            ; Call subroutine at DC0
+$2D0    $6BB1   LD       VB, #B1         ; Load 177 into VB
+$2D2    $92C5   UNKNOWN  $92C5           ; Unknown 9xxx instruction
+$2D4    $C21B   RND      V2, #1B         ; V2 = random & 1B
+$2D6    $D389   DRW      V3, V8, #9      ; Draw 9-byte sprite at V3, V8
+$2D8    $B557   JP       V0, $557        ; Jump to V0 + 557
+$2DA    $CE5C   RND      VE, #5C         ; VE = random & 5C
+$2DC    $51C4   UNKNOWN  $51C4           ; Unknown 5xxx instruction
+$2DE    $2B06   CALL     $B06            ; Call subroutine at B06
+$2E0    $3698   SE       V6, #98         ; Skip if V6 == 152
+$2E2    $E31E   UNKNOWN  $E31E           ; Unknown Exxx instruction
+$2E4    $02A8   SYS      $2A8            ; System call to 2A8
+$2E6    $13E5   JP       $3E5            ; Jump to 3E5
+$2E8    $0BC6   SYS      $BC6            ; System call to BC6
+$2EA    $480B   SNE      V8, #0B         ; Skip if V8 != 11
+$2EC    $F3E9   UNKNOWN  F3E9            ; Unknown Fxxx instruction
+$2EE    $D313   DRW      V3, V1, #3      ; Draw 3-byte sprite at V3, V1
+$2F0    $79D7   ADD      V9, #D7         ; Add 215 to V9
+$2F2    $EF98   UNKNOWN  $EF98           ; Unknown Exxx instruction
+$2F4    $CA0D   RND      VA, #0D         ; VA = random & 0D
+$2F6    $E6F8   UNKNOWN  $E6F8           ; Unknown Exxx instruction
+$2F8    $59BD   UNKNOWN  $59BD           ; Unknown 5xxx instruction
+$2FA    $54BA   UNKNOWN  $54BA           ; Unknown 5xxx instruction
+$2FC    $EF24   UNKNOWN  $EF24           ; Unknown Exxx instruction
+$2FE    $4201   SNE      V2, #01         ; Skip if V2 != 1
+$300    $0114   SYS      $114            ; System call to 114
+$302    $2131   CALL     $131            ; Call subroutine at 131
+$304    $3349   SE       V3, #49         ; Skip if V3 == 73
+$306    $74AD   ADD      V4, #AD         ; Add 173 to V4
+$308    $3D4A   SE       VD, #4A         ; Skip if VD == 74
+$30A    $540F   UNKNOWN  $540F           ; Unknown 5xxx instruction
+$30C    $B44C   JP       V0, $44C        ; Jump to V0 + 44C
+$30E    $0EA2   SYS      $EA2            ; System call to EA2
+$310    $A9DA   LD       I, $9DA         ; Load 9DA into I
+$312    $3048   SE       V0, #48         ; Skip if V0 == 72
+$314    $8616   SHR      V6              ; V6 >>= 1, VF = LSB
+$316    $88B7   SUBN     V8, VB          ; V8 = VB - V8, VF = !borrow
+$318    $D3F2   DRW      V3, VF, #2      ; Draw 2-byte sprite at V3, VF
+$31A    $7ABA   ADD      VA, #BA         ; Add 186 to VA
+$31C    $16E3   JP       $6E3            ; Jump to 6E3
+$31E    $E741   UNKNOWN  $E741           ; Unknown Exxx instruction
+$320    $D8F6   DRW      V8, VF, #6      ; Draw 6-byte sprite at V8, VF
+$322    $6DBD   LD       VD, #BD         ; Load 189 into VD
+$324    $908E   UNKNOWN  $908E           ; Unknown 9xxx instruction
+$326    $EA75   UNKNOWN  $EA75           ; Unknown Exxx instruction
+$328    $2EC2   CALL     $EC2            ; Call subroutine at EC2
+$32A    $3DE9   SE       VD, #E9         ; Skip if VD == 233
+$32C    $0C4A   SYS      $C4A            ; System call to C4A
+$32E    $78B9   ADD      V8, #B9         ; Add 185 to V8
+$330    $9D82   UNKNOWN  $9D82           ; Unknown 9xxx instruction
+$332    $3639   SE       V6, #39         ; Skip if V6 == 57
+$334    $671F   LD       V7, #1F         ; Load 31 into V7
+$336    $97E5   UNKNOWN  $97E5           ; Unknown 9xxx instruction
+$338    $F79D   UNKNOWN  F79D            ; Unknown Fxxx instruction
+$33A    $5113   UNKNOWN  $5113           ; Unknown 5xxx instruction
+$33C    $9502   UNKNOWN  $9502           ; Unknown 9xxx instruction
+$33E    $3C33   SE       VC, #33         ; Skip if VC == 51
+$340    $A021   LD       I, $021         ; Load 021 into I
+$342    $E63B   UNKNOWN  $E63B           ; Unknown Exxx instruction
+$344    $3B8B   SE       VB, #8B         ; Skip if VB == 139
+$346    $B43D   JP       V0, $43D        ; Jump to V0 + 43D
+$348    $8FD5   SUB      VF, VD          ; VF -= VD, VF = !borrow
+$34A    $C2DD   RND      V2, #DD         ; V2 = random & DD
+$34C    $283D   CALL     $83D            ; Call subroutine at 83D
+$34E    $8517   SUBN     V5, V1          ; V5 = V1 - V5, VF = !borrow
+$350    $D8B4   DRW      V8, VB, #4      ; Draw 4-byte sprite at V8, VB
+$352    $7327   ADD      V3, #27         ; Add 39 to V3
+$354    $DE09   DRW      VE, V0, #9      ; Draw 9-byte sprite at VE, V0
+$356    $2CD7   CALL     $CD7            ; Call subroutine at CD7
+$358    $E38C   UNKNOWN  $E38C           ; Unknown Exxx instruction
+$35A    $462A   SNE      V6, #2A         ; Skip if V6 != 42
+$35C    $BECD   JP       V0, $ECD        ; Jump to V0 + ECD
+$35E    $1D45   JP       $D45            ; Jump to D45
+$360    $EC78   UNKNOWN  $EC78           ; Unknown Exxx instruction
+$362    $864D   UNKNOWN  864D            ; Unknown 8xxx instruction
+$364    $1942   JP       $942            ; Jump to 942
+$366    $8E23   XOR      VE, V2          ; VE ^= V2
+$368    $2101   CALL     $101            ; Call subroutine at 101
+$36A    $60DA   LD       V0, #DA         ; Load 218 into V0
+$36C    $2022   CALL     $022            ; Call subroutine at 022
+$36E    $3D52   SE       VD, #52         ; Skip if VD == 82
+$370    $8970   LD       V9, V7          ; V9 = V7
+$372    $1364   JP       $364            ; Jump to 364
+$374    $BDBE   JP       V0, $DBE        ; Jump to V0 + DBE
+$376    $3A4E   SE       VA, #4E         ; Skip if VA == 78
+$378    $5EE2   UNKNOWN  $5EE2           ; Unknown 5xxx instruction
+$37A    $05A8   SYS      $5A8            ; System call to 5A8
+$37C    $E584   UNKNOWN  $E584           ; Unknown Exxx instruction
+$37E    $F90F   UNKNOWN  F90F            ; Unknown Fxxx instruction
+$380    $FE8F   UNKNOWN  FE8F            ; Unknown Fxxx instruction
+$382    $FCD7   UNKNOWN  FCD7            ; Unknown Fxxx instruction
+$384    $459D   SNE      V5, #9D         ; Skip if V5 != 157
+$386    $1DCB   JP       $DCB            ; Jump to DCB
+$388    $AFFF   LD       I, $FFF         ; Load FFF into I
+$38A    $4E68   SNE      VE, #68         ; Skip if VE != 104
+$38C    $C3BF   RND      V3, #BF         ; V3 = random & BF
+$38E    $DFC0   DRW      VF, VC, #0      ; Draw 0-byte sprite at VF, VC
+$390    $A236   LD       I, $236         ; Load 236 into I
+$392    $D504   DRW      V5, V0, #4      ; Draw 4-byte sprite at V5, V0
+$394    $D825   DRW      V8, V2, #5      ; Draw 5-byte sprite at V8, V2
+$396    $385B   SE       V8, #5B         ; Skip if V8 == 91
+$398    $43F2   SNE      V3, #F2         ; Skip if V3 != 242
+$39A    $6F50   LD       VF, #50         ; Load 80 into VF
+$39C    $57BD   UNKNOWN  $57BD           ; Unknown 5xxx instruction
+$39E    $ECF8   UNKNOWN  $ECF8           ; Unknown Exxx instruction
+$3A0    $6B85   LD       VB, #85         ; Load 133 into VB
+$3A2    $6D3A   LD       VD, #3A         ; Load 58 into VD
+$3A4    $B121   JP       V0, $121        ; Jump to V0 + 121
+$3A6    $F009   UNKNOWN  F009            ; Unknown Fxxx instruction
+$3A8    $0992   SYS      $992            ; System call to 992
+$3AA    $2E3D   CALL     $E3D            ; Call subroutine at E3D
+$3AC    $0552   SYS      $552            ; System call to 552
+$3AE    $AD64   LD       I, $D64         ; Load D64 into I
+$3B0    $D463   DRW      V4, V6, #3      ; Draw 3-byte sprite at V4, V6
+$3B2    $1FE7   JP       $FE7            ; Jump to FE7
+$3B4    $052A   SYS      $52A            ; System call to 52A
+$3B6    $BCC4   JP       V0, $CC4        ; Jump to V0 + CC4
+$3B8    $339C   SE       V3, #9C         ; Skip if V3 == 156
+$3BA    $E4D0   UNKNOWN  $E4D0           ; Unknown Exxx instruction
+$3BC    $CC73   RND      VC, #73         ; VC = random & 73
+$3BE    $F601   UNKNOWN  F601            ; Unknown Fxxx instruction
+$3C0    $CF23   RND      VF, #23         ; VF = random & 23
+$3C2    $7CCC   ADD      VC, #CC         ; Add 204 to VC
+$3C4    $1592   JP       $592            ; Jump to 592
+$3C6    $5E57   UNKNOWN  $5E57           ; Unknown 5xxx instruction
+$3C8    $8DEC   UNKNOWN  8DEC            ; Unknown 8xxx instruction
+$3CA    $B802   JP       V0, $802        ; Jump to V0 + 802
+$3CC    $F0FB   UNKNOWN  F0FB            ; Unknown Fxxx instruction
+$3CE    $B6F0   JP       V0, $6F0        ; Jump to V0 + 6F0
+$3D0    $4415   SNE      V4, #15         ; Skip if V4 != 21
+$3D2    $66D4   LD       V6, #D4         ; Load 212 into V6
+$3D4    $7720   ADD      V7, #20         ; Add 32 to V7
+$3D6    $5F5C   UNKNOWN  $5F5C           ; Unknown 5xxx instruction
+$3D8    $50D2   UNKNOWN  $50D2           ; Unknown 5xxx instruction
+$3DA    $1A95   JP       $A95            ; Jump to A95
+$3DC    $FA77   UNKNOWN  FA77            ; Unknown Fxxx instruction
+$3DE    $6258   LD       V2, #58         ; Load 88 into V2
+$3E0    $53AE   UNKNOWN  $53AE           ; Unknown 5xxx instruction
+$3E2    $DB2D   DRW      VB, V2, #D      ; Draw 13-byte sprite at VB, V2
+$3E4    $A263   LD       I, $263         ; Load 263 into I
+$3E6    $97FA   UNKNOWN  $97FA           ; Unknown 9xxx instruction
+$3E8    $035B   SYS      $35B            ; System call to 35B
+$3EA    $8EFE   SHL      VE              ; VE <<= 1, VF = MSB
+$3EC    $5946   UNKNOWN  $5946           ; Unknown 5xxx instruction
+$3EE    $B2CF   JP       V0, $2CF        ; Jump to V0 + 2CF
+$3F0    $C82D   RND      V8, #2D         ; V8 = random & 2D
+$3F2    $F2F1   UNKNOWN  F2F1            ; Unknown Fxxx instruction
+$3F4    $FCFD   UNKNOWN  FCFD            ; Unknown Fxxx instruction
+$3F6    $5B0D   UNKNOWN  $5B0D           ; Unknown 5xxx instruction
+$3F8    $E40A   UNKNOWN  $E40A           ; Unknown Exxx instruction
+$3FA    $5856   UNKNOWN  $5856           ; Unknown 5xxx instruction
+$3FC    $B95F   JP       V0, $95F        ; Jump to V0 + 95F
+$3FE    $4483   SNE      V4, #83         ; Skip if V4 != 131
+$400    $7109   ADD      V1, #09         ; Add 9 to V1
+$402    $08A6   SYS      $8A6            ; System call to 8A6
+$404    $FB32   UNKNOWN  FB32            ; Unknown Fxxx instruction
+$406    $037C   SYS      $37C            ; System call to 37C
+$408    $FDFF   UNKNOWN  FDFF            ; Unknown Fxxx instruction
+$40A    $E733   UNKNOWN  $E733           ; Unknown Exxx instruction
+$40C    $9DF9   UNKNOWN  $9DF9           ; Unknown 9xxx instruction
+$40E    $E428   UNKNOWN  $E428           ; Unknown Exxx instruction
+$410    $CD87   RND      VD, #87         ; VD = random & 87
+$412    $FBA4   UNKNOWN  FBA4            ; Unknown Fxxx instruction
+$414    $4083   SNE      V0, #83         ; Skip if V0 != 131
+$416    $4223   SNE      V2, #23         ; Skip if V2 != 35
+$418    $2996   CALL     $996            ; Call subroutine at 996
+$41A    $3753   SE       V7, #53         ; Skip if V7 == 83
+$41C    $A1CA   LD       I, $1CA         ; Load 1CA into I
+$41E    $5A4C   UNKNOWN  $5A4C           ; Unknown 5xxx instruction
+$420    $3587   SE       V5, #87         ; Skip if V5 == 135
+$422    $DED9   DRW      VE, VD, #9      ; Draw 9-byte sprite at VE, VD
+$424    $C58B   RND      V5, #8B         ; V5 = random & 8B
+$426    $4C9B   SNE      VC, #9B         ; Skip if VC != 155
+$428    $3F3E   SE       VF, #3E         ; Skip if VF == 62
+$42A    $4A48   SNE      VA, #48         ; Skip if VA != 72
+$42C    $6CB3   LD       VC, #B3         ; Load 179 into VC
+$42E    $72F6   ADD      V2, #F6         ; Add 246 to V2
+$430    $13E5   JP       $3E5            ; Jump to 3E5
+$432    $12F6   JP       $2F6            ; Jump to 2F6
+$434    $F939   UNKNOWN  F939            ; Unknown Fxxx instruction
+$436    $98E5   UNKNOWN  $98E5           ; Unknown 9xxx instruction
+$438    $E664   UNKNOWN  $E664           ; Unknown Exxx instruction
+$43A    $C336   RND      V3, #36         ; V3 = random & 36
+$43C    $EEE9   UNKNOWN  $EEE9           ; Unknown Exxx instruction
+$43E    $DAE7   DRW      VA, VE, #7      ; Draw 7-byte sprite at VA, VE
+$440    $E8FC   UNKNOWN  $E8FC           ; Unknown Exxx instruction
+$442    $95D1   UNKNOWN  $95D1           ; Unknown 9xxx instruction
+$444    $FC8E   UNKNOWN  FC8E            ; Unknown Fxxx instruction
+$446    $758F   ADD      V5, #8F         ; Add 143 to V5
+$448    $1258   JP       $258            ; Jump to 258
+$44A    $8EBA   UNKNOWN  8EBA            ; Unknown 8xxx instruction
+$44C    $B111   JP       V0, $111        ; Jump to V0 + 111
+$44E    $7995   ADD      V9, #95         ; Add 149 to V9
+$450    $EB23   UNKNOWN  $EB23           ; Unknown Exxx instruction
+$452    $6AE0   LD       VA, #E0         ; Load 224 into VA
+$454    $8267   SUBN     V2, V6          ; V2 = V6 - V2, VF = !borrow
+$456    $4239   SNE      V2, #39         ; Skip if V2 != 57
+$458    $3FE6   SE       VF, #E6         ; Skip if VF == 230
+$45A    $0961   SYS      $961            ; System call to 961
+$45C    $CC5B   RND      VC, #5B         ; VC = random & 5B
+$45E    $9813   UNKNOWN  $9813           ; Unknown 9xxx instruction
+$460    $262C   CALL     $62C            ; Call subroutine at 62C
+$462    $F52C   UNKNOWN  F52C            ; Unknown Fxxx instruction
+$464    $1DFA   JP       $DFA            ; Jump to DFA
+$466    $2384   CALL     $384            ; Call subroutine at 384
+$468    $E6A5   UNKNOWN  $E6A5           ; Unknown Exxx instruction
+$46A    $A4FF   LD       I, $4FF         ; Load 4FF into I
+$46C    $3A0C   SE       VA, #0C         ; Skip if VA == 12
+$46E    $4265   SNE      V2, #65         ; Skip if V2 != 101
+$470    $2E5B   CALL     $E5B            ; Call subroutine at E5B
+$472    $2871   CALL     $871            ; Call subroutine at 871
+$474    $E69F   UNKNOWN  $E69F           ; Unknown Exxx instruction
+$476    $6CC5   LD       VC, #C5         ; Load 197 into VC
+$478    $4F22   SNE      VF, #22         ; Skip if VF != 34
+$47A    $5272   UNKNOWN  $5272           ; Unknown 5xxx instruction
+$47C    $6A98   LD       VA, #98         ; Load 152 into VA
+$47E    $1CB4   JP       $CB4            ; Jump to CB4
+$480    $0B03   SYS      $B03            ; System call to B03
+$482    $D8D9   DRW      V8, VD, #9      ; Draw 9-byte sprite at V8, VD
+$484    $21A6   CALL     $1A6            ; Call subroutine at 1A6
+$486    $6073   LD       V0, #73         ; Load 115 into V0
+$488    $BEE8   JP       V0, $EE8        ; Jump to V0 + EE8
+$48A    $4BCF   SNE      VB, #CF         ; Skip if VB != 207
+$48C    $7E8B   ADD      VE, #8B         ; Add 139 to VE
+$48E    $111B   JP       $11B            ; Jump to 11B
+$490    $194C   JP       $94C            ; Jump to 94C
+$492    $5534   UNKNOWN  $5534           ; Unknown 5xxx instruction
+$494    $A947   LD       I, $947         ; Load 947 into I
+$496    $746C   ADD      V4, #6C         ; Add 108 to V4
+$498    $C364   RND      V3, #64         ; V3 = random & 64
+$49A    $92A6   UNKNOWN  $92A6           ; Unknown 9xxx instruction
+$49C    $A6BB   LD       I, $6BB         ; Load 6BB into I
+$49E    $1B6B   JP       $B6B            ; Jump to B6B
+$4A0    $8AAA   UNKNOWN  8AAA            ; Unknown 8xxx instruction
+$4A2    $4AED   SNE      VA, #ED         ; Skip if VA != 237
+$4A4    $50E0   SE       V0, VE          ; Skip if V0 == VE
+$4A6    $8606   SHR      V6              ; V6 >>= 1, VF = LSB
+$4A8    $586A   UNKNOWN  $586A           ; Unknown 5xxx instruction
+$4AA    $0EEC   SYS      $EEC            ; System call to EEC
+$4AC    $208B   CALL     $08B            ; Call subroutine at 08B
+$4AE    $D9D3   DRW      V9, VD, #3      ; Draw 3-byte sprite at V9, VD
+$4B0    $5193   UNKNOWN  $5193           ; Unknown 5xxx instruction
+$4B2    $6202   LD       V2, #02         ; Load 2 into V2
+$4B4    $006B   SYS      $06B            ; System call to 06B
+$4B6    $E66D   UNKNOWN  $E66D           ; Unknown Exxx instruction
+$4B8    $8C87   SUBN     VC, V8          ; VC = V8 - VC, VF = !borrow
+$4BA    $73FE   ADD      V3, #FE         ; Add 254 to V3
+$4BC    $07EE   SYS      $7EE            ; System call to 7EE
+$4BE    $6921   LD       V9, #21         ; Load 33 into V9
+$4C0    $276E   CALL     $76E            ; Call subroutine at 76E
+$4C2    $3229   SE       V2, #29         ; Skip if V2 == 41
+$4C4    $1614   JP       $614            ; Jump to 614
+$4C6    $F0E3   UNKNOWN  F0E3            ; Unknown Fxxx instruction
+$4C8    $4FDA   SNE      VF, #DA         ; Skip if VF != 218
+$4CA    $4D2D   SNE      VD, #2D         ; Skip if VD != 45
+$4CC    $B4CD   JP       V0, $4CD        ; Jump to V0 + 4CD
+$4CE    $AC44   LD       I, $C44         ; Load C44 into I
+$4D0    $FAE0   UNKNOWN  FAE0            ; Unknown Fxxx instruction
+$4D2    $342E   SE       V4, #2E         ; Skip if V4 == 46
+$4D4    $09C4   SYS      $9C4            ; System call to 9C4
+$4D6    $12ED   JP       $2ED            ; Jump to 2ED
+$4D8    $F040   UNKNOWN  F040            ; Unknown Fxxx instruction
+$4DA    $271E   CALL     $71E            ; Call subroutine at 71E
+$4DC    $D001   DRW      V0, V0, #1      ; Draw 1-byte sprite at V0, V0
+$4DE    $F02F   UNKNOWN  F02F            ; Unknown Fxxx instruction
+$4E0    $7DC4   ADD      VD, #C4         ; Add 196 to VD
+$4E2    $E88A   UNKNOWN  $E88A           ; Unknown Exxx instruction
+$4E4    $0B56   SYS      $B56            ; System call to B56
+$4E6    $2D29   CALL     $D29            ; Call subroutine at D29
+$4E8    $1D06   JP       $D06            ; Jump to D06
+$4EA    $7193   ADD      V1, #93         ; Add 147 to V1
+$4EC    $EE3F   UNKNOWN  $EE3F           ; Unknown Exxx instruction
+$4EE    $6A8E   LD       VA, #8E         ; Load 142 into VA
+$4F0    $603C   LD       V0, #3C         ; Load 60 into V0
+$4F2    $7348   ADD      V3, #48         ; Add 72 to V3
+$4F4    $AFDD   LD       I, $FDD         ; Load FDD into I
+$4F6    $9444   UNKNOWN  $9444           ; Unknown 9xxx instruction
+$4F8    $2FBA   CALL     $FBA            ; Call subroutine at FBA
+$4FA    $919F   UNKNOWN  $919F           ; Unknown 9xxx instruction
+$4FC    $AD2C   LD       I, $D2C         ; Load D2C into I
+$4FE    $3F25   SE       VF, #25         ; Skip if VF == 37
+$500    $686E   LD       V8, #6E         ; Load 110 into V8
+$502    $4206   SNE      V2, #06         ; Skip if V2 != 6
+$504    $F5B6   UNKNOWN  F5B6            ; Unknown Fxxx instruction
+$506    $3149   SE       V1, #49         ; Skip if V1 == 73
+$508    $5398   UNKNOWN  $5398           ; Unknown 5xxx instruction
+$50A    $ED0F   UNKNOWN  $ED0F           ; Unknown Exxx instruction
+$50C    $1482   JP       $482            ; Jump to 482
+$50E    $821F   UNKNOWN  821F            ; Unknown 8xxx instruction
+$510    $0E2E   SYS      $E2E            ; System call to E2E
+$512    $8015   SUB      V0, V1          ; V0 -= V1, VF = !borrow
+$514    $B5E1   JP       V0, $5E1        ; Jump to V0 + 5E1
+$516    $4711   SNE      V7, #11         ; Skip if V7 != 17
+$518    $938D   UNKNOWN  $938D           ; Unknown 9xxx instruction
+$51A    $0B52   SYS      $B52            ; System call to B52
+$51C    $4EDE   SNE      VE, #DE         ; Skip if VE != 222
+$51E    $F36C   UNKNOWN  F36C            ; Unknown Fxxx instruction
+$520    $F43C   UNKNOWN  F43C            ; Unknown Fxxx instruction
+$522    $44FF   SNE      V4, #FF         ; Skip if V4 != 255
+$524    $9560   SNE      V5, V6          ; Skip if V5 != V6
+$526    $BCDF   JP       V0, $CDF        ; Jump to V0 + CDF
+$528    $6DE4   LD       VD, #E4         ; Load 228 into VD
+$52A    $E97D   UNKNOWN  $E97D           ; Unknown Exxx instruction
+$52C    $22C8   CALL     $2C8            ; Call subroutine at 2C8
+$52E    $FF17   UNKNOWN  FF17            ; Unknown Fxxx instruction
+$530    $E4DA   UNKNOWN  $E4DA           ; Unknown Exxx instruction
+$532    $C367   RND      V3, #67         ; V3 = random & 67
+$534    $21C7   CALL     $1C7            ; Call subroutine at 1C7
+$536    $BDAB   JP       V0, $DAB        ; Jump to V0 + DAB
+$538    $D2EF   DRW      V2, VE, #F      ; Draw 15-byte sprite at V2, VE
+$53A    $FDDF   UNKNOWN  FDDF            ; Unknown Fxxx instruction
+$53C    $28F3   CALL     $8F3            ; Call subroutine at 8F3
+$53E    $2BEE   CALL     $BEE            ; Call subroutine at BEE
+$540    $5078   UNKNOWN  $5078           ; Unknown 5xxx instruction
+$542    $B284   JP       V0, $284        ; Jump to V0 + 284
+$544    $BEBE   JP       V0, $EBE        ; Jump to V0 + EBE
+$546    $9081   UNKNOWN  $9081           ; Unknown 9xxx instruction
+$548    $FAAD   UNKNOWN  FAAD            ; Unknown Fxxx instruction
+$54A    $FE5A   UNKNOWN  FE5A            ; Unknown Fxxx instruction
+$54C    $7389   ADD      V3, #89         ; Add 137 to V3
+$54E    $7C12   ADD      VC, #12         ; Add 18 to VC
+$550    $8708   UNKNOWN  8708            ; Unknown 8xxx instruction
+$552    $2AD9   CALL     $AD9            ; Call subroutine at AD9
+$554    $D4B6   DRW      V4, VB, #6      ; Draw 6-byte sprite at V4, VB
+$556    $424B   SNE      V2, #4B         ; Skip if V2 != 75
+$558    $9594   UNKNOWN  $9594           ; Unknown 9xxx instruction
+$55A    $53BA   UNKNOWN  $53BA           ; Unknown 5xxx instruction
+$55C    $0802   SYS      $802            ; System call to 802
+$55E    $F1EE   UNKNOWN  F1EE            ; Unknown Fxxx instruction
+$560    $1402   JP       $402            ; Jump to 402
+$562    $5517   UNKNOWN  $5517           ; Unknown 5xxx instruction
+$564    $8D14   ADD      VD, V1          ; VD += V1, VF = carry
+$566    $24A3   CALL     $4A3            ; Call subroutine at 4A3
+$568    $4F88   SNE      VF, #88         ; Skip if VF != 136
+$56A    $E00E   UNKNOWN  $E00E           ; Unknown Exxx instruction
+$56C    $E51D   UNKNOWN  $E51D           ; Unknown Exxx instruction
+$56E    $F10B   UNKNOWN  F10B            ; Unknown Fxxx instruction
+$570    $E196   UNKNOWN  $E196           ; Unknown Exxx instruction
+$572    $085B   SYS      $85B            ; System call to 85B
+$574    $DF49   DRW      VF, V4, #9      ; Draw 9-byte sprite at VF, V4
+$576    $737D   ADD      V3, #7D         ; Add 125 to V3
+$578    $23B4   CALL     $3B4            ; Call subroutine at 3B4
+$57A    $88E6   SHR      V8              ; V8 >>= 1, VF = LSB
+$57C    $9603   UNKNOWN  $9603           ; Unknown 9xxx instruction
+$57E    $42CF   SNE      V2, #CF         ; Skip if V2 != 207
+$580    $190B   JP       $90B            ; Jump to 90B
+$582    $ED0F   UNKNOWN  $ED0F           ; Unknown Exxx instruction
+$584    $9831   UNKNOWN  $9831           ; Unknown 9xxx instruction
+$586    $6DF2   LD       VD, #F2         ; Load 242 into VD
+$588    $5626   UNKNOWN  $5626           ; Unknown 5xxx instruction
+$58A    $BA08   JP       V0, $A08        ; Jump to V0 + A08
+$58C    $DA08   DRW      VA, V0, #8      ; Draw 8-byte sprite at VA, V0
+$58E    $3AEE   SE       VA, #EE         ; Skip if VA == 238
+$590    $CC12   RND      VC, #12         ; VC = random & 12
+$592    $288C   CALL     $88C            ; Call subroutine at 88C
+$594    $CBD3   RND      VB, #D3         ; VB = random & D3
+$596    $3FFC   SE       VF, #FC         ; Skip if VF == 252
+$598    $F7F1   UNKNOWN  F7F1            ; Unknown Fxxx instruction
+$59A    $B26A   JP       V0, $26A        ; Jump to V0 + 26A
+$59C    $89F7   SUBN     V9, VF          ; V9 = VF - V9, VF = !borrow
+$59E    $D38F   DRW      V3, V8, #F      ; Draw 15-byte sprite at V3, V8
+$5A0    $2A82   CALL     $A82            ; Call subroutine at A82
+$5A2    $4826   SNE      V8, #26         ; Skip if V8 != 38
+$5A4    $F429   LD       F, V4           ; I = sprite address for digit V4
+$5A6    $27D9   CALL     $7D9            ; Call subroutine at 7D9
+$5A8    $CE87   RND      VE, #87         ; VE = random & 87
+$5AA    $197E   JP       $97E            ; Jump to 97E
+$5AC    $A935   LD       I, $935         ; Load 935 into I
+$5AE    $C4B4   RND      V4, #B4         ; V4 = random & B4
+$5B0    $930D   UNKNOWN  $930D           ; Unknown 9xxx instruction
+$5B2    $CF91   RND      VF, #91         ; VF = random & 91
+$5B4    $5945   UNKNOWN  $5945           ; Unknown 5xxx instruction
+$5B6    $2465   CALL     $465            ; Call subroutine at 465
+$5B8    $CFB4   RND      VF, #B4         ; VF = random & B4
+$5BA    $6AAE   LD       VA, #AE         ; Load 174 into VA
+$5BC    $1F78   JP       $F78            ; Jump to F78
+$5BE    $6B7E   LD       VB, #7E         ; Load 126 into VB
+$5C0    $5D9B   UNKNOWN  $5D9B           ; Unknown 5xxx instruction
+$5C2    $4364   SNE      V3, #64         ; Skip if V3 != 100
+$5C4    $F819   UNKNOWN  F819            ; Unknown Fxxx instruction
+$5C6    $F8CE   UNKNOWN  F8CE            ; Unknown Fxxx instruction
+$5C8    $44A8   SNE      V4, #A8         ; Skip if V4 != 168
+$5CA    $6E5F   LD       VE, #5F         ; Load 95 into VE
+$5CC    $C933   RND      V9, #33         ; V9 = random & 33
+$5CE    $432F   SNE      V3, #2F         ; Skip if V3 != 47
+$5D0    $2D4E   CALL     $D4E            ; Call subroutine at D4E
+$5D2    $2FEF   CALL     $FEF            ; Call subroutine at FEF
+$5D4    $DD5F   DRW      VD, V5, #F      ; Draw 15-byte sprite at VD, V5
+$5D6    $9F51   UNKNOWN  $9F51           ; Unknown 9xxx instruction
+$5D8    $BE13   JP       V0, $E13        ; Jump to V0 + E13
+$5DA    $0C1F   SYS      $C1F            ; System call to C1F
+$5DC    $AF01   LD       I, $F01         ; Load F01 into I
+$5DE    $70AF   ADD      V0, #AF         ; Add 175 to V0
+$5E0    $7100   ADD      V1, #00         ; Add 0 to V1
+$5E2    $BBC7   JP       V0, $BC7        ; Jump to V0 + BC7
+$5E4    $388B   SE       V8, #8B         ; Skip if V8 == 139
+$5E6    $17D1   JP       $7D1            ; Jump to 7D1
+$5E8    $D1AD   DRW      V1, VA, #D      ; Draw 13-byte sprite at V1, VA
+$5EA    $A1C0   LD       I, $1C0         ; Load 1C0 into I
+$5EC    $0F17   SYS      $F17            ; System call to F17
+$5EE    $F5C9   UNKNOWN  F5C9            ; Unknown Fxxx instruction
+$5F0    $9DF5   UNKNOWN  $9DF5           ; Unknown 9xxx instruction
+$5F2    $97BA   UNKNOWN  $97BA           ; Unknown 9xxx instruction
+$5F4    $C475   RND      V4, #75         ; V4 = random & 75
+$5F6    $7DAC   ADD      VD, #AC         ; Add 172 to VD
+$5F8    $928E   UNKNOWN  $928E           ; Unknown 9xxx instruction
+$5FA    $07E9   SYS      $7E9            ; System call to 7E9
+$5FC    $5172   UNKNOWN  $5172           ; Unknown 5xxx instruction
+$5FE    $638B   LD       V3, #8B         ; Load 139 into V3
+$600    $1921   JP       $921            ; Jump to 921
+$602    $37FD   SE       V7, #FD         ; Skip if V7 == 253
+$604    $698B   LD       V9, #8B         ; Load 139 into V9
+$606    $DC53   DRW      VC, V5, #3      ; Draw 3-byte sprite at VC, V5
+$608    $E67B   UNKNOWN  $E67B           ; Unknown Exxx instruction
+$60A    $B5F9   JP       V0, $5F9        ; Jump to V0 + 5F9
+$60C    $EB86   UNKNOWN  $EB86           ; Unknown Exxx instruction
+$60E    $84FF   UNKNOWN  84FF            ; Unknown 8xxx instruction
+$610    $CC0D   RND      VC, #0D         ; VC = random & 0D
+$612    $AA9D   LD       I, $A9D         ; Load A9D into I
+$614    $A589   LD       I, $589         ; Load 589 into I
+$616    $6EA4   LD       VE, #A4         ; Load 164 into VE
+$618    $8058   UNKNOWN  8058            ; Unknown 8xxx instruction
+$61A    $BC97   JP       V0, $C97        ; Jump to V0 + C97
+$61C    $6317   LD       V3, #17         ; Load 23 into V3
+$61E    $C0C4   RND      V0, #C4         ; V0 = random & C4
+$620    $F511   UNKNOWN  F511            ; Unknown Fxxx instruction
+$622    $E944   UNKNOWN  $E944           ; Unknown Exxx instruction
+$624    $DC07   DRW      VC, V0, #7      ; Draw 7-byte sprite at VC, V0
+$626    $B2C8   JP       V0, $2C8        ; Jump to V0 + 2C8
+$628    $950B   UNKNOWN  $950B           ; Unknown 9xxx instruction
+$62A    $40B1   SNE      V0, #B1         ; Skip if V0 != 177
+$62C    $6D3B   LD       VD, #3B         ; Load 59 into VD
+$62E    $ED3A   UNKNOWN  $ED3A           ; Unknown Exxx instruction
+$630    $AC05   LD       I, $C05         ; Load C05 into I
+$632    $0B16   SYS      $B16            ; System call to B16
+$634    $C847   RND      V8, #47         ; V8 = random & 47
+$636    $259D   CALL     $59D            ; Call subroutine at 59D
+$638    $0F50   SYS      $F50            ; System call to F50
+$63A    $CB80   RND      VB, #80         ; VB = random & 80
+$63C    $7357   ADD      V3, #57         ; Add 87 to V3
+$63E    $3D7F   SE       VD, #7F         ; Skip if VD == 127
+$640    $1A7A   JP       $A7A            ; Jump to A7A
+$642    $B3B0   JP       V0, $3B0        ; Jump to V0 + 3B0
+$644    $4D1F   SNE      VD, #1F         ; Skip if VD != 31
+$646    $50D2   UNKNOWN  $50D2           ; Unknown 5xxx instruction
+$648    $CB3E   RND      VB, #3E         ; VB = random & 3E
+$64A    $C89C   RND      V8, #9C         ; V8 = random & 9C
+$64C    $016B   SYS      $16B            ; System call to 16B
+$64E    $420A   SNE      V2, #0A         ; Skip if V2 != 10
+$650    $CDF4   RND      VD, #F4         ; VD = random & F4
+$652    $6F82   LD       VF, #82         ; Load 130 into VF
+$654    $22AC   CALL     $2AC            ; Call subroutine at 2AC
+$656    $D3B2   DRW      V3, VB, #2      ; Draw 2-byte sprite at V3, VB
+$658    $795B   ADD      V9, #5B         ; Add 91 to V9
+$65A    $8C37   SUBN     VC, V3          ; VC = V3 - VC, VF = !borrow
+$65C    $BC82   JP       V0, $C82        ; Jump to V0 + C82
+$65E    $5346   UNKNOWN  $5346           ; Unknown 5xxx instruction
+$660    $BD54   JP       V0, $D54        ; Jump to V0 + D54
+$662    $41AD   SNE      V1, #AD         ; Skip if V1 != 173
+$664    $480D   SNE      V8, #0D         ; Skip if V8 != 13
+$666    $011F   SYS      $11F            ; System call to 11F
+$668    $BD21   JP       V0, $D21        ; Jump to V0 + D21
+$66A    $3C6A   SE       VC, #6A         ; Skip if VC == 106
+$66C    $B7E1   JP       V0, $7E1        ; Jump to V0 + 7E1
+$66E    $9D3D   UNKNOWN  $9D3D           ; Unknown 9xxx instruction
+$670    $8A5A   UNKNOWN  8A5A            ; Unknown 8xxx instruction
+$672    $1F6C   JP       $F6C            ; Jump to F6C
+$674    $769A   ADD      V6, #9A         ; Add 154 to V6
+$676    $27F9   CALL     $7F9            ; Call subroutine at 7F9
+$678    $3CAE   SE       VC, #AE         ; Skip if VC == 174
+$67A    $D187   DRW      V1, V8, #7      ; Draw 7-byte sprite at V1, V8
+$67C    $D2F6   DRW      V2, VF, #6      ; Draw 6-byte sprite at V2, VF
+$67E    $242C   CALL     $42C            ; Call subroutine at 42C
+$680    $8C09   UNKNOWN  8C09            ; Unknown 8xxx instruction
+$682    $1B3B   JP       $B3B            ; Jump to B3B
+$684    $EF25   UNKNOWN  $EF25           ; Unknown Exxx instruction
+$686    $4910   SNE      V9, #10         ; Skip if V9 != 16
+$688    $D7F3   DRW      V7, VF, #3      ; Draw 3-byte sprite at V7, VF
+$68A    $5C82   UNKNOWN  $5C82           ; Unknown 5xxx instruction
+$68C    $F89E   UNKNOWN  F89E            ; Unknown Fxxx instruction
+$68E    $E072   UNKNOWN  $E072           ; Unknown Exxx instruction
+$690    $DA3E   DRW      VA, V3, #E      ; Draw 14-byte sprite at VA, V3
+$692    $7C5B   ADD      VC, #5B         ; Add 91 to VC
+$694    $3677   SE       V6, #77         ; Skip if V6 == 119
+$696    $C3B7   RND      V3, #B7         ; V3 = random & B7
+$698    $6BDB   LD       VB, #DB         ; Load 219 into VB
+$69A    $E57B   UNKNOWN  $E57B           ; Unknown Exxx instruction
+$69C    $FB4D   UNKNOWN  FB4D            ; Unknown Fxxx instruction
+$69E    $7E08   ADD      VE, #08         ; Add 8 to VE
+$6A0    $6087   LD       V0, #87         ; Load 135 into V0
+$6A2    $5F51   UNKNOWN  $5F51           ; Unknown 5xxx instruction
+$6A4    $E51C   UNKNOWN  $E51C           ; Unknown Exxx instruction
+$6A6    $26A1   CALL     $6A1            ; Call subroutine at 6A1
+$6A8    $E949   UNKNOWN  $E949           ; Unknown Exxx instruction
+$6AA    $94BE   UNKNOWN  $94BE           ; Unknown 9xxx instruction
+$6AC    $152A   JP       $52A            ; Jump to 52A
+$6AE    $652E   LD       V5, #2E         ; Load 46 into V5
+$6B0    $7944   ADD      V9, #44         ; Add 68 to V9
+$6B2    $C5F6   RND      V5, #F6         ; V5 = random & F6
+$6B4    $7CD3   ADD      VC, #D3         ; Add 211 to VC
+$6B6    $D832   DRW      V8, V3, #2      ; Draw 2-byte sprite at V8, V3
+$6B8    $4352   SNE      V3, #52         ; Skip if V3 != 82
+$6BA    $9859   UNKNOWN  $9859           ; Unknown 9xxx instruction
+$6BC    $4FFB   SNE      VF, #FB         ; Skip if VF != 251
+$6BE    $318B   SE       V1, #8B         ; Skip if V1 == 139
+$6C0    $4844   SNE      V8, #44         ; Skip if V8 != 68
+$6C2    $E871   UNKNOWN  $E871           ; Unknown Exxx instruction
+$6C4    $18A4   JP       $8A4            ; Jump to 8A4
+$6C6    $1870   JP       $870            ; Jump to 870
+$6C8    $46EC   SNE      V6, #EC         ; Skip if V6 != 236
+$6CA    $CC3E   RND      VC, #3E         ; VC = random & 3E
+$6CC    $8165   SUB      V1, V6          ; V1 -= V6, VF = !borrow
+$6CE    $4D6D   SNE      VD, #6D         ; Skip if VD != 109
+$6D0    $539D   UNKNOWN  $539D           ; Unknown 5xxx instruction
+$6D2    $E88D   UNKNOWN  $E88D           ; Unknown Exxx instruction
+$6D4    $33A6   SE       V3, #A6         ; Skip if V3 == 166
+$6D6    $7B38   ADD      VB, #38         ; Add 56 to VB
+$6D8    $B30E   JP       V0, $30E        ; Jump to V0 + 30E
+$6DA    $3E38   SE       VE, #38         ; Skip if VE == 56
+$6DC    $4DD1   SNE      VD, #D1         ; Skip if VD != 209
+$6DE    $F607   LD       V6, DT          ; V6 = delay timer
+$6E0    $CF8A   RND      VF, #8A         ; VF = random & 8A
+$6E2    $81B0   LD       V1, VB          ; V1 = VB
+$6E4    $ECE9   UNKNOWN  $ECE9           ; Unknown Exxx instruction
+$6E6    $85A2   AND      V5, VA          ; V5 &= VA
+$6E8    $9A91   UNKNOWN  $9A91           ; Unknown 9xxx instruction
+$6EA    $51FD   UNKNOWN  $51FD           ; Unknown 5xxx instruction
+$6EC    $FCB1   UNKNOWN  FCB1            ; Unknown Fxxx instruction
+$6EE    $C5EA   RND      V5, #EA         ; V5 = random & EA
+$6F0    $92CE   UNKNOWN  $92CE           ; Unknown 9xxx instruction
+$6F2    $652C   LD       V5, #2C         ; Load 44 into V5
+$6F4    $C261   RND      V2, #61         ; V2 = random & 61
+$6F6    $5BE5   UNKNOWN  $5BE5           ; Unknown 5xxx instruction
+$6F8    $B44F   JP       V0, $44F        ; Jump to V0 + 44F
+$6FA    $235E   CALL     $35E            ; Call subroutine at 35E
+$6FC    $B7B0   JP       V0, $7B0        ; Jump to V0 + 7B0
+$6FE    $2112   CALL     $112            ; Call subroutine at 112
+$700    $F075   UNKNOWN  F075            ; Unknown Fxxx instruction
+$702    $51DC   UNKNOWN  $51DC           ; Unknown 5xxx instruction
+$704    $0520   SYS      $520            ; System call to 520
+$706    $A0D9   LD       I, $0D9         ; Load 0D9 into I
+$708    $5695   UNKNOWN  $5695           ; Unknown 5xxx instruction
+$70A    $F774   UNKNOWN  F774            ; Unknown Fxxx instruction
+$70C    $694B   LD       V9, #4B         ; Load 75 into V9
+$70E    $105E   JP       $05E            ; Jump to 05E
+$710    $7767   ADD      V7, #67         ; Add 103 to V7
+$712    $A9DF   LD       I, $9DF         ; Load 9DF into I
+$714    $3D69   SE       VD, #69         ; Skip if VD == 105
+$716    $3AC5   SE       VA, #C5         ; Skip if VA == 197
+$718    $362E   SE       V6, #2E         ; Skip if V6 == 46
+$71A    $AA1E   LD       I, $A1E         ; Load A1E into I
+$71C    $9D7C   UNKNOWN  $9D7C           ; Unknown 9xxx instruction
+$71E    $5AB1   UNKNOWN  $5AB1           ; Unknown 5xxx instruction
+$720    $5155   UNKNOWN  $5155           ; Unknown 5xxx instruction
+$722    $84F2   AND      V4, VF          ; V4 &= VF
+$724    $1D20   JP       $D20            ; Jump to D20
+$726    $B79D   JP       V0, $79D        ; Jump to V0 + 79D
+$728    $04E0   SYS      $4E0            ; System call to 4E0
+$72A    $0EB4   SYS      $EB4            ; System call to EB4
+$72C    $EA61   UNKNOWN  $EA61           ; Unknown Exxx instruction
+$72E    $6936   LD       V9, #36         ; Load 54 into V9
+$730    $F243   UNKNOWN  F243            ; Unknown Fxxx instruction
+$732    $9EBF   UNKNOWN  $9EBF           ; Unknown 9xxx instruction
+$734    $FE60   UNKNOWN  FE60            ; Unknown Fxxx instruction
+$736    $9BF8   UNKNOWN  $9BF8           ; Unknown 9xxx instruction
+$738    $F2EA   UNKNOWN  F2EA            ; Unknown Fxxx instruction
+$73A    $8E38   UNKNOWN  8E38            ; Unknown 8xxx instruction
+$73C    $D463   DRW      V4, V6, #3      ; Draw 3-byte sprite at V4, V6
+$73E    $85E9   UNKNOWN  85E9            ; Unknown 8xxx instruction
+$740    $52A5   UNKNOWN  $52A5           ; Unknown 5xxx instruction
+$742    $DCAA   DRW      VC, VA, #A      ; Draw 10-byte sprite at VC, VA
+$744    $C88B   RND      V8, #8B         ; V8 = random & 8B
+$746    $A8FB   LD       I, $8FB         ; Load 8FB into I
+$748    $D16A   DRW      V1, V6, #A      ; Draw 10-byte sprite at V1, V6
+$74A    $D6A4   DRW      V6, VA, #4      ; Draw 4-byte sprite at V6, VA
+$74C    $A1CA   LD       I, $1CA         ; Load 1CA into I
+$74E    $2FCB   CALL     $FCB            ; Call subroutine at FCB
+$750    $F65B   UNKNOWN  F65B            ; Unknown Fxxx instruction
+$752    $6AD6   LD       VA, #D6         ; Load 214 into VA
+$754    $8131   OR       V1, V3          ; V1 |= V3
+$756    $EE5C   UNKNOWN  $EE5C           ; Unknown Exxx instruction
+$758    $628E   LD       V2, #8E         ; Load 142 into V2
+$75A    $9F86   UNKNOWN  $9F86           ; Unknown 9xxx instruction
+$75C    $9E0F   UNKNOWN  $9E0F           ; Unknown 9xxx instruction
+$75E    $F2E8   UNKNOWN  F2E8            ; Unknown Fxxx instruction
+$760    $86C1   OR       V6, VC          ; V6 |= VC
+$762    $41E4   SNE      V1, #E4         ; Skip if V1 != 228
+$764    $0E13   SYS      $E13            ; System call to E13
+$766    $CD14   RND      VD, #14         ; VD = random & 14
+$768    $857B   UNKNOWN  857B            ; Unknown 8xxx instruction
+$76A    $0F03   SYS      $F03            ; System call to F03
+$76C    $1624   JP       $624            ; Jump to 624
+$76E    $C960   RND      V9, #60         ; V9 = random & 60
+$770    $6E8F   LD       VE, #8F         ; Load 143 into VE
+$772    $2B82   CALL     $B82            ; Call subroutine at B82
+$774    $4BB1   SNE      VB, #B1         ; Skip if VB != 177
+$776    $ABC6   LD       I, $BC6         ; Load BC6 into I
+$778    $4DEE   SNE      VD, #EE         ; Skip if VD != 238
+$77A    $3594   SE       V5, #94         ; Skip if V5 == 148
+$77C    $579D   UNKNOWN  $579D           ; Unknown 5xxx instruction
+$77E    $FEE4   UNKNOWN  FEE4            ; Unknown Fxxx instruction
+$780    $F843   UNKNOWN  F843            ; Unknown Fxxx instruction
+$782    $1220   JP       $220            ; Jump to 220
+$784    $254C   CALL     $54C            ; Call subroutine at 54C
+$786    $8DA3   XOR      VD, VA          ; VD ^= VA
+$788    $D453   DRW      V4, V5, #3      ; Draw 3-byte sprite at V4, V5
+$78A    $2496   CALL     $496            ; Call subroutine at 496
+$78C    $5FD0   SE       VF, VD          ; Skip if VF == VD
+$78E    $8D26   SHR      VD              ; VD >>= 1, VF = LSB
+$790    $8091   OR       V0, V9          ; V0 |= V9
+$792    $4496   SNE      V4, #96         ; Skip if V4 != 150
+$794    $82DB   UNKNOWN  82DB            ; Unknown 8xxx instruction
+$796    $4FA9   SNE      VF, #A9         ; Skip if VF != 169
+$798    $A491   LD       I, $491         ; Load 491 into I
+$79A    $A477   LD       I, $477         ; Load 477 into I
+$79C    $0DBB   SYS      $DBB            ; System call to DBB
+$79E    $CB62   RND      VB, #62         ; VB = random & 62
+$7A0    $C685   RND      V6, #85         ; V6 = random & 85
+$7A2    $7565   ADD      V5, #65         ; Add 101 to V5
+$7A4    $0BCF   SYS      $BCF            ; System call to BCF
+$7A6    $E187   UNKNOWN  $E187           ; Unknown Exxx instruction
+$7A8    $1A6B   JP       $A6B            ; Jump to A6B
+$7AA    $07D9   SYS      $7D9            ; System call to 7D9
+$7AC    $344C   SE       V4, #4C         ; Skip if V4 == 76
+$7AE    $817F   UNKNOWN  817F            ; Unknown 8xxx instruction
+$7B0    $BBEB   JP       V0, $BEB        ; Jump to V0 + BEB
+$7B2    $6731   LD       V7, #31         ; Load 49 into V7
+$7B4    $87D8   UNKNOWN  87D8            ; Unknown 8xxx instruction
+$7B6    $9AC6   UNKNOWN  $9AC6           ; Unknown 9xxx instruction
+$7B8    $3465   SE       V4, #65         ; Skip if V4 == 101
+$7BA    $FFC1   UNKNOWN  FFC1            ; Unknown Fxxx instruction
+$7BC    $A643   LD       I, $643         ; Load 643 into I
+$7BE    $B257   JP       V0, $257        ; Jump to V0 + 257
+$7C0    $8C88   UNKNOWN  8C88            ; Unknown 8xxx instruction
+$7C2    $12BD   JP       $2BD            ; Jump to 2BD
+$7C4    $57C6   UNKNOWN  $57C6           ; Unknown 5xxx instruction
+$7C6    $A132   LD       I, $132         ; Load 132 into I
+$7C8    $E78A   UNKNOWN  $E78A           ; Unknown Exxx instruction
+$7CA    $FE6B   UNKNOWN  FE6B            ; Unknown Fxxx instruction
+$7CC    $86FB   UNKNOWN  86FB            ; Unknown 8xxx instruction
+$7CE    $14F6   JP       $4F6            ; Jump to 4F6
+$7D0    $0274   SYS      $274            ; System call to 274
+$7D2    $1A33   JP       $A33            ; Jump to A33
+$7D4    $9E43   UNKNOWN  $9E43           ; Unknown 9xxx instruction
+$7D6    $EE2D   UNKNOWN  $EE2D           ; Unknown Exxx instruction
+$7D8    $C85C   RND      V8, #5C         ; V8 = random & 5C
+$7DA    $D504   DRW      V5, V0, #4      ; Draw 4-byte sprite at V5, V0
+$7DC    $5909   UNKNOWN  $5909           ; Unknown 5xxx instruction
+$7DE    $4349   SNE      V3, #49         ; Skip if V3 != 73
+$7E0    $1D5E   JP       $D5E            ; Jump to D5E
+$7E2    $04C4   SYS      $4C4            ; System call to 4C4
+$7E4    $25BE   CALL     $5BE            ; Call subroutine at 5BE
+$7E6    $946D   UNKNOWN  $946D           ; Unknown 9xxx instruction
+$7E8    $AB9D   LD       I, $B9D         ; Load B9D into I
+$7EA    $2E1C   CALL     $E1C            ; Call subroutine at E1C
+$7EC    $7CC1   ADD      VC, #C1         ; Add 193 to VC
+$7EE    $E1F4   UNKNOWN  $E1F4           ; Unknown Exxx instruction
+$7F0    $2265   CALL     $265            ; Call subroutine at 265
+$7F2    $0C2A   SYS      $C2A            ; System call to C2A
+$7F4    $A2F9   LD       I, $2F9         ; Load 2F9 into I
+$7F6    $84D5   SUB      V4, VD          ; V4 -= VD, VF = !borrow
+$7F8    $26D4   CALL     $6D4            ; Call subroutine at 6D4
+$7FA    $8044   ADD      V0, V4          ; V0 += V4, VF = carry
+$7FC    $7D26   ADD      VD, #26         ; Add 38 to VD
+$7FE    $60BD   LD       V0, #BD         ; Load 189 into V0
+$800    $57D3   UNKNOWN  $57D3           ; Unknown 5xxx instruction
+$802    $F955   LD       [I], V9         ; Store V0-V9 at I
+$804    $8A86   SHR      VA              ; VA >>= 1, VF = LSB
+$806    $E06E   UNKNOWN  $E06E           ; Unknown Exxx instruction
+$808    $8F14   ADD      VF, V1          ; VF += V1, VF = carry
+$80A    $1928   JP       $928            ; Jump to 928
+$80C    $CB63   RND      VB, #63         ; VB = random & 63
+$80E    $52D7   UNKNOWN  $52D7           ; Unknown 5xxx instruction
+$810    $BEE4   JP       V0, $EE4        ; Jump to V0 + EE4
+$812    $431B   SNE      V3, #1B         ; Skip if V3 != 27
+$814    $E9B2   UNKNOWN  $E9B2           ; Unknown Exxx instruction
+$816    $9E34   UNKNOWN  $9E34           ; Unknown 9xxx instruction
+$818    $1062   JP       $062            ; Jump to 062
+$81A    $CFF6   RND      VF, #F6         ; VF = random & F6
+$81C    $7BED   ADD      VB, #ED         ; Add 237 to VB
+$81E    $D3AF   DRW      V3, VA, #F      ; Draw 15-byte sprite at V3, VA
+$820    $7D38   ADD      VD, #38         ; Add 56 to VD
+$822    $56C3   UNKNOWN  $56C3           ; Unknown 5xxx instruction
+$824    $872C   UNKNOWN  872C            ; Unknown 8xxx instruction
+$826    $03FB   SYS      $3FB            ; System call to 3FB
+$828    $7543   ADD      V5, #43         ; Add 67 to V5
+$82A    $8AF0   LD       VA, VF          ; VA = VF
+$82C    $D503   DRW      V5, V0, #3      ; Draw 3-byte sprite at V5, V0
+$82E    $91EC   UNKNOWN  $91EC           ; Unknown 9xxx instruction
+$830    $3547   SE       V5, #47         ; Skip if V5 == 71
+$832    $03D6   SYS      $3D6            ; System call to 3D6
+$834    $5146   UNKNOWN  $5146           ; Unknown 5xxx instruction
+$836    $7BD5   ADD      VB, #D5         ; Add 213 to VB
+$838    $E27E   UNKNOWN  $E27E           ; Unknown Exxx instruction
+$83A    $E864   UNKNOWN  $E864           ; Unknown Exxx instruction
+$83C    $23B2   CALL     $3B2            ; Call subroutine at 3B2
+$83E    $91CD   UNKNOWN  $91CD           ; Unknown 9xxx instruction
+$840    $F322   UNKNOWN  F322            ; Unknown Fxxx instruction
+$842    $32FF   SE       V2, #FF         ; Skip if V2 == 255
+$844    $520A   UNKNOWN  $520A           ; Unknown 5xxx instruction
+$846    $1D5B   JP       $D5B            ; Jump to D5B
+$848    $C9A0   RND      V9, #A0         ; V9 = random & A0
+$84A    $4822   SNE      V8, #22         ; Skip if V8 != 34
+$84C    $D2E8   DRW      V2, VE, #8      ; Draw 8-byte sprite at V2, VE
+$84E    $A3E4   LD       I, $3E4         ; Load 3E4 into I
+$850    $B822   JP       V0, $822        ; Jump to V0 + 822
+$852    $7DBE   ADD      VD, #BE         ; Add 190 to VD
+$854    $25DA   CALL     $5DA            ; Call subroutine at 5DA
+$856    $0356   SYS      $356            ; System call to 356
+$858    $8962   AND      V9, V6          ; V9 &= V6
+$85A    $39DC   SE       V9, #DC         ; Skip if V9 == 220
+$85C    $C846   RND      V8, #46         ; V8 = random & 46
+$85E    $1A07   JP       $A07            ; Jump to A07
+$860    $8E3F   UNKNOWN  8E3F            ; Unknown 8xxx instruction
+$862    $A630   LD       I, $630         ; Load 630 into I
+$864    $0E7B   SYS      $E7B            ; System call to E7B
+$866    $0BF0   SYS      $BF0            ; System call to BF0
+$868    $18D1   JP       $8D1            ; Jump to 8D1
+$86A    $3878   SE       V8, #78         ; Skip if V8 == 120
+$86C    $204D   CALL     $04D            ; Call subroutine at 04D
+$86E    $3421   SE       V4, #21         ; Skip if V4 == 33
+$870    $350E   SE       V5, #0E         ; Skip if V5 == 14
+$872    $7249   ADD      V2, #49         ; Add 73 to V2
+$874    $2190   CALL     $190            ; Call subroutine at 190
+$876    $AF0B   LD       I, $F0B         ; Load F0B into I
+$878    $3A44   SE       VA, #44         ; Skip if VA == 68
+$87A    $CD1B   RND      VD, #1B         ; VD = random & 1B
+$87C    $F9D4   UNKNOWN  F9D4            ; Unknown Fxxx instruction
+$87E    $85DA   UNKNOWN  85DA            ; Unknown 8xxx instruction
+$880    $FC31   UNKNOWN  FC31            ; Unknown Fxxx instruction
+$882    $E39E   SKP      V3              ; Skip if key V3 pressed
+$884    $38B2   SE       V8, #B2         ; Skip if V8 == 178
+$886    $5D22   UNKNOWN  $5D22           ; Unknown 5xxx instruction
+$888    $C769   RND      V7, #69         ; V7 = random & 69
+$88A    $CE35   RND      VE, #35         ; VE = random & 35
+$88C    $BCD9   JP       V0, $CD9        ; Jump to V0 + CD9
+$88E    $C494   RND      V4, #94         ; V4 = random & 94
+$890    $67AD   LD       V7, #AD         ; Load 173 into V7
+$892    $19BA   JP       $9BA            ; Jump to 9BA
+$894    $448B   SNE      V4, #8B         ; Skip if V4 != 139
+$896    $79BB   ADD      V9, #BB         ; Add 187 to V9
+$898    $B40A   JP       V0, $40A        ; Jump to V0 + 40A
+$89A    $C17C   RND      V1, #7C         ; V1 = random & 7C
+$89C    $3BE3   SE       VB, #E3         ; Skip if VB == 227
+$89E    $2F52   CALL     $F52            ; Call subroutine at F52
+$8A0    $BEB1   JP       V0, $EB1        ; Jump to V0 + EB1
+$8A2    $B47D   JP       V0, $47D        ; Jump to V0 + 47D
+$8A4    $158D   JP       $58D            ; Jump to 58D
+$8A6    $2AC5   CALL     $AC5            ; Call subroutine at AC5
+$8A8    $671A   LD       V7, #1A         ; Load 26 into V7
+$8AA    $1A56   JP       $A56            ; Jump to A56
+$8AC    $A06A   LD       I, $06A         ; Load 06A into I
+$8AE    $D3E8   DRW      V3, VE, #8      ; Draw 8-byte sprite at V3, VE
+$8B0    $0409   SYS      $409            ; System call to 409
+$8B2    $EEE1   UNKNOWN  $EEE1           ; Unknown Exxx instruction
+$8B4    $345C   SE       V4, #5C         ; Skip if V4 == 92
+$8B6    $DD7D   DRW      VD, V7, #D      ; Draw 13-byte sprite at VD, V7
+$8B8    $33C6   SE       V3, #C6         ; Skip if V3 == 198
+$8BA    $2729   CALL     $729            ; Call subroutine at 729
+$8BC    $95BC   UNKNOWN  $95BC           ; Unknown 9xxx instruction
+$8BE    $4622   SNE      V6, #22         ; Skip if V6 != 34
+$8C0    $5BCD   UNKNOWN  $5BCD           ; Unknown 5xxx instruction
+$8C2    $3357   SE       V3, #57         ; Skip if V3 == 87
+$8C4    $0D85   SYS      $D85            ; System call to D85
+$8C6    $FFA4   UNKNOWN  FFA4            ; Unknown Fxxx instruction
+$8C8    $B676   JP       V0, $676        ; Jump to V0 + 676
+$8CA    $067D   SYS      $67D            ; System call to 67D
+$8CC    $D158   DRW      V1, V5, #8      ; Draw 8-byte sprite at V1, V5
+$8CE    $9A7F   UNKNOWN  $9A7F           ; Unknown 9xxx instruction
+$8D0    $61D8   LD       V1, #D8         ; Load 216 into V1
+$8D2    $788D   ADD      V8, #8D         ; Add 141 to V8
+$8D4    $F014   UNKNOWN  F014            ; Unknown Fxxx instruction
+$8D6    $9EEF   UNKNOWN  $9EEF           ; Unknown 9xxx instruction
+$8D8    $B04B   JP       V0, $04B        ; Jump to V0 + 04B
+$8DA    $F395   UNKNOWN  F395            ; Unknown Fxxx instruction
+$8DC    $4CB4   SNE      VC, #B4         ; Skip if VC != 180
+$8DE    $4B5B   SNE      VB, #5B         ; Skip if VB != 91
+$8E0    $783F   ADD      V8, #3F         ; Add 63 to V8
+$8E2    $C494   RND      V4, #94         ; V4 = random & 94
+$8E4    $A22F   LD       I, $22F         ; Load 22F into I
+$8E6    $1F5E   JP       $F5E            ; Jump to F5E
+$8E8    $B813   JP       V0, $813        ; Jump to V0 + 813
+$8EA    $6288   LD       V2, #88         ; Load 136 into V2
+$8EC    $B063   JP       V0, $063        ; Jump to V0 + 063
+$8EE    $3920   SE       V9, #20         ; Skip if V9 == 32
+$8F0    $2538   CALL     $538            ; Call subroutine at 538
+$8F2    $859B   UNKNOWN  859B            ; Unknown 8xxx instruction
+$8F4    $CD5F   RND      VD, #5F         ; VD = random & 5F
+$8F6    $3D84   SE       VD, #84         ; Skip if VD == 132
+$8F8    $D8B5   DRW      V8, VB, #5      ; Draw 5-byte sprite at V8, VB
+$8FA    $EFD9   UNKNOWN  $EFD9           ; Unknown Exxx instruction
+$8FC    $FFC9   UNKNOWN  FFC9            ; Unknown Fxxx instruction
+$8FE    $001C   SYS      $01C            ; System call to 01C
+$900    $4227   SNE      V2, #27         ; Skip if V2 != 39
+$902    $9464   UNKNOWN  $9464           ; Unknown 9xxx instruction
+$904    $5987   UNKNOWN  $5987           ; Unknown 5xxx instruction
+$906    $0F62   SYS      $F62            ; System call to F62
+$908    $47B0   SNE      V7, #B0         ; Skip if V7 != 176
+$90A    $CF41   RND      VF, #41         ; VF = random & 41
+$90C    $1173   JP       $173            ; Jump to 173
+$90E    $81F6   SHR      V1              ; V1 >>= 1, VF = LSB
+$910    $DA78   DRW      VA, V7, #8      ; Draw 8-byte sprite at VA, V7
+$912    $4BAD   SNE      VB, #AD         ; Skip if VB != 173
+$914    $0C7B   SYS      $C7B            ; System call to C7B
+$916    $00EF   SYS      $0EF            ; System call to 0EF
+$918    $E4A8   UNKNOWN  $E4A8           ; Unknown Exxx instruction
+$91A    $ED8C   UNKNOWN  $ED8C           ; Unknown Exxx instruction
+$91C    $31D7   SE       V1, #D7         ; Skip if V1 == 215
+$91E    $ADC0   LD       I, $DC0         ; Load DC0 into I
+$920    $8CBF   UNKNOWN  8CBF            ; Unknown 8xxx instruction
+$922    $4F8F   SNE      VF, #8F         ; Skip if VF != 143
+$924    $87A6   SHR      V7              ; V7 >>= 1, VF = LSB
+$926    $FF67   UNKNOWN  FF67            ; Unknown Fxxx instruction
+$928    $75CB   ADD      V5, #CB         ; Add 203 to V5
+$92A    $EB85   UNKNOWN  $EB85           ; Unknown Exxx instruction
+$92C    $1531   JP       $531            ; Jump to 531
+$92E    $207C   CALL     $07C            ; Call subroutine at 07C
+$930    $4295   SNE      V2, #95         ; Skip if V2 != 149
+$932    $7A93   ADD      VA, #93         ; Add 147 to VA
+$934    $A9FC   LD       I, $9FC         ; Load 9FC into I
+$936    $C68C   RND      V6, #8C         ; V6 = random & 8C
+$938    $1D80   JP       $D80            ; Jump to D80
+$93A    $BEFF   JP       V0, $EFF        ; Jump to V0 + EFF
+$93C    $6EF4   LD       VE, #F4         ; Load 244 into VE
+$93E    $8E9B   UNKNOWN  8E9B            ; Unknown 8xxx instruction
+$940    $4DA3   SNE      VD, #A3         ; Skip if VD != 163
+$942    $74CF   ADD      V4, #CF         ; Add 207 to V4
+$944    $9BED   UNKNOWN  $9BED           ; Unknown 9xxx instruction
+$946    $61EB   LD       V1, #EB         ; Load 235 into V1
+$948    $42AC   SNE      V2, #AC         ; Skip if V2 != 172
+$94A    $2F21   CALL     $F21            ; Call subroutine at F21
+$94C    $DCA4   DRW      VC, VA, #4      ; Draw 4-byte sprite at VC, VA
+$94E    $F5EB   UNKNOWN  F5EB            ; Unknown Fxxx instruction
+$950    $D9C1   DRW      V9, VC, #1      ; Draw 1-byte sprite at V9, VC
+$952    $2511   CALL     $511            ; Call subroutine at 511
+$954    $8180   LD       V1, V8          ; V1 = V8
+$956    $AF94   LD       I, $F94         ; Load F94 into I
+$958    $CE58   RND      VE, #58         ; VE = random & 58
+$95A    $C3ED   RND      V3, #ED         ; V3 = random & ED
+$95C    $348D   SE       V4, #8D         ; Skip if V4 == 141
+$95E    $6551   LD       V5, #51         ; Load 81 into V5
+$960    $7839   ADD      V8, #39         ; Add 57 to V8
+$962    $42C4   SNE      V2, #C4         ; Skip if V2 != 196
+$964    $CBD0   RND      VB, #D0         ; VB = random & D0
+$966    $D769   DRW      V7, V6, #9      ; Draw 9-byte sprite at V7, V6
+$968    $8A2B   UNKNOWN  8A2B            ; Unknown 8xxx instruction
+$96A    $94E3   UNKNOWN  $94E3           ; Unknown 9xxx instruction
+$96C    $27B4   CALL     $7B4            ; Call subroutine at 7B4
+$96E    $AAFA   LD       I, $AFA         ; Load AFA into I
+$970    $04A9   SYS      $4A9            ; System call to 4A9
+$972    $88C6   SHR      V8              ; V8 >>= 1, VF = LSB
+$974    $60D1   LD       V0, #D1         ; Load 209 into V0
+$976    $9694   UNKNOWN  $9694           ; Unknown 9xxx instruction
+$978    $0C53   SYS      $C53            ; System call to C53
+$97A    $4DD8   SNE      VD, #D8         ; Skip if VD != 216
+$97C    $0B5D   SYS      $B5D            ; System call to B5D
+$97E    $2EBB   CALL     $EBB            ; Call subroutine at EBB
+$980    $344E   SE       V4, #4E         ; Skip if V4 == 78
+$982    $F616   UNKNOWN  F616            ; Unknown Fxxx instruction
+$984    $B9EA   JP       V0, $9EA        ; Jump to V0 + 9EA
+$986    $AAB7   LD       I, $AB7         ; Load AB7 into I
+$988    $27EA   CALL     $7EA            ; Call subroutine at 7EA
+$98A    $DE8F   DRW      VE, V8, #F      ; Draw 15-byte sprite at VE, V8
+$98C    $D00C   DRW      V0, V0, #C      ; Draw 12-byte sprite at V0, V0
+$98E    $F10E   UNKNOWN  F10E            ; Unknown Fxxx instruction
+$990    $E260   UNKNOWN  $E260           ; Unknown Exxx instruction
+$992    $DECF   DRW      VE, VC, #F      ; Draw 15-byte sprite at VE, VC
+$994    $663C   LD       V6, #3C         ; Load 60 into V6
+$996    $9AE7   UNKNOWN  $9AE7           ; Unknown 9xxx instruction
+$998    $DB5C   DRW      VB, V5, #C      ; Draw 12-byte sprite at VB, V5
+$99A    $9613   UNKNOWN  $9613           ; Unknown 9xxx instruction
+$99C    $B3C9   JP       V0, $3C9        ; Jump to V0 + 3C9
+$99E    $5948   UNKNOWN  $5948           ; Unknown 5xxx instruction
+$9A0    $7B8A   ADD      VB, #8A         ; Add 138 to VB
+$9A2    $FE6E   UNKNOWN  FE6E            ; Unknown Fxxx instruction
+$9A4    $6A1F   LD       VA, #1F         ; Load 31 into VA
+$9A6    $80A2   AND      V0, VA          ; V0 &= VA
+$9A8    $5E48   UNKNOWN  $5E48           ; Unknown 5xxx instruction
+$9AA    $24C7   CALL     $4C7            ; Call subroutine at 4C7
+$9AC    $3F0D   SE       VF, #0D         ; Skip if VF == 13
+$9AE    $8972   AND      V9, V7          ; V9 &= V7
+$9B0    $57FB   UNKNOWN  $57FB           ; Unknown 5xxx instruction
+$9B2    $77DD   ADD      V7, #DD         ; Add 221 to V7
+$9B4    $1096   JP       $096            ; Jump to 096
+$9B6    $081E   SYS      $81E            ; System call to 81E
+$9B8    $51A8   UNKNOWN  $51A8           ; Unknown 5xxx instruction
+$9BA    $1784   JP       $784            ; Jump to 784
+$9BC    $134E   JP       $34E            ; Jump to 34E
+$9BE    $083F   SYS      $83F            ; System call to 83F
+$9C0    $A6EE   LD       I, $6EE         ; Load 6EE into I
+$9C2    $660E   LD       V6, #0E         ; Load 14 into V6
+$9C4    $A28A   LD       I, $28A         ; Load 28A into I
+$9C6    $DA7F   DRW      VA, V7, #F      ; Draw 15-byte sprite at VA, V7
+$9C8    $BADA   JP       V0, $ADA        ; Jump to V0 + ADA
+$9CA    $D19A   DRW      V1, V9, #A      ; Draw 10-byte sprite at V1, V9
+$9CC    $C5B9   RND      V5, #B9         ; V5 = random & B9
+$9CE    $20E7   CALL     $0E7            ; Call subroutine at 0E7
+$9D0    $D1BF   DRW      V1, VB, #F      ; Draw 15-byte sprite at V1, VB
+$9D2    $1B82   JP       $B82            ; Jump to B82
+$9D4    $0FD4   SYS      $FD4            ; System call to FD4
+$9D6    $4BC8   SNE      VB, #C8         ; Skip if VB != 200
+$9D8    $7D3B   ADD      VD, #3B         ; Add 59 to VD
+$9DA    $04AD   SYS      $4AD            ; System call to 4AD
+$9DC    $A746   LD       I, $746         ; Load 746 into I
+$9DE    $B552   JP       V0, $552        ; Jump to V0 + 552
+$9E0    $91A8   UNKNOWN  $91A8           ; Unknown 9xxx instruction
+$9E2    $FE4D   UNKNOWN  FE4D            ; Unknown Fxxx instruction
+$9E4    $9064   UNKNOWN  $9064           ; Unknown 9xxx instruction
+$9E6    $3645   SE       V6, #45         ; Skip if V6 == 69
+$9E8    $5416   UNKNOWN  $5416           ; Unknown 5xxx instruction
+$9EA    $C167   RND      V1, #67         ; V1 = random & 67
+$9EC    $21C1   CALL     $1C1            ; Call subroutine at 1C1
+$9EE    $688E   LD       V8, #8E         ; Load 142 into V8
+$9F0    $BCF7   JP       V0, $CF7        ; Jump to V0 + CF7
+$9F2    $B347   JP       V0, $347        ; Jump to V0 + 347
+$9F4    $A0B6   LD       I, $0B6         ; Load 0B6 into I
+$9F6    $7EEB   ADD      VE, #EB         ; Add 235 to VE
+$9F8    $236B   CALL     $36B            ; Call subroutine at 36B
+$9FA    $4FD1   SNE      VF, #D1         ; Skip if VF != 209
+$9FC    $4AC8   SNE      VA, #C8         ; Skip if VA != 200
+$9FE    $EC15   UNKNOWN  $EC15           ; Unknown Exxx instruction
+$A00    $9495   UNKNOWN  $9495           ; Unknown 9xxx instruction
+$A02    $9305   UNKNOWN  $9305           ; Unknown 9xxx instruction
+$A04    $FFC3   UNKNOWN  FFC3            ; Unknown Fxxx instruction
+$A06    $CAEB   RND      VA, #EB         ; VA = random & EB
+$A08    $F282   UNKNOWN  F282            ; Unknown Fxxx instruction
+$A0A    $351F   SE       V5, #1F         ; Skip if V5 == 31
+$A0C    $37CA   SE       V7, #CA         ; Skip if V7 == 202
+$A0E    $83D3   XOR      V3, VD          ; V3 ^= VD
+$A10    $3C9C   SE       VC, #9C         ; Skip if VC == 156
+$A12    $0B8E   SYS      $B8E            ; System call to B8E
+$A14    $23A4   CALL     $3A4            ; Call subroutine at 3A4
+$A16    $8AB8   UNKNOWN  8AB8            ; Unknown 8xxx instruction
+$A18    $F6E7   UNKNOWN  F6E7            ; Unknown Fxxx instruction
+$A1A    $0B37   SYS      $B37            ; System call to B37
+$A1C    $7755   ADD      V7, #55         ; Add 85 to V7
+$A1E    $568B   UNKNOWN  $568B           ; Unknown 5xxx instruction
+$A20    $0770   SYS      $770            ; System call to 770
+$A22    $8DE0   LD       VD, VE          ; VD = VE
+$A24    $8160   LD       V1, V6          ; V1 = V6
+$A26    $7A01   ADD      VA, #01         ; Add 1 to VA
+$A28    $0445   SYS      $445            ; System call to 445
+$A2A    $3184   SE       V1, #84         ; Skip if V1 == 132
+$A2C    $75A0   ADD      V5, #A0         ; Add 160 to V5
+$A2E    $0F67   SYS      $F67            ; System call to F67
+$A30    $61FF   LD       V1, #FF         ; Load 255 into V1
+$A32    $DD42   DRW      VD, V4, #2      ; Draw 2-byte sprite at VD, V4
+$A34    $4CD8   SNE      VC, #D8         ; Skip if VC != 216
+$A36    $222E   CALL     $22E            ; Call subroutine at 22E
+$A38    $27E7   CALL     $7E7            ; Call subroutine at 7E7
+$A3A    $6398   LD       V3, #98         ; Load 152 into V3
+$A3C    $4E92   SNE      VE, #92         ; Skip if VE != 146
+$A3E    $3FBC   SE       VF, #BC         ; Skip if VF == 188
+$A40    $0D08   SYS      $D08            ; System call to D08
+$A42    $8279   UNKNOWN  8279            ; Unknown 8xxx instruction
+$A44    $1900   JP       $900            ; Jump to 900
+$A46    $7071   ADD      V0, #71         ; Add 113 to V0
+$A48    $E288   UNKNOWN  $E288           ; Unknown Exxx instruction
+$A4A    $681B   LD       V8, #1B         ; Load 27 into V8
+$A4C    $461F   SNE      V6, #1F         ; Skip if V6 != 31
+$A4E    $9137   UNKNOWN  $9137           ; Unknown 9xxx instruction
+$A50    $9C25   UNKNOWN  $9C25           ; Unknown 9xxx instruction
+$A52    $57BA   UNKNOWN  $57BA           ; Unknown 5xxx instruction
+$A54    $8EC6   SHR      VE              ; VE >>= 1, VF = LSB
+$A56    $7E77   ADD      VE, #77         ; Add 119 to VE
+$A58    $5EE4   UNKNOWN  $5EE4           ; Unknown 5xxx instruction
+$A5A    $B9CE   JP       V0, $9CE        ; Jump to V0 + 9CE
+$A5C    $4F65   SNE      VF, #65         ; Skip if VF != 101
+$A5E    $11EA   JP       $1EA            ; Jump to 1EA
+$A60    $522D   UNKNOWN  $522D           ; Unknown 5xxx instruction
+$A62    $320B   SE       V2, #0B         ; Skip if V2 == 11
+$A64    $490D   SNE      V9, #0D         ; Skip if V9 != 13
+$A66    $55B7   UNKNOWN  $55B7           ; Unknown 5xxx instruction
+$A68    $7518   ADD      V5, #18         ; Add 24 to V5
+$A6A    $BBA8   JP       V0, $BA8        ; Jump to V0 + BA8
+$A6C    $1C9B   JP       $C9B            ; Jump to C9B
+$A6E    $AE30   LD       I, $E30         ; Load E30 into I
+$A70    $EBB0   UNKNOWN  $EBB0           ; Unknown Exxx instruction
+$A72    $E989   UNKNOWN  $E989           ; Unknown Exxx instruction
+$A74    $1BAD   JP       $BAD            ; Jump to BAD
+$A76    $CDFF   RND      VD, #FF         ; VD = random & FF
+$A78    $562C   UNKNOWN  $562C           ; Unknown 5xxx instruction
+$A7A    $1D63   JP       $D63            ; Jump to D63
+$A7C    $8169   UNKNOWN  8169            ; Unknown 8xxx instruction
+$A7E    $0ADE   SYS      $ADE            ; System call to ADE
+$A80    $314D   SE       V1, #4D         ; Skip if V1 == 77
+$A82    $6908   LD       V9, #08         ; Load 8 into V9
+$A84    $C701   RND      V7, #01         ; V7 = random & 01
+$A86    $6B6E   LD       VB, #6E         ; Load 110 into VB
+$A88    $D18F   DRW      V1, V8, #F      ; Draw 15-byte sprite at V1, V8
+$A8A    $EB46   UNKNOWN  $EB46           ; Unknown Exxx instruction
+$A8C    $6725   LD       V7, #25         ; Load 37 into V7
+$A8E    $3A6F   SE       VA, #6F         ; Skip if VA == 111
+$A90    $7EA5   ADD      VE, #A5         ; Add 165 to VE
+$A92    $FCEE   UNKNOWN  FCEE            ; Unknown Fxxx instruction
+$A94    $A046   LD       I, $046         ; Load 046 into I
+$A96    $E9FE   UNKNOWN  $E9FE           ; Unknown Exxx instruction
+$A98    $22B8   CALL     $2B8            ; Call subroutine at 2B8
+$A9A    $C20F   RND      V2, #0F         ; V2 = random & 0F
+$A9C    $62A0   LD       V2, #A0         ; Load 160 into V2
+$A9E    $167F   JP       $67F            ; Jump to 67F
+$AA0    $C2EF   RND      V2, #EF         ; V2 = random & EF
+$AA2    $9919   UNKNOWN  $9919           ; Unknown 9xxx instruction
+$AA4    $B03D   JP       V0, $03D        ; Jump to V0 + 03D
+$AA6    $CDB9   RND      VD, #B9         ; VD = random & B9
+$AA8    $C3E3   RND      V3, #E3         ; V3 = random & E3
+$AAA    $4BAF   SNE      VB, #AF         ; Skip if VB != 175
+$AAC    $894E   SHL      V9              ; V9 <<= 1, VF = MSB
+$AAE    $D6D2   DRW      V6, VD, #2      ; Draw 2-byte sprite at V6, VD
+$AB0    $05A7   SYS      $5A7            ; System call to 5A7
+$AB2    $DA02   DRW      VA, V0, #2      ; Draw 2-byte sprite at VA, V0
+$AB4    $B55E   JP       V0, $55E        ; Jump to V0 + 55E
+$AB6    $8401   OR       V4, V0          ; V4 |= V0
+$AB8    $5ADC   UNKNOWN  $5ADC           ; Unknown 5xxx instruction
+$ABA    $DDC5   DRW      VD, VC, #5      ; Draw 5-byte sprite at VD, VC
+$ABC    $6805   LD       V8, #05         ; Load 5 into V8
+$ABE    $C6C3   RND      V6, #C3         ; V6 = random & C3
+$AC0    $A0DD   LD       I, $0DD         ; Load 0DD into I
+$AC2    $6F95   LD       VF, #95         ; Load 149 into VF
+$AC4    $034F   SYS      $34F            ; System call to 34F
+$AC6    $F21C   UNKNOWN  F21C            ; Unknown Fxxx instruction
+$AC8    $EEEE   UNKNOWN  $EEEE           ; Unknown Exxx instruction
+$ACA    $9EB7   UNKNOWN  $9EB7           ; Unknown 9xxx instruction
+$ACC    $A9F4   LD       I, $9F4         ; Load 9F4 into I
+$ACE    $EAE9   UNKNOWN  $EAE9           ; Unknown Exxx instruction
+$AD0    $984F   UNKNOWN  $984F           ; Unknown 9xxx instruction
+$AD2    $8038   UNKNOWN  8038            ; Unknown 8xxx instruction
+$AD4    $D22C   DRW      V2, V2, #C      ; Draw 12-byte sprite at V2, V2
+$AD6    $B708   JP       V0, $708        ; Jump to V0 + 708
+$AD8    $3F79   SE       VF, #79         ; Skip if VF == 121
+$ADA    $A236   LD       I, $236         ; Load 236 into I
+$ADC    $25F9   CALL     $5F9            ; Call subroutine at 5F9
+$ADE    $1606   JP       $606            ; Jump to 606
+$AE0    $B3A7   JP       V0, $3A7        ; Jump to V0 + 3A7
+$AE2    $73AA   ADD      V3, #AA         ; Add 170 to V3
+$AE4    $9C5D   UNKNOWN  $9C5D           ; Unknown 9xxx instruction
+$AE6    $01F4   SYS      $1F4            ; System call to 1F4
+$AE8    $2E92   CALL     $E92            ; Call subroutine at E92
+$AEA    $73DB   ADD      V3, #DB         ; Add 219 to V3
+$AEC    $77D0   ADD      V7, #D0         ; Add 208 to V7
+$AEE    $A120   LD       I, $120         ; Load 120 into I
+$AF0    $E241   UNKNOWN  $E241           ; Unknown Exxx instruction
+$AF2    $58C2   UNKNOWN  $58C2           ; Unknown 5xxx instruction
+$AF4    $952F   UNKNOWN  $952F           ; Unknown 9xxx instruction
+$AF6    $47D6   SNE      V7, #D6         ; Skip if V7 != 214
+$AF8    $39A2   SE       V9, #A2         ; Skip if V9 == 162
+$AFA    $CCD7   RND      VC, #D7         ; VC = random & D7
+$AFC    $D32A   DRW      V3, V2, #A      ; Draw 10-byte sprite at V3, V2
+$AFE    $641D   LD       V4, #1D         ; Load 29 into V4
+$B00    $09D4   SYS      $9D4            ; System call to 9D4
+$B02    $4C56   SNE      VC, #56         ; Skip if VC != 86
+$B04    $D780   DRW      V7, V8, #0      ; Draw 0-byte sprite at V7, V8
+$B06    $36C1   SE       V6, #C1         ; Skip if V6 == 193
+$B08    $FFD6   UNKNOWN  FFD6            ; Unknown Fxxx instruction
+$B0A    $75D2   ADD      V5, #D2         ; Add 210 to V5
+$B0C    $3B5E   SE       VB, #5E         ; Skip if VB == 94
+$B0E    $B60F   JP       V0, $60F        ; Jump to V0 + 60F
+$B10    $DBE9   DRW      VB, VE, #9      ; Draw 9-byte sprite at VB, VE
+$B12    $0B6A   SYS      $B6A            ; System call to B6A
+$B14    $FA44   UNKNOWN  FA44            ; Unknown Fxxx instruction
+$B16    $9866   UNKNOWN  $9866           ; Unknown 9xxx instruction
+$B18    $A833   LD       I, $833         ; Load 833 into I
+$B1A    $3EC2   SE       VE, #C2         ; Skip if VE == 194
+$B1C    $5559   UNKNOWN  $5559           ; Unknown 5xxx instruction
+$B1E    $1816   JP       $816            ; Jump to 816
+$B20    $6C5D   LD       VC, #5D         ; Load 93 into VC
+$B22    $0174   SYS      $174            ; System call to 174
+$B24    $076D   SYS      $76D            ; System call to 76D
+$B26    $6FD7   LD       VF, #D7         ; Load 215 into VF
+$B28    $C0E5   RND      V0, #E5         ; V0 = random & E5
+$B2A    $371E   SE       V7, #1E         ; Skip if V7 == 30
+$B2C    $099F   SYS      $99F            ; System call to 99F
+$B2E    $D766   DRW      V7, V6, #6      ; Draw 6-byte sprite at V7, V6
+$B30    $EB14   UNKNOWN  $EB14           ; Unknown Exxx instruction
+$B32    $F1F7   UNKNOWN  F1F7            ; Unknown Fxxx instruction
+$B34    $222F   CALL     $22F            ; Call subroutine at 22F
+$B36    $C57E   RND      V5, #7E         ; V5 = random & 7E
+$B38    $18C7   JP       $8C7            ; Jump to 8C7
+$B3A    $116E   JP       $16E            ; Jump to 16E
+$B3C    $F8D4   UNKNOWN  F8D4            ; Unknown Fxxx instruction
+$B3E    $D500   DRW      V5, V0, #0      ; Draw 0-byte sprite at V5, V0
+$B40    $490D   SNE      V9, #0D         ; Skip if V9 != 13
+$B42    $18F1   JP       $8F1            ; Jump to 8F1
+$B44    $E07B   UNKNOWN  $E07B           ; Unknown Exxx instruction
+$B46    $A83B   LD       I, $83B         ; Load 83B into I
+$B48    $9E73   UNKNOWN  $9E73           ; Unknown 9xxx instruction
+$B4A    $378F   SE       V7, #8F         ; Skip if V7 == 143
+$B4C    $F566   UNKNOWN  F566            ; Unknown Fxxx instruction
+$B4E    $F8F6   UNKNOWN  F8F6            ; Unknown Fxxx instruction
+$B50    $1C3E   JP       $C3E            ; Jump to C3E
+$B52    $1721   JP       $721            ; Jump to 721
+$B54    $33A2   SE       V3, #A2         ; Skip if V3 == 162
+$B56    $648A   LD       V4, #8A         ; Load 138 into V4
+$B58    $F3AB   UNKNOWN  F3AB            ; Unknown Fxxx instruction
+$B5A    $A928   LD       I, $928         ; Load 928 into I
+$B5C    $D11E   DRW      V1, V1, #E      ; Draw 14-byte sprite at V1, V1
+$B5E    $367B   SE       V6, #7B         ; Skip if V6 == 123
+$B60    $8C32   AND      VC, V3          ; VC &= V3
+$B62    $D8D8   DRW      V8, VD, #8      ; Draw 8-byte sprite at V8, VD
+$B64    $4053   SNE      V0, #53         ; Skip if V0 != 83
+$B66    $6969   LD       V9, #69         ; Load 105 into V9
+$B68    $6874   LD       V8, #74         ; Load 116 into V8
+$B6A    $C343   RND      V3, #43         ; V3 = random & 43
+$B6C    $D240   DRW      V2, V4, #0      ; Draw 0-byte sprite at V2, V4
+$B6E    $E966   UNKNOWN  $E966           ; Unknown Exxx instruction
+$B70    $C0CA   RND      V0, #CA         ; V0 = random & CA
+$B72    $80F9   UNKNOWN  80F9            ; Unknown 8xxx instruction
+$B74    $F049   UNKNOWN  F049            ; Unknown Fxxx instruction
+$B76    $732E   ADD      V3, #2E         ; Add 46 to V3
+$B78    $5EE7   UNKNOWN  $5EE7           ; Unknown 5xxx instruction
+$B7A    $4171   SNE      V1, #71         ; Skip if V1 != 113
+$B7C    $062B   SYS      $62B            ; System call to 62B
+$B7E    $ED3F   UNKNOWN  $ED3F           ; Unknown Exxx instruction
+$B80    $D183   DRW      V1, V8, #3      ; Draw 3-byte sprite at V1, V8
+$B82    $F883   UNKNOWN  F883            ; Unknown Fxxx instruction
+$B84    $E421   UNKNOWN  $E421           ; Unknown Exxx instruction
+$B86    $8B24   ADD      VB, V2          ; VB += V2, VF = carry
+$B88    $5F82   UNKNOWN  $5F82           ; Unknown 5xxx instruction
+$B8A    $45D3   SNE      V5, #D3         ; Skip if V5 != 211
+$B8C    $90F3   UNKNOWN  $90F3           ; Unknown 9xxx instruction
+$B8E    $3B93   SE       VB, #93         ; Skip if VB == 147
+$B90    $F12B   UNKNOWN  F12B            ; Unknown Fxxx instruction
+$B92    $E151   UNKNOWN  $E151           ; Unknown Exxx instruction
+$B94    $C2DD   RND      V2, #DD         ; V2 = random & DD
+$B96    $7D28   ADD      VD, #28         ; Add 40 to VD
+$B98    $7B48   ADD      VB, #48         ; Add 72 to VB
+$B9A    $1469   JP       $469            ; Jump to 469
+$B9C    $A34B   LD       I, $34B         ; Load 34B into I
+$B9E    $ACAE   LD       I, $CAE         ; Load CAE into I
+$BA0    $8971   OR       V9, V7          ; V9 |= V7
+$BA2    $83A0   LD       V3, VA          ; V3 = VA
+$BA4    $2E17   CALL     $E17            ; Call subroutine at E17
+$BA6    $9424   UNKNOWN  $9424           ; Unknown 9xxx instruction
+$BA8    $526D   UNKNOWN  $526D           ; Unknown 5xxx instruction
+$BAA    $D204   DRW      V2, V0, #4      ; Draw 4-byte sprite at V2, V0
+$BAC    $5915   UNKNOWN  $5915           ; Unknown 5xxx instruction
+$BAE    $3A02   SE       VA, #02         ; Skip if VA == 2
+$BB0    $49FE   SNE      V9, #FE         ; Skip if V9 != 254
+$BB2    $9B00   SNE      VB, V0          ; Skip if VB != V0
+$BB4    $6762   LD       V7, #62         ; Load 98 into V7
+$BB6    $084C   SYS      $84C            ; System call to 84C
+$BB8    $3C0C   SE       VC, #0C         ; Skip if VC == 12
+$BBA    $B53A   JP       V0, $53A        ; Jump to V0 + 53A
+$BBC    $DF08   DRW      VF, V0, #8      ; Draw 8-byte sprite at VF, V0
+$BBE    $08EE   SYS      $8EE            ; System call to 8EE
+$BC0    $C8DF   RND      V8, #DF         ; V8 = random & DF
+$BC2    $114F   JP       $14F            ; Jump to 14F
+$BC4    $06CF   SYS      $6CF            ; System call to 6CF
+$BC6    $AB13   LD       I, $B13         ; Load B13 into I
+$BC8    $68ED   LD       V8, #ED         ; Load 237 into V8
+$BCA    $ECA2   UNKNOWN  $ECA2           ; Unknown Exxx instruction
+$BCC    $430E   SNE      V3, #0E         ; Skip if V3 != 14
+$BCE    $799D   ADD      V9, #9D         ; Add 157 to V9
+$BD0    $588A   UNKNOWN  $588A           ; Unknown 5xxx instruction
+$BD2    $C88A   RND      V8, #8A         ; V8 = random & 8A
+$BD4    $607B   LD       V0, #7B         ; Load 123 into V0
+$BD6    $EB4E   UNKNOWN  $EB4E           ; Unknown Exxx instruction
+$BD8    $FF0E   UNKNOWN  FF0E            ; Unknown Fxxx instruction
+$BDA    $F1C5   UNKNOWN  F1C5            ; Unknown Fxxx instruction
+$BDC    $7328   ADD      V3, #28         ; Add 40 to V3
+$BDE    $5C6D   UNKNOWN  $5C6D           ; Unknown 5xxx instruction
+$BE0    $B275   JP       V0, $275        ; Jump to V0 + 275
+$BE2    $1A5B   JP       $A5B            ; Jump to A5B
+$BE4    $05F7   SYS      $5F7            ; System call to 5F7
+$BE6    $5A8E   UNKNOWN  $5A8E           ; Unknown 5xxx instruction
+$BE8    $A0F6   LD       I, $0F6         ; Load 0F6 into I
+$BEA    $FE7B   UNKNOWN  FE7B            ; Unknown Fxxx instruction
+$BEC    $2CD0   CALL     $CD0            ; Call subroutine at CD0
+$BEE    $B0AE   JP       V0, $0AE        ; Jump to V0 + 0AE
+$BF0    $F7EF   UNKNOWN  F7EF            ; Unknown Fxxx instruction
+$BF2    $8973   XOR      V9, V7          ; V9 ^= V7
+$BF4    $CEEA   RND      VE, #EA         ; VE = random & EA
+$BF6    $947C   UNKNOWN  $947C           ; Unknown 9xxx instruction
+$BF8    $E47D   UNKNOWN  $E47D           ; Unknown Exxx instruction
+$BFA    $DC07   DRW      VC, V0, #7      ; Draw 7-byte sprite at VC, V0
+$BFC    $6F20   LD       VF, #20         ; Load 32 into VF
+$BFE    $C6E2   RND      V6, #E2         ; V6 = random & E2
+$C00    $CC0B   RND      VC, #0B         ; VC = random & 0B
+$C02    $12A6   JP       $2A6            ; Jump to 2A6
+$C04    $EB27   UNKNOWN  $EB27           ; Unknown Exxx instruction
+$C06    $399A   SE       V9, #9A         ; Skip if V9 == 154
+$C08    $832C   UNKNOWN  832C            ; Unknown 8xxx instruction
+$C0A    $0AE8   SYS      $AE8            ; System call to AE8
+$C0C    $C1D4   RND      V1, #D4         ; V1 = random & D4
+$C0E    $FA23   UNKNOWN  FA23            ; Unknown Fxxx instruction
+$C10    $CE10   RND      VE, #10         ; VE = random & 10
+$C12    $1CAF   JP       $CAF            ; Jump to CAF
+$C14    $D79B   DRW      V7, V9, #B      ; Draw 11-byte sprite at V7, V9
+$C16    $CB65   RND      VB, #65         ; VB = random & 65
+$C18    $73D5   ADD      V3, #D5         ; Add 213 to V3
+$C1A    $7962   ADD      V9, #62         ; Add 98 to V9
+$C1C    $A8DD   LD       I, $8DD         ; Load 8DD into I
+$C1E    $1EC6   JP       $EC6            ; Jump to EC6
+$C20    $B46B   JP       V0, $46B        ; Jump to V0 + 46B
+$C22    $5AF5   UNKNOWN  $5AF5           ; Unknown 5xxx instruction
+$C24    $BF64   JP       V0, $F64        ; Jump to V0 + F64
+$C26    $3258   SE       V2, #58         ; Skip if V2 == 88
+$C28    $F9C8   UNKNOWN  F9C8            ; Unknown Fxxx instruction
+$C2A    $E68D   UNKNOWN  $E68D           ; Unknown Exxx instruction
+$C2C    $8F97   SUBN     VF, V9          ; VF = V9 - VF, VF = !borrow
+$C2E    $135A   JP       $35A            ; Jump to 35A
+$C30    $D3F5   DRW      V3, VF, #5      ; Draw 5-byte sprite at V3, VF
+$C32    $9061   UNKNOWN  $9061           ; Unknown 9xxx instruction
+$C34    $3C7F   SE       VC, #7F         ; Skip if VC == 127
+$C36    $73DD   ADD      V3, #DD         ; Add 221 to V3
+$C38    $B625   JP       V0, $625        ; Jump to V0 + 625
+$C3A    $1844   JP       $844            ; Jump to 844
+$C3C    $B385   JP       V0, $385        ; Jump to V0 + 385
+$C3E    $CB40   RND      VB, #40         ; VB = random & 40
+$C40    $5CED   UNKNOWN  $5CED           ; Unknown 5xxx instruction
+$C42    $A63F   LD       I, $63F         ; Load 63F into I
+$C44    $6BEC   LD       VB, #EC         ; Load 236 into VB
+$C46    $75C5   ADD      V5, #C5         ; Add 197 to V5
+$C48    $A574   LD       I, $574         ; Load 574 into I
+$C4A    $9271   UNKNOWN  $9271           ; Unknown 9xxx instruction
+$C4C    $4288   SNE      V2, #88         ; Skip if V2 != 136
+$C4E    $C078   RND      V0, #78         ; V0 = random & 78
+$C50    $927C   UNKNOWN  $927C           ; Unknown 9xxx instruction
+$C52    $77C6   ADD      V7, #C6         ; Add 198 to V7
+$C54    $E554   UNKNOWN  $E554           ; Unknown Exxx instruction
+$C56    $1842   JP       $842            ; Jump to 842
+$C58    $FF08   UNKNOWN  FF08            ; Unknown Fxxx instruction
+$C5A    $B8FC   JP       V0, $8FC        ; Jump to V0 + 8FC
+$C5C    $FF91   UNKNOWN  FF91            ; Unknown Fxxx instruction
+$C5E    $169D   JP       $69D            ; Jump to 69D
+$C60    $2D86   CALL     $D86            ; Call subroutine at D86
+$C62    $0BC3   SYS      $BC3            ; System call to BC3
+$C64    $A068   LD       I, $068         ; Load 068 into I
+$C66    $EC7D   UNKNOWN  $EC7D           ; Unknown Exxx instruction
+$C68    $057A   SYS      $57A            ; System call to 57A
+$C6A    $8EDE   SHL      VE              ; VE <<= 1, VF = MSB
+$C6C    $9E70   SNE      VE, V7          ; Skip if VE != V7
+$C6E    $2FBB   CALL     $FBB            ; Call subroutine at FBB
+$C70    $2495   CALL     $495            ; Call subroutine at 495
+$C72    $C119   RND      V1, #19         ; V1 = random & 19
+$C74    $6822   LD       V8, #22         ; Load 34 into V8
+$C76    $7C26   ADD      VC, #26         ; Add 38 to VC
+$C78    $52AE   UNKNOWN  $52AE           ; Unknown 5xxx instruction
+$C7A    $3CFE   SE       VC, #FE         ; Skip if VC == 254
+$C7C    $061E   SYS      $61E            ; System call to 61E
+$C7E    $F23F   UNKNOWN  F23F            ; Unknown Fxxx instruction
+$C80    $5126   UNKNOWN  $5126           ; Unknown 5xxx instruction
+$C82    $2838   CALL     $838            ; Call subroutine at 838
+$C84    $BD0E   JP       V0, $D0E        ; Jump to V0 + D0E
+$C86    $6635   LD       V6, #35         ; Load 53 into V6
+$C88    $0845   SYS      $845            ; System call to 845
+$C8A    $8001   OR       V0, V0          ; V0 |= V0
+$C8C    $8021   OR       V0, V2          ; V0 |= V2
+$C8E    $D3B9   DRW      V3, VB, #9      ; Draw 9-byte sprite at V3, VB
+$C90    $70DA   ADD      V0, #DA         ; Add 218 to V0
+$C92    $D495   DRW      V4, V9, #5      ; Draw 5-byte sprite at V4, V9
+$C94    $8D24   ADD      VD, V2          ; VD += V2, VF = carry
+$C96    $38F6   SE       V8, #F6         ; Skip if V8 == 246
+$C98    $1E97   JP       $E97            ; Jump to E97
+$C9A    $FD50   UNKNOWN  FD50            ; Unknown Fxxx instruction
+$C9C    $FD11   UNKNOWN  FD11            ; Unknown Fxxx instruction
+$C9E    $96C4   UNKNOWN  $96C4           ; Unknown 9xxx instruction
+$CA0    $3FC7   SE       VF, #C7         ; Skip if VF == 199
+$CA2    $E6C4   UNKNOWN  $E6C4           ; Unknown Exxx instruction
+$CA4    $DDB7   DRW      VD, VB, #7      ; Draw 7-byte sprite at VD, VB
+$CA6    $4228   SNE      V2, #28         ; Skip if V2 != 40
+$CA8    $45C8   SNE      V5, #C8         ; Skip if V5 != 200
+$CAA    $62B5   LD       V2, #B5         ; Load 181 into V2
+$CAC    $D2B5   DRW      V2, VB, #5      ; Draw 5-byte sprite at V2, VB
+$CAE    $9362   UNKNOWN  $9362           ; Unknown 9xxx instruction
+$CB0    $EFEB   UNKNOWN  $EFEB           ; Unknown Exxx instruction
+$CB2    $CE62   RND      VE, #62         ; VE = random & 62
+$CB4    $CFFA   RND      VF, #FA         ; VF = random & FA
+$CB6    $5D34   UNKNOWN  $5D34           ; Unknown 5xxx instruction
+$CB8    $DBCD   DRW      VB, VC, #D      ; Draw 13-byte sprite at VB, VC
+$CBA    $1ABA   JP       $ABA            ; Jump to ABA
+$CBC    $8451   OR       V4, V5          ; V4 |= V5
+$CBE    $F842   UNKNOWN  F842            ; Unknown Fxxx instruction
+$CC0    $5033   UNKNOWN  $5033           ; Unknown 5xxx instruction
+$CC2    $F9B2   UNKNOWN  F9B2            ; Unknown Fxxx instruction
+$CC4    $2C89   CALL     $C89            ; Call subroutine at C89
+$CC6    $2F6D   CALL     $F6D            ; Call subroutine at F6D
+$CC8    $9C29   UNKNOWN  $9C29           ; Unknown 9xxx instruction
+$CCA    $DDED   DRW      VD, VE, #D      ; Draw 13-byte sprite at VD, VE
+$CCC    $33CE   SE       V3, #CE         ; Skip if V3 == 206
+$CCE    $EC38   UNKNOWN  $EC38           ; Unknown Exxx instruction
+$CD0    $09E5   SYS      $9E5            ; System call to 9E5
+$CD2    $1499   JP       $499            ; Jump to 499
+$CD4    $236C   CALL     $36C            ; Call subroutine at 36C
+$CD6    $69AE   LD       V9, #AE         ; Load 174 into V9
+$CD8    $0032   SYS      $032            ; System call to 032
+$CDA    $95F4   UNKNOWN  $95F4           ; Unknown 9xxx instruction
+$CDC    $91F8   UNKNOWN  $91F8           ; Unknown 9xxx instruction
+$CDE    $B275   JP       V0, $275        ; Jump to V0 + 275
+$CE0    $C3FF   RND      V3, #FF         ; V3 = random & FF
+$CE2    $044B   SYS      $44B            ; System call to 44B
+$CE4    $0214   SYS      $214            ; System call to 214
+$CE6    $29A7   CALL     $9A7            ; Call subroutine at 9A7
+$CE8    $4A31   SNE      VA, #31         ; Skip if VA != 49
+$CEA    $1CDC   JP       $CDC            ; Jump to CDC
+$CEC    $F605   UNKNOWN  F605            ; Unknown Fxxx instruction
+$CEE    $4408   SNE      V4, #08         ; Skip if V4 != 8
+$CF0    $9613   UNKNOWN  $9613           ; Unknown 9xxx instruction
+$CF2    $F9DE   UNKNOWN  F9DE            ; Unknown Fxxx instruction
+$CF4    $3BB1   SE       VB, #B1         ; Skip if VB == 177
+$CF6    $D534   DRW      V5, V3, #4      ; Draw 4-byte sprite at V5, V3
+$CF8    $48D3   SNE      V8, #D3         ; Skip if V8 != 211
+$CFA    $0629   SYS      $629            ; System call to 629
+$CFC    $0BE1   SYS      $BE1            ; System call to BE1
+$CFE    $53C3   UNKNOWN  $53C3           ; Unknown 5xxx instruction
+$D00    $C0C8   RND      V0, #C8         ; V0 = random & C8
+$D02    $FB63   UNKNOWN  FB63            ; Unknown Fxxx instruction
+$D04    $9EF5   UNKNOWN  $9EF5           ; Unknown 9xxx instruction
+$D06    $B9FE   JP       V0, $9FE        ; Jump to V0 + 9FE
+$D08    $5878   UNKNOWN  $5878           ; Unknown 5xxx instruction
+$D0A    $BFB6   JP       V0, $FB6        ; Jump to V0 + FB6
+$D0C    $D1A9   DRW      V1, VA, #9      ; Draw 9-byte sprite at V1, VA
+$D0E    $97F7   UNKNOWN  $97F7           ; Unknown 9xxx instruction
+$D10    $084A   SYS      $84A            ; System call to 84A
+$D12    $5354   UNKNOWN  $5354           ; Unknown 5xxx instruction
+$D14    $FECD   UNKNOWN  FECD            ; Unknown Fxxx instruction
+$D16    $FA5E   UNKNOWN  FA5E            ; Unknown Fxxx instruction
+$D18    $71B4   ADD      V1, #B4         ; Add 180 to V1
+$D1A    $04B4   SYS      $4B4            ; System call to 4B4
+$D1C    $1E96   JP       $E96            ; Jump to E96
+$D1E    $4473   SNE      V4, #73         ; Skip if V4 != 115
+$D20    $192C   JP       $92C            ; Jump to 92C
+$D22    $CB2D   RND      VB, #2D         ; VB = random & 2D
+$D24    $4BF4   SNE      VB, #F4         ; Skip if VB != 244
+$D26    $1233   JP       $233            ; Jump to 233
+$D28    $D025   DRW      V0, V2, #5      ; Draw 5-byte sprite at V0, V2
+$D2A    $A716   LD       I, $716         ; Load 716 into I
+$D2C    $2DFC   CALL     $DFC            ; Call subroutine at DFC
+$D2E    $FE4C   UNKNOWN  FE4C            ; Unknown Fxxx instruction
+$D30    $A358   LD       I, $358         ; Load 358 into I
+$D32    $3963   SE       V9, #63         ; Skip if V9 == 99
+$D34    $29AA   CALL     $9AA            ; Call subroutine at 9AA
+$D36    $1500   JP       $500            ; Jump to 500
+$D38    $12D5   JP       $2D5            ; Jump to 2D5
+$D3A    $84CE   SHL      V4              ; V4 <<= 1, VF = MSB
+$D3C    $7F30   ADD      VF, #30         ; Add 48 to VF
+$D3E    $225F   CALL     $25F            ; Call subroutine at 25F
+$D40    $D39B   DRW      V3, V9, #B      ; Draw 11-byte sprite at V3, V9
+$D42    $6305   LD       V3, #05         ; Load 5 into V3
+$D44    $5E0F   UNKNOWN  $5E0F           ; Unknown 5xxx instruction
+$D46    $98B1   UNKNOWN  $98B1           ; Unknown 9xxx instruction
+$D48    $DBAA   DRW      VB, VA, #A      ; Draw 10-byte sprite at VB, VA
+$D4A    $1FE5   JP       $FE5            ; Jump to FE5
+$D4C    $F8C2   UNKNOWN  F8C2            ; Unknown Fxxx instruction
+$D4E    $A487   LD       I, $487         ; Load 487 into I
+$D50    $2AE2   CALL     $AE2            ; Call subroutine at AE2
+$D52    $BD93   JP       V0, $D93        ; Jump to V0 + D93
+$D54    $9D88   UNKNOWN  $9D88           ; Unknown 9xxx instruction
+$D56    $6E0A   LD       VE, #0A         ; Load 10 into VE
+$D58    $18B2   JP       $8B2            ; Jump to 8B2
+$D5A    $8F0B   UNKNOWN  8F0B            ; Unknown 8xxx instruction
+$D5C    $B197   JP       V0, $197        ; Jump to V0 + 197
+$D5E    $FA4B   UNKNOWN  FA4B            ; Unknown Fxxx instruction
+$D60    $7F68   ADD      VF, #68         ; Add 104 to VF
+$D62    $711F   ADD      V1, #1F         ; Add 31 to V1
+$D64    $9F35   UNKNOWN  $9F35           ; Unknown 9xxx instruction
+$D66    $7CD7   ADD      VC, #D7         ; Add 215 to VC
+$D68    $1BA0   JP       $BA0            ; Jump to BA0
+$D6A    $23F1   CALL     $3F1            ; Call subroutine at 3F1
+$D6C    $C946   RND      V9, #46         ; V9 = random & 46
+$D6E    $89F3   XOR      V9, VF          ; V9 ^= VF
+$D70    $811B   UNKNOWN  811B            ; Unknown 8xxx instruction
+$D72    $3C04   SE       VC, #04         ; Skip if VC == 4
+$D74    $B14D   JP       V0, $14D        ; Jump to V0 + 14D
+$D76    $C16C   RND      V1, #6C         ; V1 = random & 6C
+$D78    $F0FB   UNKNOWN  F0FB            ; Unknown Fxxx instruction
+$D7A    $7A9A   ADD      VA, #9A         ; Add 154 to VA
+$D7C    $ED37   UNKNOWN  $ED37           ; Unknown Exxx instruction
+$D7E    $A521   LD       I, $521         ; Load 521 into I
+$D80    $4772   SNE      V7, #72         ; Skip if V7 != 114
+$D82    $5796   UNKNOWN  $5796           ; Unknown 5xxx instruction
+$D84    $3F14   SE       VF, #14         ; Skip if VF == 20
+$D86    $5FF6   UNKNOWN  $5FF6           ; Unknown 5xxx instruction
+$D88    $41A7   SNE      V1, #A7         ; Skip if V1 != 167
+$D8A    $132D   JP       $32D            ; Jump to 32D
+$D8C    $2C82   CALL     $C82            ; Call subroutine at C82
+$D8E    $26F4   CALL     $6F4            ; Call subroutine at 6F4
+$D90    $6E4B   LD       VE, #4B         ; Load 75 into VE
+$D92    $EAD7   UNKNOWN  $EAD7           ; Unknown Exxx instruction
+$D94    $6B25   LD       VB, #25         ; Load 37 into VB
+$D96    $60F5   LD       V0, #F5         ; Load 245 into V0
+$D98    $4949   SNE      V9, #49         ; Skip if V9 != 73
+$D9A    $B536   JP       V0, $536        ; Jump to V0 + 536
+$D9C    $C710   RND      V7, #10         ; V7 = random & 10
+$D9E    $DDAC   DRW      VD, VA, #C      ; Draw 12-byte sprite at VD, VA
+$DA0    $2703   CALL     $703            ; Call subroutine at 703
+$DA2    $D516   DRW      V5, V1, #6      ; Draw 6-byte sprite at V5, V1
+$DA4    $E360   UNKNOWN  $E360           ; Unknown Exxx instruction
+$DA6    $8D94   ADD      VD, V9          ; VD += V9, VF = carry
+$DA8    $C75B   RND      V7, #5B         ; V7 = random & 5B
+$DAA    $9C3A   UNKNOWN  $9C3A           ; Unknown 9xxx instruction
+$DAC    $21FE   CALL     $1FE            ; Call subroutine at 1FE
+$DAE    $70E3   ADD      V0, #E3         ; Add 227 to V0
+$DB0    $CAC5   RND      VA, #C5         ; VA = random & C5
+$DB2    $1A37   JP       $A37            ; Jump to A37
+$DB4    $8BAA   UNKNOWN  8BAA            ; Unknown 8xxx instruction
+$DB6    $EF5F   UNKNOWN  $EF5F           ; Unknown Exxx instruction
+$DB8    $2010   CALL     $010            ; Call subroutine at 010
+$DBA    $9A0E   UNKNOWN  $9A0E           ; Unknown 9xxx instruction
+$DBC    $875A   UNKNOWN  875A            ; Unknown 8xxx instruction
+$DBE    $ADD1   LD       I, $DD1         ; Load DD1 into I
+$DC0    $46D9   SNE      V6, #D9         ; Skip if V6 != 217
+$DC2    $A411   LD       I, $411         ; Load 411 into I
+$DC4    $FE52   UNKNOWN  FE52            ; Unknown Fxxx instruction
+$DC6    $1150   JP       $150            ; Jump to 150
+$DC8    $2CCA   CALL     $CCA            ; Call subroutine at CCA
+$DCA    $E3BA   UNKNOWN  $E3BA           ; Unknown Exxx instruction
+$DCC    $F7E7   UNKNOWN  F7E7            ; Unknown Fxxx instruction
+$DCE    $C093   RND      V0, #93         ; V0 = random & 93
+$DD0    $1A22   JP       $A22            ; Jump to A22
+$DD2    $0A0F   SYS      $A0F            ; System call to A0F
+$DD4    $CD6C   RND      VD, #6C         ; VD = random & 6C
+$DD6    $56C4   UNKNOWN  $56C4           ; Unknown 5xxx instruction
+$DD8    $9E48   UNKNOWN  $9E48           ; Unknown 9xxx instruction
+$DDA    $3B94   SE       VB, #94         ; Skip if VB == 148
+$DDC    $123B   JP       $23B            ; Jump to 23B
+$DDE    $4A84   SNE      VA, #84         ; Skip if VA != 132
+$DE0    $4FB2   SNE      VF, #B2         ; Skip if VF != 178
+$DE2    $CD2B   RND      VD, #2B         ; VD = random & 2B
+$DE4    $3EB0   SE       VE, #B0         ; Skip if VE == 176
+$DE6    $6C43   LD       VC, #43         ; Load 67 into VC
+$DE8    $81B6   SHR      V1              ; V1 >>= 1, VF = LSB
+$DEA    $43FB   SNE      V3, #FB         ; Skip if V3 != 251
+$DEC    $ABB9   LD       I, $BB9         ; Load BB9 into I
+$DEE    $7322   ADD      V3, #22         ; Add 34 to V3
+$DF0    $0258   SYS      $258            ; System call to 258
+$DF2    $CD49   RND      VD, #49         ; VD = random & 49
+$DF4    $8F09   UNKNOWN  8F09            ; Unknown 8xxx instruction
+$DF6    $FE5A   UNKNOWN  FE5A            ; Unknown Fxxx instruction
+$DF8    $9CB7   UNKNOWN  $9CB7           ; Unknown 9xxx instruction
+$DFA    $E62B   UNKNOWN  $E62B           ; Unknown Exxx instruction
+$DFC    $5DC1   UNKNOWN  $5DC1           ; Unknown 5xxx instruction
+$DFE    $DC84   DRW      VC, V8, #4      ; Draw 4-byte sprite at VC, V8
+$E00    $A22C   LD       I, $22C         ; Load 22C into I
+$E02    $2D87   CALL     $D87            ; Call subroutine at D87
+$E04    $8C50   LD       VC, V5          ; VC = V5
+$E06    $DB01   DRW      VB, V0, #1      ; Draw 1-byte sprite at VB, V0
+$E08    $E2DD   UNKNOWN  $E2DD           ; Unknown Exxx instruction
+$E0A    $C9EA   RND      V9, #EA         ; V9 = random & EA
+$E0C    $3102   SE       V1, #02         ; Skip if V1 == 2
+$E0E    $FA91   UNKNOWN  FA91            ; Unknown Fxxx instruction
+$E10    $FC44   UNKNOWN  FC44            ; Unknown Fxxx instruction
+$E12    $48C5   SNE      V8, #C5         ; Skip if V8 != 197
+$E14    $3D5B   SE       VD, #5B         ; Skip if VD == 91
+$E16    $5E66   UNKNOWN  $5E66           ; Unknown 5xxx instruction
+$E18    $5950   SE       V9, V5          ; Skip if V9 == V5
+$E1A    $CD6A   RND      VD, #6A         ; VD = random & 6A
+$E1C    $A717   LD       I, $717         ; Load 717 into I
+$E1E    $A283   LD       I, $283         ; Load 283 into I
+$E20    $ECE0   UNKNOWN  $ECE0           ; Unknown Exxx instruction
+$E22    $5E27   UNKNOWN  $5E27           ; Unknown 5xxx instruction
+$E24    $F8EE   UNKNOWN  F8EE            ; Unknown Fxxx instruction
+$E26    $7903   ADD      V9, #03         ; Add 3 to V9
+$E28    $21F4   CALL     $1F4            ; Call subroutine at 1F4
+$E2A    $EA4F   UNKNOWN  $EA4F           ; Unknown Exxx instruction
+$E2C    $71EA   ADD      V1, #EA         ; Add 234 to V1
+$E2E    $8F55   SUB      VF, V5          ; VF -= V5, VF = !borrow
+$E30    $DBC2   DRW      VB, VC, #2      ; Draw 2-byte sprite at VB, VC
+$E32    $69B4   LD       V9, #B4         ; Load 180 into V9
+$E34    $8FA7   SUBN     VF, VA          ; VF = VA - VF, VF = !borrow
+$E36    $9B4C   UNKNOWN  $9B4C           ; Unknown 9xxx instruction
+$E38    $0C8E   SYS      $C8E            ; System call to C8E
+$E3A    $9DD2   UNKNOWN  $9DD2           ; Unknown 9xxx instruction
+$E3C    $7EE0   ADD      VE, #E0         ; Add 224 to VE
+$E3E    $2CBF   CALL     $CBF            ; Call subroutine at CBF
+$E40    $747D   ADD      V4, #7D         ; Add 125 to V4
+$E42    $3A46   SE       VA, #46         ; Skip if VA == 70
+$E44    $6E22   LD       VE, #22         ; Load 34 into VE
+$E46    $1B32   JP       $B32            ; Jump to B32
+$E48    $7D1D   ADD      VD, #1D         ; Add 29 to VD
+$E4A    $0FAE   SYS      $FAE            ; System call to FAE
+$E4C    $AEAE   LD       I, $EAE         ; Load EAE into I
+$E4E    $AB21   LD       I, $B21         ; Load B21 into I
+$E50    $9393   UNKNOWN  $9393           ; Unknown 9xxx instruction
+$E52    $C04F   RND      V0, #4F         ; V0 = random & 4F
+$E54    $E155   UNKNOWN  $E155           ; Unknown Exxx instruction
+$E56    $FB3B   UNKNOWN  FB3B            ; Unknown Fxxx instruction
+$E58    $8AC0   LD       VA, VC          ; VA = VC
+$E5A    $5405   UNKNOWN  $5405           ; Unknown 5xxx instruction
+$E5C    $3B4E   SE       VB, #4E         ; Skip if VB == 78
+$E5E    $B742   JP       V0, $742        ; Jump to V0 + 742
+$E60    $01FD   SYS      $1FD            ; System call to 1FD
+$E62    $4B69   SNE      VB, #69         ; Skip if VB != 105
+$E64    $6CED   LD       VC, #ED         ; Load 237 into VC
+$E66    $FDF1   UNKNOWN  FDF1            ; Unknown Fxxx instruction
+$E68    $3F20   SE       VF, #20         ; Skip if VF == 32
+$E6A    $5FD4   UNKNOWN  $5FD4           ; Unknown 5xxx instruction
+$E6C    $798D   ADD      V9, #8D         ; Add 141 to V9
+$E6E    $42AA   SNE      V2, #AA         ; Skip if V2 != 170
+$E70    $E639   UNKNOWN  $E639           ; Unknown Exxx instruction
+$E72    $6F4C   LD       VF, #4C         ; Load 76 into VF
+$E74    $BF5B   JP       V0, $F5B        ; Jump to V0 + F5B
+$E76    $08FB   SYS      $8FB            ; System call to 8FB
+$E78    $75FC   ADD      V5, #FC         ; Add 252 to V5
+$E7A    $F60B   UNKNOWN  F60B            ; Unknown Fxxx instruction
+$E7C    $C183   RND      V1, #83         ; V1 = random & 83
+$E7E    $5EFE   UNKNOWN  $5EFE           ; Unknown 5xxx instruction
+$E80    $0F94   SYS      $F94            ; System call to F94
+$E82    $5366   UNKNOWN  $5366           ; Unknown 5xxx instruction
+$E84    $4158   SNE      V1, #58         ; Skip if V1 != 88
+$E86    $AA82   LD       I, $A82         ; Load A82 into I
+$E88    $463F   SNE      V6, #3F         ; Skip if V6 != 63
+$E8A    $222D   CALL     $22D            ; Call subroutine at 22D
+$E8C    $502D   UNKNOWN  $502D           ; Unknown 5xxx instruction
+$E8E    $4C39   SNE      VC, #39         ; Skip if VC != 57
+$E90    $EDF7   UNKNOWN  $EDF7           ; Unknown Exxx instruction
+$E92    $A668   LD       I, $668         ; Load 668 into I
+$E94    $8944   ADD      V9, V4          ; V9 += V4, VF = carry
+$E96    $50E3   UNKNOWN  $50E3           ; Unknown 5xxx instruction
+$E98    $8297   SUBN     V2, V9          ; V2 = V9 - V2, VF = !borrow
+$E9A    $34F0   SE       V4, #F0         ; Skip if V4 == 240
+$E9C    $992B   UNKNOWN  $992B           ; Unknown 9xxx instruction
+$E9E    $10B1   JP       $0B1            ; Jump to 0B1
+$EA0    $C58F   RND      V5, #8F         ; V5 = random & 8F
+$EA2    $9945   UNKNOWN  $9945           ; Unknown 9xxx instruction
+$EA4    $BC5C   JP       V0, $C5C        ; Jump to V0 + C5C
+$EA6    $F831   UNKNOWN  F831            ; Unknown Fxxx instruction
+$EA8    $4FD1   SNE      VF, #D1         ; Skip if VF != 209
+$EAA    $AF50   LD       I, $F50         ; Load F50 into I
+$EAC    $DE62   DRW      VE, V6, #2      ; Draw 2-byte sprite at VE, V6
+$EAE    $3498   SE       V4, #98         ; Skip if V4 == 152
+$EB0    $EBF1   UNKNOWN  $EBF1           ; Unknown Exxx instruction
+$EB2    $591F   UNKNOWN  $591F           ; Unknown 5xxx instruction
+$EB4    $943B   UNKNOWN  $943B           ; Unknown 9xxx instruction
+$EB6    $1C06   JP       $C06            ; Jump to C06
+$EB8    $FA6A   UNKNOWN  FA6A            ; Unknown Fxxx instruction
+$EBA    $FEF6   UNKNOWN  FEF6            ; Unknown Fxxx instruction
+$EBC    $4B73   SNE      VB, #73         ; Skip if VB != 115
+$EBE    $4D47   SNE      VD, #47         ; Skip if VD != 71
+$EC0    $F723   UNKNOWN  F723            ; Unknown Fxxx instruction
+$EC2    $96BA   UNKNOWN  $96BA           ; Unknown 9xxx instruction
+$EC4    $3305   SE       V3, #05         ; Skip if V3 == 5
+$EC6    $4CC7   SNE      VC, #C7         ; Skip if VC != 199
+$EC8    $87C0   LD       V7, VC          ; V7 = VC
+$ECA    $E569   UNKNOWN  $E569           ; Unknown Exxx instruction
+$ECC    $C126   RND      V1, #26         ; V1 = random & 26
+$ECE    $9A24   UNKNOWN  $9A24           ; Unknown 9xxx instruction
+$ED0    $4426   SNE      V4, #26         ; Skip if V4 != 38
+$ED2    $E1F3   UNKNOWN  $E1F3           ; Unknown Exxx instruction
+$ED4    $845D   UNKNOWN  845D            ; Unknown 8xxx instruction
+$ED6    $EB10   UNKNOWN  $EB10           ; Unknown Exxx instruction
+$ED8    $6397   LD       V3, #97         ; Load 151 into V3
+$EDA    $D461   DRW      V4, V6, #1      ; Draw 1-byte sprite at V4, V6
+$EDC    $E401   UNKNOWN  $E401           ; Unknown Exxx instruction
+$EDE    $3377   SE       V3, #77         ; Skip if V3 == 119
+$EE0    $F5E6   UNKNOWN  F5E6            ; Unknown Fxxx instruction
+$EE2    $0686   SYS      $686            ; System call to 686
+$EE4    $E102   UNKNOWN  $E102           ; Unknown Exxx instruction
+$EE6    $7256   ADD      V2, #56         ; Add 86 to V2
+$EE8    $974A   UNKNOWN  $974A           ; Unknown 9xxx instruction
+$EEA    $A4A3   LD       I, $4A3         ; Load 4A3 into I
+$EEC    $E233   UNKNOWN  $E233           ; Unknown Exxx instruction
+$EEE    $ACDE   LD       I, $CDE         ; Load CDE into I
+$EF0    $6747   LD       V7, #47         ; Load 71 into V7
+$EF2    $B745   JP       V0, $745        ; Jump to V0 + 745
+$EF4    $CE83   RND      VE, #83         ; VE = random & 83
+$EF6    $3406   SE       V4, #06         ; Skip if V4 == 6
+$EF8    $ED73   UNKNOWN  $ED73           ; Unknown Exxx instruction
+$EFA    $27B4   CALL     $7B4            ; Call subroutine at 7B4
+$EFC    $E33B   UNKNOWN  $E33B           ; Unknown Exxx instruction
+$EFE    $C338   RND      V3, #38         ; V3 = random & 38
+$F00    $BF19   JP       V0, $F19        ; Jump to V0 + F19
+$F02    $EEF1   UNKNOWN  $EEF1           ; Unknown Exxx instruction
+$F04    $7E3B   ADD      VE, #3B         ; Add 59 to VE
+$F06    $1484   JP       $484            ; Jump to 484
+$F08    $D9E0   DRW      V9, VE, #0      ; Draw 0-byte sprite at V9, VE
+$F0A    $195A   JP       $95A            ; Jump to 95A
+$F0C    $1536   JP       $536            ; Jump to 536
+$F0E    $6987   LD       V9, #87         ; Load 135 into V9
+$F10    $F5BF   UNKNOWN  F5BF            ; Unknown Fxxx instruction
+$F12    $E838   UNKNOWN  $E838           ; Unknown Exxx instruction
+$F14    $3F01   SE       VF, #01         ; Skip if VF == 1
+$F16    $C731   RND      V7, #31         ; V7 = random & 31
+$F18    $AC61   LD       I, $C61         ; Load C61 into I
+$F1A    $7291   ADD      V2, #91         ; Add 145 to V2
+$F1C    $70D5   ADD      V0, #D5         ; Add 213 to V0
+$F1E    $43F7   SNE      V3, #F7         ; Skip if V3 != 247
+$F20    $0FE0   SYS      $FE0            ; System call to FE0
+$F22    $58D8   UNKNOWN  $58D8           ; Unknown 5xxx instruction
+$F24    $504A   UNKNOWN  $504A           ; Unknown 5xxx instruction
+$F26    $FB71   UNKNOWN  FB71            ; Unknown Fxxx instruction
+$F28    $6422   LD       V4, #22         ; Load 34 into V4
+$F2A    $CAE6   RND      VA, #E6         ; VA = random & E6
+$F2C    $D908   DRW      V9, V0, #8      ; Draw 8-byte sprite at V9, V0
+$F2E    $DD8C   DRW      VD, V8, #C      ; Draw 12-byte sprite at VD, V8
+$F30    $C59F   RND      V5, #9F         ; V5 = random & 9F
+$F32    $6FC8   LD       VF, #C8         ; Load 200 into VF
+$F34    $119B   JP       $19B            ; Jump to 19B
+$F36    $2C95   CALL     $C95            ; Call subroutine at C95
+$F38    $47D6   SNE      V7, #D6         ; Skip if V7 != 214
+$F3A    $D58E   DRW      V5, V8, #E      ; Draw 14-byte sprite at V5, V8
+$F3C    $89F6   SHR      V9              ; V9 >>= 1, VF = LSB
+$F3E    $9BB6   UNKNOWN  $9BB6           ; Unknown 9xxx instruction
+$F40    $3407   SE       V4, #07         ; Skip if V4 == 7
+$F42    $BFC3   JP       V0, $FC3        ; Jump to V0 + FC3
+$F44    $71AF   ADD      V1, #AF         ; Add 175 to V1
+$F46    $096D   SYS      $96D            ; System call to 96D
+$F48    $872A   UNKNOWN  872A            ; Unknown 8xxx instruction
+$F4A    $7AF2   ADD      VA, #F2         ; Add 242 to VA
+$F4C    $56CC   UNKNOWN  $56CC           ; Unknown 5xxx instruction
+$F4E    $6E67   LD       VE, #67         ; Load 103 into VE
+$F50    $2803   CALL     $803            ; Call subroutine at 803
+$F52    $99BC   UNKNOWN  $99BC           ; Unknown 9xxx instruction
+$F54    $AC16   LD       I, $C16         ; Load C16 into I
+$F56    $9C76   UNKNOWN  $9C76           ; Unknown 9xxx instruction
+$F58    $D8A0   DRW      V8, VA, #0      ; Draw 0-byte sprite at V8, VA
+$F5A    $67C7   LD       V7, #C7         ; Load 199 into V7
+$F5C    $EFF6   UNKNOWN  $EFF6           ; Unknown Exxx instruction
+$F5E    $93BF   UNKNOWN  $93BF           ; Unknown 9xxx instruction
+$F60    $4224   SNE      V2, #24         ; Skip if V2 != 36
+$F62    $6A8B   LD       VA, #8B         ; Load 139 into VA
+$F64    $6237   LD       V2, #37         ; Load 55 into V2
+$F66    $C823   RND      V8, #23         ; V8 = random & 23
+$F68    $6066   LD       V0, #66         ; Load 102 into V0
+$F6A    $ABBE   LD       I, $BBE         ; Load BBE into I
+$F6C    $573C   UNKNOWN  $573C           ; Unknown 5xxx instruction
+$F6E    $239E   CALL     $39E            ; Call subroutine at 39E
+$F70    $02E0   SYS      $2E0            ; System call to 2E0
+$F72    $78F7   ADD      V8, #F7         ; Add 247 to V8
+$F74    $0B75   SYS      $B75            ; System call to B75
+$F76    $9F3D   UNKNOWN  $9F3D           ; Unknown 9xxx instruction
+$F78    $C0E8   RND      V0, #E8         ; V0 = random & E8
+$F7A    $8D13   XOR      VD, V1          ; VD ^= V1
+$F7C    $AB4C   LD       I, $B4C         ; Load B4C into I
+$F7E    $2B7D   CALL     $B7D            ; Call subroutine at B7D
+$F80    $7640   ADD      V6, #40         ; Add 64 to V6
+$F82    $5D9C   UNKNOWN  $5D9C           ; Unknown 5xxx instruction
+$F84    $BECC   JP       V0, $ECC        ; Jump to V0 + ECC
+$F86    $0DF8   SYS      $DF8            ; System call to DF8
+$F88    $89D3   XOR      V9, VD          ; V9 ^= VD
+$F8A    $67B3   LD       V7, #B3         ; Load 179 into V7
+$F8C    $AE05   LD       I, $E05         ; Load E05 into I
+$F8E    $F1B4   UNKNOWN  F1B4            ; Unknown Fxxx instruction
+$F90    $5D9C   UNKNOWN  $5D9C           ; Unknown 5xxx instruction
+$F92    $1A98   JP       $A98            ; Jump to A98
+$F94    $F755   LD       [I], V7         ; Store V0-V7 at I
+$F96    $B10B   JP       V0, $10B        ; Jump to V0 + 10B
+$F98    $A790   LD       I, $790         ; Load 790 into I
+$F9A    $3414   SE       V4, #14         ; Skip if V4 == 20
+$F9C    $CD09   RND      VD, #09         ; VD = random & 09
+$F9E    $B183   JP       V0, $183        ; Jump to V0 + 183
+$FA0    $407C   SNE      V0, #7C         ; Skip if V0 != 124
+$FA2    $5904   UNKNOWN  $5904           ; Unknown 5xxx instruction
+$FA4    $8BD2   AND      VB, VD          ; VB &= VD
+$FA6    $3277   SE       V2, #77         ; Skip if V2 == 119
+$FA8    $23CA   CALL     $3CA            ; Call subroutine at 3CA
+$FAA    $0930   SYS      $930            ; System call to 930
+$FAC    $0956   SYS      $956            ; System call to 956
+$FAE    $AA35   LD       I, $A35         ; Load A35 into I
+$FB0    $0062   SYS      $062            ; System call to 062
+$FB2    $0435   SYS      $435            ; System call to 435
+$FB4    $D487   DRW      V4, V8, #7      ; Draw 7-byte sprite at V4, V8
+$FB6    $C76F   RND      V7, #6F         ; V7 = random & 6F
+$FB8    $4683   SNE      V6, #83         ; Skip if V6 != 131
+$FBA    $2C97   CALL     $C97            ; Call subroutine at C97
+$FBC    $3820   SE       V8, #20         ; Skip if V8 == 32
+$FBE    $AA37   LD       I, $A37         ; Load A37 into I
+$FC0    $0F3F   SYS      $F3F            ; System call to F3F
+$FC2    $84BD   UNKNOWN  84BD            ; Unknown 8xxx instruction
+$FC4    $5F64   UNKNOWN  $5F64           ; Unknown 5xxx instruction
+$FC6    $D12B   DRW      V1, V2, #B      ; Draw 11-byte sprite at V1, V2
+$FC8    $2CAC   CALL     $CAC            ; Call subroutine at CAC
+$FCA    $AF15   LD       I, $F15         ; Load F15 into I
+$FCC    $6954   LD       V9, #54         ; Load 84 into V9
+$FCE    $9DB4   UNKNOWN  $9DB4           ; Unknown 9xxx instruction
+$FD0    $A741   LD       I, $741         ; Load 741 into I
+$FD2    $BCEA   JP       V0, $CEA        ; Jump to V0 + CEA
+$FD4    $F56D   UNKNOWN  F56D            ; Unknown Fxxx instruction
+$FD6    $8467   SUBN     V4, V6          ; V4 = V6 - V4, VF = !borrow
+$FD8    $CED4   RND      VE, #D4         ; VE = random & D4
+$FDA    $F647   UNKNOWN  F647            ; Unknown Fxxx instruction
+$FDC    $FE6D   UNKNOWN  FE6D            ; Unknown Fxxx instruction
+$FDE    $4475   SNE      V4, #75         ; Skip if V4 != 117
+$FE0    $2520   CALL     $520            ; Call subroutine at 520
+$FE2    $3BB3   SE       VB, #B3         ; Skip if VB == 179
+$FE4    $8E68   UNKNOWN  8E68            ; Unknown 8xxx instruction
+$FE6    $2082   CALL     $082            ; Call subroutine at 082
+$FE8    $6C40   LD       VC, #40         ; Load 64 into VC
+$FEA    $198F   JP       $98F            ; Jump to 98F
+$FEC    $10C7   JP       $0C7            ; Jump to 0C7
+$FEE    $83A7   SUBN     V3, VA          ; V3 = VA - V3, VF = !borrow
+$FF0    $7588   ADD      V5, #88         ; Add 136 to V5
+$FF2    $CD34   RND      VD, #34         ; VD = random & 34
+$FF4    $5A5D   UNKNOWN  $5A5D           ; Unknown 5xxx instruction
+$FF6    $B24E   JP       V0, $24E        ; Jump to V0 + 24E
+$FF8    $4074   SNE      V0, #74         ; Skip if V0 != 116
+$FFA    $7B98   ADD      VB, #98         ; Add 152 to VB
+$FFC    $AAF3   LD       I, $AF3         ; Load AF3 into I
+$FFE    $402E   SNE      V0, #2E         ; Skip if V0 != 46
+
+ALGORITHMIC ANALYSIS:
+==============================
+Instruction Distribution:
+  UNKNOWN : 490 (27.3%)
+  LD      : 224 (12.5%)
+  JP      : 210 (11.7%)
+  RND     : 122 ( 6.8%)
+  SNE     : 122 ( 6.8%)
+  SE      : 120 ( 6.7%)
+  SYS     : 116 ( 6.5%)
+  CALL    : 113 ( 6.3%)
+  ADD     : 113 ( 6.3%)
+  DRW     : 105 ( 5.9%)
+  SUBN    :  12 ( 0.7%)
+  SHR     :  11 ( 0.6%)
+  XOR     :   8 ( 0.4%)
+  OR      :   8 ( 0.4%)
+  AND     :   7 ( 0.4%)
+  SHL     :   5 ( 0.3%)
+  SUB     :   5 ( 0.3%)
+  SKP     :   1 ( 0.1%)
+
+Memory Operations: 337 (18.8%)
+Arithmetic Operations: 153 (8.5%)
