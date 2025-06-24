@@ -1,499 +1,374 @@
 #!/usr/bin/env python3
 """
-Babelscope Sorting Algorithm Search Runner
-Top-level script to search for emergent sorting algorithms in random CHIP-8 code
+Correct Babelscope Main Runner
+Pure implementation matching the blog post requirements:
+1. Generate completely random ROMs
+2. Put unique unsorted values at 0x300-0x307  
+3. Run complete CHIP-8 emulation
+4. Check if values get sorted
+5. Save ROMs that achieve sorting
 
-Saves all output to output/sorting/ directory with comprehensive debug logs
+No bias, no templates, no "smart" generation - just pure computational archaeology.
 """
 
 import os
 import sys
 import time
 import json
-import numpy as np
+import signal
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Dict, List, Optional
 import argparse
 
-# Add emulators and generators directories to path
+# Add emulators directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'emulators'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'generators'))
 
 try:
-    from parallel_chip8_sorting import CUDASortingDetector
-    print("✅ Successfully imported CUDA Sorting Detector")
-except ImportError as e:
-    print(f"❌ Failed to import sorting detector: {e}")
-    print("Make sure emulators/parallel_chip8_sorting.py exists")
+    import cupy as cp
+    import numpy as np
+    print("✅ CuPy loaded")
+except ImportError:
+    print("❌ CuPy required: pip install cupy-cuda12x")
     sys.exit(1)
 
 try:
-    from cuda_rom_generator import generate_random_roms_cuda
-    print("✅ Successfully imported CUDA ROM Generator")
-    USE_CUDA_GENERATOR = True
+    from sorting_emulator import PureBabelscopeDetector, generate_pure_random_roms_gpu, save_discovery_rom
+    print("✅ Sorting emulator modules loaded")
 except ImportError as e:
-    print(f"⚠️  CUDA ROM Generator not available: {e}")
-    print("Falling back to CPU generation")
-    USE_CUDA_GENERATOR = False
+    print(f"❌ Failed to import from emulators/sorting_emulator.py: {e}")
+    print("Make sure sorting_emulator.py exists in the emulators/ directory")
+    sys.exit(1)
 
-class SortingSearchRunner:
-    """
-    Top-level runner for Babelscope sorting algorithm search
-    Manages output directories, logging, and comprehensive result tracking
-    """
+class BabelscopeSession:
+    """Manages a Babelscope exploration session"""
     
-    def __init__(self, output_base_dir: str = "output/sorting"):
-        self.output_base_dir = Path(output_base_dir)
-        self.session_start = datetime.now()
-        self.session_id = self.session_start.strftime("%Y%m%d_%H%M%S")
+    def __init__(self, batch_size: int, output_dir: str = "babelscope_results"):
+        self.batch_size = batch_size
+        self.output_dir = Path(output_dir)
+        self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.session_dir = self.output_dir / f"session_{self.session_id}"
         
-        # Create output directory structure
-        self.output_dir = self.output_base_dir / f"session_{self.session_id}"
-        self.roms_dir = self.output_dir / "roms"
-        self.logs_dir = self.output_dir / "logs"
+        # Create directory structure
+        self.session_dir.mkdir(parents=True, exist_ok=True)
+        self.roms_dir = self.session_dir / "discovered_roms"
+        self.logs_dir = self.session_dir / "logs"
+        self.roms_dir.mkdir(exist_ok=True)
+        self.logs_dir.mkdir(exist_ok=True)
         
-        for dir_path in [self.output_dir, self.roms_dir, self.logs_dir]:
-            dir_path.mkdir(parents=True, exist_ok=True)
-        
-        # Initialize log files
-        self.debug_log_path = self.logs_dir / "debug.txt"
-        self.summary_log_path = self.logs_dir / "summary.json"
-        self.discoveries_log_path = self.logs_dir / "discoveries.json"
-        
-        # Session statistics
-        self.session_stats = {
+        # Session state
+        self.running = True
+        self.stats = {
             'session_id': self.session_id,
-            'start_time': self.session_start.isoformat(),
+            'start_time': time.time(),
             'total_roms_tested': 0,
             'total_batches': 0,
-            'total_sorts_found': 0,
-            'total_execution_time': 0.0,
-            'discoveries': [],
+            'total_discoveries': 0,
             'batch_history': []
         }
         
-        self._init_debug_log()
-        print(f"🔢 Sorting Search Session: {self.session_id}")
-        print(f"📁 Output directory: {self.output_dir}")
-    
-    def _init_debug_log(self):
-        """Initialize debug log file with session header"""
-        with open(self.debug_log_path, 'w', encoding='utf-8') as f:
-            f.write("BABELSCOPE SORTING ALGORITHM SEARCH - DEBUG LOG\n")
-            f.write("=" * 60 + "\n")
-            f.write(f"Session ID: {self.session_id}\n")
-            f.write(f"Start Time: {self.session_start}\n")
-            f.write(f"Output Directory: {self.output_dir}\n")
-            f.write("=" * 60 + "\n\n")
-    
-    def _log_debug(self, message: str, also_print: bool = True):
-        """Write message to debug log and optionally print"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        log_message = f"[{timestamp}] {message}"
-        
-        with open(self.debug_log_path, 'a', encoding='utf-8') as f:
-            f.write(log_message + "\n")
-        
-        if also_print:
-            print(log_message)
-    
-    def _save_session_summary(self):
-        """Save comprehensive session summary"""
-        # Update final stats
-        self.session_stats['end_time'] = datetime.now().isoformat()
-        self.session_stats['total_execution_time'] = time.time() - time.mktime(self.session_start.timetuple())
-        
-        # Calculate rates
-        if self.session_stats['total_execution_time'] > 0:
-            self.session_stats['roms_per_second'] = self.session_stats['total_roms_tested'] / self.session_stats['total_execution_time']
-            self.session_stats['batches_per_hour'] = self.session_stats['total_batches'] / (self.session_stats['total_execution_time'] / 3600)
-        
-        # Discovery rate
-        if self.session_stats['total_sorts_found'] > 0:
-            self.session_stats['discovery_rate'] = self.session_stats['total_roms_tested'] / self.session_stats['total_sorts_found']
-        else:
-            self.session_stats['discovery_rate'] = None
-        
-        # Save summary
-        with open(self.summary_log_path, 'w', encoding='utf-8') as f:
-            json.dump(self.session_stats, f, indent=2)
-        
-        # Save discoveries separately
-        with open(self.discoveries_log_path, 'w', encoding='utf-8') as f:
-            json.dump(self.session_stats['discoveries'], f, indent=2)
-    
-    def _process_batch_results(self, batch_num: int, batch_results: Dict, 
-                              execution_time: float, detector: CUDASortingDetector) -> int:
-        """Process and log results from a batch"""
-        sorts_found = batch_results['sorts_found']
-        arrays_accessed = batch_results['arrays_accessed']
-        
-        # Log batch summary
-        self._log_debug(f"Batch {batch_num} Results:")
-        self._log_debug(f"  Execution time: {execution_time:.2f}s")
-        self._log_debug(f"  Arrays accessed: {arrays_accessed}")
-        self._log_debug(f"  Sorting algorithms found: {sorts_found}")
-        self._log_debug(f"  Total array reads: {batch_results['total_array_reads']}")
-        self._log_debug(f"  Total array writes: {batch_results['total_array_writes']}")
-        self._log_debug(f"  Total comparisons: {batch_results['total_comparisons']}")
-        self._log_debug(f"  Total swaps: {batch_results['total_swaps']}")
-        
-        # Process discoveries
-        discoveries_saved = 0
-        if sorts_found > 0:
-            self._log_debug(f"🎯 SORTING ALGORITHMS DISCOVERED:")
-            
-            for i, discovery in enumerate(batch_results['discoveries']):
-                instance_id = discovery['instance_id']
-                direction = discovery['sort_direction']
-                cycle = discovery['sort_cycle']
-                final_array = discovery['final_array']
-                
-                self._log_debug(f"  {i+1}. Instance {instance_id}: {direction.upper()} sort")
-                self._log_debug(f"     Sorted at cycle: {cycle:,}")
-                self._log_debug(f"     Array reads: {discovery['array_reads']}")
-                self._log_debug(f"     Array writes: {discovery['array_writes']}")
-                self._log_debug(f"     Comparisons: {discovery['comparisons']}")
-                self._log_debug(f"     Swaps: {discovery['swaps']}")
-                self._log_debug(f"     Final array: {final_array}")
-                
-                # Save ROM and analysis
-                rom_filename = self._save_discovery_rom(
-                    detector, instance_id, discovery, batch_num, i+1
-                )
-                
-                # Add to session discoveries
-                discovery_record = {
-                    'batch': batch_num,
-                    'discovery_number': i+1,
-                    'instance_id': instance_id,
-                    'direction': direction,
-                    'cycle': cycle,
-                    'array_reads': discovery['array_reads'],
-                    'array_writes': discovery['array_writes'],
-                    'comparisons': discovery['comparisons'],
-                    'swaps': discovery['swaps'],
-                    'final_array': final_array,
-                    'rom_filename': rom_filename,
-                    'timestamp': datetime.now().isoformat()
-                }
-                
-                self.session_stats['discoveries'].append(discovery_record)
-                discoveries_saved += 1
-        
-        # Record batch in history
-        batch_record = {
-            'batch_number': batch_num,
-            'execution_time': execution_time,
-            'arrays_accessed': arrays_accessed,
-            'sorts_found': sorts_found,
-            'total_array_reads': batch_results['total_array_reads'],
-            'total_array_writes': batch_results['total_array_writes'],
-            'total_comparisons': batch_results['total_comparisons'],
-            'total_swaps': batch_results['total_swaps'],
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        self.session_stats['batch_history'].append(batch_record)
-        self._log_debug("")  # Empty line for readability
-        
-        return discoveries_saved
-    
-    def _save_discovery_rom(self, detector: CUDASortingDetector, instance_id: int, 
-                           discovery: Dict, batch_num: int, discovery_num: int) -> str:
-        """Save discovered sorting ROM with comprehensive analysis"""
-        import cupy as cp
-        import hashlib
-        
-        # Extract ROM data
-        rom_data = cp.asnumpy(detector.memory[instance_id, 0x200:])
-        
-        # Find actual ROM end (first long stretch of zeros)
-        rom_end = len(rom_data)
-        zero_count = 0
-        for i in range(len(rom_data)):
-            if rom_data[i] == 0:
-                zero_count += 1
-                if zero_count > 64:
-                    rom_end = max(100, i - 63)  # Ensure minimum ROM size
-                    break
-            else:
-                zero_count = 0
-        
-        rom_data = rom_data[:rom_end]
-        rom_hash = hashlib.sha256(rom_data.tobytes()).hexdigest()[:12]
-        
-        # Create filenames
-        direction = discovery['sort_direction']
-        cycle = discovery['sort_cycle']
-        
-        base_filename = f"SORT_{direction.upper()}_B{batch_num:03d}D{discovery_num:02d}_I{instance_id:05d}_C{cycle}_{rom_hash}"
-        rom_filename = f"{base_filename}.ch8"
-        analysis_filename = f"{base_filename}_ANALYSIS.txt"
-        
-        rom_path = self.roms_dir / rom_filename
-        analysis_path = self.roms_dir / analysis_filename
-        
-        # Save ROM binary
-        with open(rom_path, 'wb') as f:
-            f.write(rom_data.tobytes())
-        
-        # Save comprehensive analysis
-        with open(analysis_path, 'w', encoding='utf-8') as f:
-            f.write("BABELSCOPE SORTING ALGORITHM DISCOVERY\n")
-            f.write("=" * 50 + "\n\n")
-            
-            f.write("DISCOVERY INFORMATION:\n")
-            f.write("-" * 30 + "\n")
-            f.write(f"Session ID: {self.session_id}\n")
-            f.write(f"Batch Number: {batch_num}\n")
-            f.write(f"Discovery Number: {discovery_num}\n")
-            f.write(f"Instance ID: {instance_id}\n")
-            f.write(f"Discovery Time: {datetime.now()}\n\n")
-            
-            f.write("SORTING ALGORITHM DETAILS:\n")
-            f.write("-" * 30 + "\n")
-            f.write(f"Sort Direction: {direction.upper()}\n")
-            f.write(f"Sorting Completed at Cycle: {cycle:,}\n")
-            f.write(f"Final Sorted Array: {discovery['final_array']}\n")
-            f.write(f"Array Location: 0x300-0x307 (768-775 decimal)\n\n")
-            
-            f.write("ALGORITHM STATISTICS:\n")
-            f.write("-" * 30 + "\n")
-            f.write(f"Array Reads: {discovery['array_reads']}\n")
-            f.write(f"Array Writes: {discovery['array_writes']}\n")
-            f.write(f"Comparison Operations: {discovery['comparisons']}\n")
-            f.write(f"Swap Operations: {discovery['swaps']}\n")
-            f.write(f"Total Memory Operations: {discovery['array_reads'] + discovery['array_writes']}\n\n")
-            
-            f.write("ROM INFORMATION:\n")
-            f.write("-" * 30 + "\n")
-            f.write(f"ROM Size: {len(rom_data)} bytes\n")
-            f.write(f"ROM Hash: {rom_hash}\n")
-            f.write(f"ROM Filename: {rom_filename}\n\n")
-            
-            f.write("ALGORITHM CLASSIFICATION:\n")
-            f.write("-" * 30 + "\n")
-            
-            # Classify the sorting algorithm based on operations
-            reads = discovery['array_reads']
-            writes = discovery['array_writes']
-            comps = discovery['comparisons']
-            swaps = discovery['swaps']
-            
-            if reads <= 16 and writes <= 16 and comps <= 20:
-                algorithm_type = "Efficient sorting (possible quicksort or optimized algorithm)"
-            elif reads > 50 or writes > 50:
-                algorithm_type = "Brute-force or bubble-sort style algorithm"
-            elif swaps > comps:
-                algorithm_type = "Swap-heavy algorithm (possible selection sort)"
-            elif comps > swaps * 3:
-                algorithm_type = "Comparison-heavy algorithm (possible insertion sort)"
-            else:
-                algorithm_type = "Unknown sorting methodology"
-            
-            f.write(f"Likely Algorithm Type: {algorithm_type}\n")
-            f.write(f"Efficiency Rating: ")
-            if reads + writes < 30:
-                f.write("HIGH (efficient sorting)\n")
-            elif reads + writes < 60:
-                f.write("MEDIUM (moderately efficient)\n")
-            else:
-                f.write("LOW (brute-force approach)\n")
-        
-        self._log_debug(f"💾 Saved: {rom_filename}")
-        return rom_filename
-    
-    def run_search(self, batch_size: int = 20000, cycles: int = 50000, 
-                   max_batches: int = None, continuous: bool = False,
-                   check_interval: int = 500):
-        """Run the sorting algorithm search"""
-        
-        self._log_debug(f"🔢 Starting Sorting Algorithm Search")
-        self._log_debug(f"Batch size: {batch_size:,} ROMs")
-        self._log_debug(f"Cycles per ROM: {cycles:,}")
-        self._log_debug(f"Check interval: {check_interval}")
-        self._log_debug(f"Mode: {'Continuous' if continuous else f'{max_batches} batches'}")
-        self._log_debug("")
-        
         # Initialize detector
-        try:
-            detector = CUDASortingDetector(batch_size)
-        except Exception as e:
-            self._log_debug(f"❌ Failed to initialize detector: {e}")
-            return False
+        print(f"🔬 Initializing Babelscope session: {self.session_id}")
+        print(f"📁 Output directory: {self.session_dir}")
+        print(f"📊 Batch size: {batch_size:,}")
+        
+        self.detector = PureBabelscopeDetector(batch_size)
+        
+        # Setup signal handlers
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+        
+    def _signal_handler(self, signum, frame):
+        """Handle graceful shutdown"""
+        print(f"\n🛑 Received signal {signum}, shutting down gracefully...")
+        self.running = False
+    
+    def run_exploration(self, 
+                       max_batches: Optional[int] = None,
+                       cycles_per_rom: int = 100000,
+                       save_frequency: int = 10):
+        """
+        Run the main Babelscope exploration
+        
+        Args:
+            max_batches: Maximum batches to run (None = infinite)
+            cycles_per_rom: Execution cycles per ROM
+            save_frequency: Save session state every N batches
+        """
+        
+        print("\n🏹 STARTING BABELSCOPE EXPLORATION")
+        print("=" * 60)
+        print(f"   Test pattern: [8, 3, 6, 1, 7, 2, 5, 4] at 0x300-0x307")
+        print(f"   Cycles per ROM: {cycles_per_rom:,}")
+        print(f"   Max batches: {max_batches or 'Infinite'}")
+        print(f"   Looking for: Any code that sorts this array")
+        print()
         
         batch_count = 0
-        search_start_time = time.time()
         
         try:
-            while True:
-                # Check stopping conditions
-                if not continuous and max_batches and batch_count >= max_batches:
-                    self._log_debug(f"🛑 Reached maximum batches ({max_batches})")
+            while self.running:
+                if max_batches and batch_count >= max_batches:
+                    print(f"🏁 Reached maximum batches ({max_batches})")
                     break
                 
                 batch_count += 1
-                self._log_debug(f"🔢 Starting Batch {batch_count}")
+                batch_start_time = time.time()
                 
-                # Generate ROMs using CUDA generator
-                batch_start = time.time()
+                print(f"🎯 BATCH {batch_count}")
+                print("-" * 30)
+                
+                # Step 1: Generate completely random ROMs on GPU
+                print(f"🎲 Generating {self.batch_size:,} random ROMs on GPU...")
                 try:
-                    if USE_CUDA_GENERATOR:
-                        rom_data_list = generate_random_roms_cuda(batch_size)
-                        self._log_debug(f"Generated {len(rom_data_list):,} random ROMs on GPU")
-                    else:
-                        # Fallback to simple CPU generation
-                        self._log_debug(f"Generating {batch_size:,} ROMs on CPU...")
-                        rom_data_list = []
-                        for i in range(batch_size):
-                            rom_data = np.random.randint(0, 256, size=3584, dtype=np.uint8)
-                            rom_data_list.append(rom_data)
-                        self._log_debug(f"Generated {len(rom_data_list):,} random ROMs on CPU")
+                    rom_generation_start = time.time()
+                    random_roms_gpu = generate_pure_random_roms_gpu(self.batch_size)
+                    rom_gen_time = time.time() - rom_generation_start
+                    
+                    print(f"   ✅ Generated in {rom_gen_time:.2f}s")
                 except Exception as e:
-                    self._log_debug(f"❌ ROM generation failed: {e}")
+                    print(f"   ❌ ROM generation failed: {e}")
                     continue
                 
-                # Load ROMs with sorting arrays
+                # Step 2: Load ROMs and setup sort test (direct GPU-to-GPU transfer)
+                print(f"📥 Loading ROMs with test pattern...")
                 try:
-                    detector.load_roms_with_sort_arrays(rom_data_list)
-                    self._log_debug(f"Loaded ROMs with pre-seeded sort arrays")
+                    load_start = time.time()
+                    self.detector.load_random_roms_and_setup_sort_test(random_roms_gpu)
+                    load_time = time.time() - load_start
+                    
+                    print(f"   ✅ Loaded in {load_time:.2f}s")
                 except Exception as e:
-                    self._log_debug(f"❌ ROM loading failed: {e}")
+                    print(f"   ❌ ROM loading failed: {e}")
                     continue
                 
-                # Run sorting detection
+                # Step 3: Run complete CHIP-8 emulation and check for sorting
+                print(f"🔍 Running CHIP-8 emulation and sort detection...")
                 try:
-                    sorts_found = detector.run_sorting_detection(
-                        cycles=cycles,
-                        sort_check_interval=check_interval
+                    search_start = time.time()
+                    discoveries = self.detector.run_babelscope_search(
+                        cycles=cycles_per_rom, 
+                        check_interval=100
                     )
+                    search_time = time.time() - search_start
+                    
+                    print(f"   ✅ Search completed in {search_time:.2f}s")
+                    print(f"   🎯 Discoveries: {discoveries}")
+                    
                 except Exception as e:
-                    self._log_debug(f"❌ Detection failed: {e}")
+                    print(f"   ❌ Search failed: {e}")
+                    discoveries = 0
                     continue
                 
-                batch_time = time.time() - batch_start
+                # Step 4: Save any discovered ROMs
+                discoveries_saved = 0
+                if discoveries > 0:
+                    print(f"💾 Saving discovered ROMs...")
+                    try:
+                        discovery_list = self.detector.get_discoveries()
+                        
+                        for i, discovery in enumerate(discovery_list):
+                            filename = save_discovery_rom(
+                                discovery, 
+                                self.roms_dir, 
+                                batch_count, 
+                                i + 1
+                            )
+                            discoveries_saved += 1
+                            
+                            print(f"      {filename}: cycle {discovery['sort_cycle']:,}")
+                        
+                    except Exception as e:
+                        print(f"   ❌ Failed to save discoveries: {e}")
                 
-                # Get comprehensive results
-                try:
-                    # Try validated results first, fall back to regular results
-                    if hasattr(detector, 'get_validated_results'):
-                        batch_results = detector.get_validated_results()
-                    elif hasattr(detector, 'validate_sorting_results'):
-                        batch_results = detector.validate_sorting_results()
-                    else:
-                        # Fallback to regular results
-                        batch_results = detector.get_sorting_results()
-                        self._log_debug("⚠️  Using unvalidated results - false positives possible")
-                except Exception as e:
-                    self._log_debug(f"❌ Failed to get results: {e}")
-                    continue
+                # Update statistics
+                batch_time = time.time() - batch_start_time
+                roms_per_second = self.batch_size / batch_time
                 
-                # Process and save results
-                discoveries_saved = self._process_batch_results(
-                    batch_count, batch_results, batch_time, detector
-                )
+                self.stats['total_roms_tested'] += self.batch_size
+                self.stats['total_batches'] = batch_count
+                self.stats['total_discoveries'] += discoveries_saved
                 
-                # Update session statistics
-                self.session_stats['total_roms_tested'] += batch_size
-                self.session_stats['total_batches'] = batch_count
-                self.session_stats['total_sorts_found'] += sorts_found
+                # Record batch info
+                batch_record = {
+                    'batch': batch_count,
+                    'roms_tested': self.batch_size,
+                    'discoveries': discoveries_saved,
+                    'batch_time': batch_time,
+                    'roms_per_second': roms_per_second,
+                    'timestamp': datetime.now().isoformat()
+                }
+                self.stats['batch_history'].append(batch_record)
                 
-                # Progress report
-                total_time = time.time() - search_start_time
-                rate = self.session_stats['total_roms_tested'] / total_time if total_time > 0 else 0
+                # Print batch summary
+                print(f"📊 Batch {batch_count} summary:")
+                print(f"   ROMs tested: {self.batch_size:,}")
+                print(f"   Discoveries: {discoveries_saved}")
+                print(f"   Batch time: {batch_time:.2f}s")
+                print(f"   Rate: {roms_per_second:,.0f} ROMs/sec")
                 
-                self._log_debug(f"📊 Session Progress:")
-                self._log_debug(f"  Total ROMs tested: {self.session_stats['total_roms_tested']:,}")
-                self._log_debug(f"  Total batches: {batch_count}")
-                self._log_debug(f"  Total sorts found: {self.session_stats['total_sorts_found']}")
-                self._log_debug(f"  Processing rate: {rate:.0f} ROMs/sec")
-                self._log_debug(f"  Session time: {total_time/3600:.2f} hours")
+                # Print session totals
+                session_time = time.time() - self.stats['start_time']
+                total_rate = self.stats['total_roms_tested'] / session_time
                 
-                if self.session_stats['total_sorts_found'] > 0:
-                    discovery_rate = self.session_stats['total_roms_tested'] // self.session_stats['total_sorts_found']
-                    self._log_debug(f"  Discovery rate: 1 in {discovery_rate:,} ROMs")
+                print(f"🎯 Session totals:")
+                print(f"   Total ROMs: {self.stats['total_roms_tested']:,}")
+                print(f"   Total discoveries: {self.stats['total_discoveries']}")
+                print(f"   Session time: {session_time/3600:.2f} hours")
+                print(f"   Avg rate: {total_rate:,.0f} ROMs/sec")
                 
-                self._log_debug("=" * 60)
+                if self.stats['total_discoveries'] > 0:
+                    discovery_rate = self.stats['total_roms_tested'] // self.stats['total_discoveries']
+                    print(f"   Discovery rate: 1 in {discovery_rate:,}")
                 
-                # Save progress
-                self._save_session_summary()
+                print()
+                
+                # Save session state periodically
+                if batch_count % save_frequency == 0:
+                    self._save_session_state()
+                
+                # Reset detector for next batch
+                self.detector.reset()
+                
+                # Memory cleanup
+                del random_roms_gpu
+                cp.get_default_memory_pool().free_all_blocks()
         
         except KeyboardInterrupt:
-            self._log_debug(f"🛑 Search interrupted by user at batch {batch_count}")
+            print(f"\n🛑 Exploration interrupted by user after {batch_count} batches")
+        
         except Exception as e:
-            self._log_debug(f"❌ Unexpected error: {e}")
+            print(f"\n❌ Unexpected error: {e}")
+            import traceback
+            traceback.print_exc()
         
-        # Final summary
-        total_time = time.time() - search_start_time
-        final_rate = self.session_stats['total_roms_tested'] / total_time if total_time > 0 else 0
+        finally:
+            # Final save and summary
+            self._save_session_state()
+            self._print_final_summary(batch_count)
+    
+    def _save_session_state(self):
+        """Save current session state"""
+        self.stats['last_saved'] = datetime.now().isoformat()
+        self.stats['total_time'] = time.time() - self.stats['start_time']
         
-        self._log_debug("")
-        self._log_debug("🏁 SORTING ALGORITHM SEARCH COMPLETE")
-        self._log_debug("=" * 60)
-        self._log_debug(f"Session ID: {self.session_id}")
-        self._log_debug(f"Total batches: {batch_count}")
-        self._log_debug(f"Total ROMs tested: {self.session_stats['total_roms_tested']:,}")
-        self._log_debug(f"Total execution time: {total_time/3600:.2f} hours")
-        self._log_debug(f"Average rate: {final_rate:.0f} ROMs/sec")
-        self._log_debug(f"🎯 TOTAL SORTING ALGORITHMS FOUND: {self.session_stats['total_sorts_found']}")
+        # Save detailed state
+        state_file = self.logs_dir / "session_state.json"
+        with open(state_file, 'w') as f:
+            json.dump(self.stats, f, indent=2)
         
-        if self.session_stats['total_sorts_found'] > 0:
-            discovery_rate = self.session_stats['total_roms_tested'] // self.session_stats['total_sorts_found']
-            self._log_debug(f"🔢 Final discovery rate: 1 per {discovery_rate:,} ROMs")
-            self._log_debug(f"📁 ROMs saved to: {self.roms_dir}")
+        # Save human-readable summary
+        summary_file = self.logs_dir / "summary.txt"
+        with open(summary_file, 'w') as f:
+            f.write(f"Babelscope Exploration Session {self.stats['session_id']}\n")
+            f.write("=" * 60 + "\n\n")
+            f.write(f"ROMs tested: {self.stats['total_roms_tested']:,}\n")
+            f.write(f"Batches completed: {self.stats['total_batches']}\n")
+            f.write(f"Sorting algorithms found: {self.stats['total_discoveries']}\n")
+            f.write(f"Session time: {self.stats['total_time']/3600:.2f} hours\n")
+            
+            if self.stats['total_discoveries'] > 0:
+                rate = self.stats['total_roms_tested'] // self.stats['total_discoveries']
+                f.write(f"Discovery rate: 1 in {rate:,} ROMs\n")
+            
+            f.write(f"\nLast updated: {datetime.now()}\n")
+    
+    def _print_final_summary(self, batches_completed: int):
+        """Print final session summary"""
+        total_time = time.time() - self.stats['start_time']
+        final_rate = self.stats['total_roms_tested'] / total_time if total_time > 0 else 0
         
-        self._log_debug(f"📋 Debug log: {self.debug_log_path}")
-        self._log_debug(f"📊 Summary: {self.summary_log_path}")
+        print("\n🏁 BABELSCOPE EXPLORATION COMPLETE")
+        print("=" * 60)
+        print(f"Session ID: {self.stats['session_id']}")
+        print(f"Batches completed: {batches_completed}")
+        print(f"Total ROMs tested: {self.stats['total_roms_tested']:,}")
+        print(f"Total time: {total_time/3600:.2f} hours")
+        print(f"Average rate: {final_rate:,.0f} ROMs/sec")
+        print(f"🎯 SORTING ALGORITHMS DISCOVERED: {self.stats['total_discoveries']}")
         
-        # Final save
-        self._save_session_summary()
+        if self.stats['total_discoveries'] > 0:
+            final_discovery_rate = self.stats['total_roms_tested'] // self.stats['total_discoveries']
+            print(f"🔢 Final discovery rate: 1 in {final_discovery_rate:,}")
+            print(f"📁 Discovered ROMs saved in: {self.roms_dir}")
         
-        return self.session_stats['total_sorts_found'] > 0
+        print(f"📋 Session data: {self.logs_dir}")
+        print(f"📁 All results: {self.session_dir}")
 
 
 def main():
     """Main entry point"""
-    parser = argparse.ArgumentParser(description='Babelscope Sorting Algorithm Search')
-    parser.add_argument('--batch-size', type=int, default=20000,
-                       help='ROMs per batch (default: 20000)')
-    parser.add_argument('--cycles', type=int, default=50000,
-                       help='Execution cycles per ROM (default: 50000)')
-    parser.add_argument('--batches', type=int, default=1,
-                       help='Number of batches (default: 1)')
-    parser.add_argument('--continuous', action='store_true',
-                       help='Run continuous search')
-    parser.add_argument('--check-interval', type=int, default=500,
-                       help='Sort check interval (default: 500)')
-    parser.add_argument('--output-dir', type=str, default='output/sorting',
-                       help='Output directory (default: output/sorting)')
+    parser = argparse.ArgumentParser(
+        description='Babelscope: Find sorting algorithms in random machine code',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python babelscope_runner.py --batch-size 100000 --batches 50
+  python babelscope_runner.py --batch-size 200000 --infinite
+  python babelscope_runner.py --batch-size 50000 --cycles 200000
+        """
+    )
+    
+    parser.add_argument('--batch-size', type=int, default=50000,
+                       help='ROMs per batch (default: 50000)')
+    parser.add_argument('--batches', type=int, default=10,
+                       help='Number of batches (default: 10)')
+    parser.add_argument('--infinite', action='store_true',
+                       help='Run infinite batches (Ctrl+C to stop)')
+    parser.add_argument('--cycles', type=int, default=100000,
+                       help='Execution cycles per ROM (default: 100000)')
+    parser.add_argument('--output-dir', type=str, default='babelscope_results',
+                       help='Output directory (default: babelscope_results)')
+    parser.add_argument('--save-frequency', type=int, default=10,
+                       help='Save state every N batches (default: 10)')
     
     args = parser.parse_args()
     
-    print("🔢 Babelscope Sorting Algorithm Search")
-    print("=" * 50)
-    print("🎯 Searching for emergent sorting algorithms in random CHIP-8 code")
-    print("📊 Pre-seeds 8 integers at memory 0x300, detects when sorted")
+    print("🔬 BABELSCOPE: COMPUTATIONAL ARCHAEOLOGY")
+    print("=" * 60)
+    print("🎯 Searching for sorting algorithms in random machine code")
+    print("📊 Method: Generate random ROMs, run CHIP-8 emulation, detect sorting")
+    print("🧬 Pure exploration - no bias, no templates, just entropy")
     print()
     
-    # Create runner and start search
-    runner = SortingSearchRunner(args.output_dir)
+    # Validate GPU
+    try:
+        device = cp.cuda.Device()
+        device_props = cp.cuda.runtime.getDeviceProperties(device.id)
+        device_name = device_props['name'].decode('utf-8')
+        memory_info = device.mem_info
+        compute_capability = device.compute_capability
+        
+        print(f"🎮 GPU: {device_name}")
+        print(f"💾 Memory: {memory_info[1] // (1024**3)} GB")
+        print(f"🔧 Compute: {compute_capability}")
+        print()
+    except Exception as e:
+        print(f"❌ GPU validation failed: {e}")
+        return 1
     
-    success = runner.run_search(
-        batch_size=args.batch_size,
-        cycles=args.cycles,
-        max_batches=args.batches,
-        continuous=args.continuous,
-        check_interval=args.check_interval
-    )
-    
-    if success:
-        print(f"🎉 Search completed successfully!")
-        print(f"📁 Results saved to: {runner.output_dir}")
+    # Create and run session
+    try:
+        session = BabelscopeSession(
+            batch_size=args.batch_size,
+            output_dir=args.output_dir
+        )
+        
+        max_batches = None if args.infinite else args.batches
+        
+        session.run_exploration(
+            max_batches=max_batches,
+            cycles_per_rom=args.cycles,
+            save_frequency=args.save_frequency
+        )
+        
+        print("🎉 Exploration completed successfully!")
         return 0
-    else:
-        print(f"❌ Search encountered errors")
+        
+    except Exception as e:
+        print(f"❌ Exploration failed: {e}")
+        import traceback
+        traceback.print_exc()
         return 1
 
 

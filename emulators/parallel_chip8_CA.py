@@ -1,6 +1,6 @@
 """
-Mega-Kernel CHIP-8 Emulator with FIXED CUDA CA Detection
-FIXED: CA scoring algorithm to properly detect high-likelihood patterns
+GTX 1070-Optimized CHIP-8 Emulator for Memory-Based CA Detection
+Focuses on memory patterns, ignores display operations
 """
 
 import cupy as cp
@@ -38,13 +38,12 @@ CHIP8_FONT = cp.array([
     0xF0, 0x80, 0xF0, 0x80, 0x80   # F
 ], dtype=cp.uint8)
 
-# FIXED mega-kernel with improved CA detection
-MEGA_KERNEL_WITH_CA_SOURCE = r'''
+# GTX 1070-optimized Memory-CA detection kernel
+MEMORY_CA_KERNEL_SOURCE = r'''
 extern "C" __global__
-void chip8_mega_kernel_with_ca(
+void chip8_memory_ca_kernel(
     // State arrays
     unsigned char* memory,              // [instances][4096]
-    unsigned char* displays,            // [instances][32][64] 
     unsigned char* registers,           // [instances][16]
     unsigned short* index_registers,    // [instances]
     unsigned short* program_counters,   // [instances]
@@ -52,37 +51,32 @@ void chip8_mega_kernel_with_ca(
     unsigned short* stacks,             // [instances][16]
     unsigned char* delay_timers,        // [instances]
     unsigned char* sound_timers,        // [instances]
-    unsigned char* keypad,              // [instances][16]
     
     // State flags
     unsigned char* crashed,             // [instances]
     unsigned char* halted,              // [instances]
-    unsigned char* waiting_for_key,     // [instances]
-    unsigned char* key_registers,       // [instances]
     
-    // Statistics arrays
+    // Statistics arrays (minimal for memory-CA focus)
     unsigned int* instructions_executed,    // [instances]
-    unsigned int* display_writes,           // [instances]
-    unsigned int* pixels_drawn,             // [instances]
-    unsigned int* pixels_erased,            // [instances]
-    unsigned int* sprite_collisions,        // [instances]
+    unsigned int* memory_operations,        // [instances]
     
     // Random number state
-    unsigned int* rng_state,            // [instances] - for RND instruction
+    unsigned int* rng_state,            // [instances]
     
-    // NEW: CA detection arrays
+    // Memory-CA detection arrays
     unsigned char* ca_detected,         // [instances] - boolean CA flag
     float* ca_likelihood,               // [instances] - CA likelihood score
     unsigned short* hot_loop_start,     // [instances] - start of hot loop
     unsigned short* hot_loop_end,       // [instances] - end of hot loop
     unsigned int* pc_frequency,         // [instances][256] - PC frequency buckets
+    unsigned int* memory_write_frequency, // [instances][128] - Memory write pattern tracking
     
     // Execution parameters
     int num_instances,
     int cycles_to_run,
     int timer_update_interval,
     
-    // CA detection parameters
+    // Memory-CA detection parameters
     int ca_detection_interval,          // How often to check for CA patterns
     float ca_threshold,                 // Minimum CA likelihood to flag
     
@@ -96,11 +90,10 @@ void chip8_mega_kernel_with_ca(
     
     // Calculate base indices for this instance
     int mem_base = instance * 4096;
-    int display_base = instance * 32 * 64;
     int reg_base = instance * 16;
     int stack_base = instance * 16;
-    int keypad_base = instance * 16;
     int pc_freq_base = instance * 256;  // 256 PC frequency buckets per instance
+    int mem_write_base = instance * 128; // 128 memory write buckets
     
     // Local state (registers for better performance)
     unsigned short pc = program_counters[instance];
@@ -109,42 +102,37 @@ void chip8_mega_kernel_with_ca(
     unsigned char dt = delay_timers[instance];
     unsigned char st = sound_timers[instance];
     
-    // FIXED: CA detection state with better tracking
+    // Enhanced CA detection state with focus on memory patterns
     unsigned int local_pc_frequency[256];
+    unsigned int local_memory_writes[128];
     unsigned int instruction_counts[16];  // Track instruction types
     for (int i = 0; i < 256; i++) local_pc_frequency[i] = 0;
+    for (int i = 0; i < 128; i++) local_memory_writes[i] = 0;
     for (int i = 0; i < 16; i++) instruction_counts[i] = 0;
     
     unsigned int last_ca_check = 0;
-    unsigned int total_display_ops = 0;
     unsigned int total_memory_ops = 0;
+    unsigned int sequential_memory_accesses = 0;
+    unsigned short last_memory_write_addr = 0xFFFF;
     
     // Statistics
     unsigned int local_instructions = 0;
-    unsigned int local_display_writes = 0;
-    unsigned int local_pixels_drawn = 0;
-    unsigned int local_pixels_erased = 0;
-    unsigned int local_collisions = 0;
+    unsigned int local_memory_operations = 0;
     
     // Check if this instance is active
     if (crashed[instance] || halted[instance]) {
         return; // Skip crashed/halted instances
     }
     
-    // Main execution loop with enhanced CA detection
+    // Main execution loop with enhanced memory-CA detection
     for (int cycle = 0; cycle < cycles_to_run; cycle++) {
-        // Skip if waiting for key
-        if (waiting_for_key[instance]) {
-            continue;
-        }
-        
         // Check PC bounds
         if (pc >= 4096 - 1) {
             crashed[instance] = 1;
             break;
         }
         
-        // Track PC frequency for CA detection (map PC to 0-255 range)
+        // Track PC frequency for CA detection
         if (pc >= 0x200) {
             unsigned char pc_bucket = (pc - 0x200) / 16;  // Map 0x200-0xFFF to 0-255
             if (pc_bucket < 256) {
@@ -157,15 +145,9 @@ void chip8_mega_kernel_with_ca(
         unsigned char low_byte = memory[mem_base + pc + 1];
         unsigned short instruction = (high_byte << 8) | low_byte;
         
-        // FIXED: Track instruction types for better CA analysis
+        // Track instruction types for better CA analysis
         unsigned char opcode = (instruction & 0xF000) >> 12;
         instruction_counts[opcode]++;
-        
-        // Track specific CA-relevant operations
-        if (opcode == 0xD) total_display_ops++;  // Display operations
-        if (opcode == 0xF && ((instruction & 0x00FF) == 0x55 || (instruction & 0x00FF) == 0x65 || (instruction & 0x00FF) == 0x1E)) {
-            total_memory_ops++;  // Memory operations
-        }
         
         // Increment PC
         pc += 2;
@@ -178,15 +160,10 @@ void chip8_mega_kernel_with_ca(
         unsigned char kk = instruction & 0x00FF;
         unsigned short nnn = instruction & 0x0FFF;
         
-        // Execute instruction (same as before - keeping it concise for space)
+        // Execute instruction with enhanced memory tracking
         switch (opcode) {
             case 0x0:
-                if (instruction == 0x00E0) {
-                    for (int i = 0; i < 32 * 64; i++) {
-                        displays[display_base + i] = 0;
-                    }
-                    local_display_writes++;
-                } else if (instruction == 0x00EE) {
+                if (instruction == 0x00EE) {
                     if (sp > 0) {
                         sp--;
                         pc = stacks[stack_base + sp];
@@ -194,6 +171,7 @@ void chip8_mega_kernel_with_ca(
                         crashed[instance] = 1;
                     }
                 }
+                // Skip display clear (0x00E0) - we don't care about display
                 break;
                 
             case 0x1: pc = nnn; break;
@@ -260,60 +238,21 @@ void chip8_mega_kernel_with_ca(
                 }
                 break;
                 
-            case 0xD: // Display operations
-                {
-                    unsigned char vx = registers[reg_base + x] % 64;
-                    unsigned char vy = registers[reg_base + y] % 32;
-                    registers[reg_base + 0xF] = 0;
-                    
-                    for (int row = 0; row < n; row++) {
-                        if (vy + row >= 32) break;
-                        if (index_reg + row >= 4096) break;
-                        
-                        unsigned char sprite_byte = memory[mem_base + index_reg + row];
-                        
-                        for (int col = 0; col < 8; col++) {
-                            if (vx + col >= 64) break;
-                            
-                            if (sprite_byte & (0x80 >> col)) {
-                                int pixel_idx = display_base + (vy + row) * 64 + (vx + col);
-                                
-                                if (displays[pixel_idx]) {
-                                    registers[reg_base + 0xF] = 1;
-                                    local_collisions++;
-                                    local_pixels_erased++;
-                                } else {
-                                    local_pixels_drawn++;
-                                }
-                                
-                                displays[pixel_idx] ^= 1;
-                            }
-                        }
-                    }
-                    local_display_writes++;
-                }
-                break;
+            // Skip display operations (0xD) - we don't care about display for memory-CA
+            case 0xD: break;
+            
+            // Skip key operations (0xE) - not relevant for memory-CA
+            case 0xE: break;
                 
-            case 0xE: // Key operations
-                {
-                    unsigned char key = registers[reg_base + x] & 0xF;
-                    if (kk == 0x9E) {
-                        if (keypad[keypad_base + key]) pc += 2;
-                    } else if (kk == 0xA1) {
-                        if (!keypad[keypad_base + key]) pc += 2;
-                    } else {
-                        crashed[instance] = 1;
-                    }
-                }
-                break;
-                
-            case 0xF: // Timer and misc operations
+            case 0xF: // Timer and CRITICAL memory operations
                 switch (kk) {
                     case 0x07: registers[reg_base + x] = dt; break;
-                    case 0x0A: waiting_for_key[instance] = 1; key_registers[instance] = x; break;
                     case 0x15: dt = registers[reg_base + x]; break;
                     case 0x18: st = registers[reg_base + x]; break;
-                    case 0x1E: index_reg = (index_reg + registers[reg_base + x]) & 0xFFFF; break;
+                    case 0x1E: 
+                        index_reg = (index_reg + registers[reg_base + x]) & 0xFFFF; 
+                        total_memory_ops++;
+                        break;
                     case 0x29: {
                         unsigned char digit = registers[reg_base + x] & 0xF;
                         index_reg = 0x50 + digit * 5;
@@ -324,19 +263,50 @@ void chip8_mega_kernel_with_ca(
                             memory[mem_base + index_reg] = value / 100;
                             memory[mem_base + index_reg + 1] = (value / 10) % 10;
                             memory[mem_base + index_reg + 2] = value % 10;
+                            
+                            // Track memory write pattern
+                            unsigned char write_bucket = (index_reg - 0x200) / 32;
+                            if (write_bucket < 128) {
+                                local_memory_writes[write_bucket]++;
+                            }
+                            
+                            // Check for sequential memory writes
+                            if (last_memory_write_addr != 0xFFFF && 
+                                index_reg == last_memory_write_addr + 3) {
+                                sequential_memory_accesses++;
+                            }
+                            last_memory_write_addr = index_reg;
                         }
+                        total_memory_ops++;
+                        local_memory_operations++;
                     } break;
-                    case 0x55:
+                    case 0x55: // CRITICAL: Memory store operation
                         for (int i = 0; i <= x; i++) {
                             if (index_reg + i < 4096) {
                                 memory[mem_base + index_reg + i] = registers[reg_base + i];
+                                
+                                // Track memory write pattern
+                                unsigned char write_bucket = ((index_reg + i) - 0x200) / 32;
+                                if (write_bucket < 128) {
+                                    local_memory_writes[write_bucket]++;
+                                }
                             }
                         }
+                        
+                        // Check for sequential memory writes
+                        if (last_memory_write_addr != 0xFFFF && 
+                            index_reg <= last_memory_write_addr + 16) {
+                            sequential_memory_accesses += (x + 1);
+                        }
+                        last_memory_write_addr = index_reg + x;
+                        
                         if (quirk_memory) {
                             index_reg = (index_reg + x + 1) & 0xFFFF;
                         }
+                        total_memory_ops++;
+                        local_memory_operations++;
                         break;
-                    case 0x65:
+                    case 0x65: // CRITICAL: Memory load operation
                         for (int i = 0; i <= x; i++) {
                             if (index_reg + i < 4096) {
                                 registers[reg_base + i] = memory[mem_base + index_reg + i];
@@ -345,16 +315,18 @@ void chip8_mega_kernel_with_ca(
                         if (quirk_memory) {
                             index_reg = (index_reg + x + 1) & 0xFFFF;
                         }
+                        total_memory_ops++;
+                        local_memory_operations++;
                         break;
-                    default: crashed[instance] = 1; break;
+                    default: break; // Ignore unknown F instructions
                 }
                 break;
                 
             default: crashed[instance] = 1; break;
         }
         
-        // ENHANCED CA DETECTION LOGIC - run periodically
-        if (cycle > 1000 && ca_detection_interval > 0 && 
+        // ENHANCED MEMORY-CA DETECTION LOGIC
+        if (cycle > 2000 && ca_detection_interval > 0 && 
             (cycle - last_ca_check) >= ca_detection_interval) {
             last_ca_check = cycle;
             
@@ -371,107 +343,111 @@ void chip8_mega_kernel_with_ca(
                 }
             }
             
-            // FIXED: Lower threshold for hot loop detection (was 30%, now 20%)
-            if (total_frequency > 0 && max_frequency > total_frequency / 5) {
+            // Check for hot loop
+            if (total_frequency > 0 && max_frequency > total_frequency / 6) {
                 // Calculate actual PC range from bucket
                 unsigned short hot_start = 0x200 + hot_bucket * 16;
-                unsigned short hot_end = hot_start + 32;  // FIXED: Larger analysis window (was 16, now 32)
+                unsigned short hot_end = hot_start + 32;
                 
-                // ENHANCED: More sophisticated CA pattern analysis
+                // MEMORY-FOCUSED CA SCORING
                 float ca_score = 0.0f;
                 
-                // Pattern counters
+                // Pattern counters for memory-CA detection
                 int add_i_count = 0;
                 int memory_load_count = 0;
                 int memory_store_count = 0;
                 int xor_count = 0;
                 int logical_ops = 0;
-                int display_ops = 0;
                 int arithmetic_ops = 0;
-                int control_flow_ops = 0;
+                int loop_ops = 0;
+                int index_manipulation = 0;
                 
-                // Analyze instructions in hot loop
+                // Analyze instructions in hot loop for memory patterns
                 for (unsigned short addr = hot_start; addr < hot_end && addr < 4094; addr += 2) {
+                    if (addr >= 4096) break;
                     unsigned short instr = (memory[mem_base + addr] << 8) | memory[mem_base + addr + 1];
                     unsigned char op = (instr & 0xF000) >> 12;
                     
-                    // Enhanced pattern recognition
                     if (op == 0x8) {  // Register operations
                         unsigned char subop = instr & 0x000F;
                         if (subop >= 0x1 && subop <= 0x3) {  // OR, AND, XOR
                             logical_ops++;
-                            if (subop == 0x3) xor_count++;  // XOR
+                            if (subop == 0x3) xor_count++;  // XOR is key for CA
                         } else if (subop == 0x4 || subop == 0x5 || subop == 0x7) {
                             arithmetic_ops++;
                         }
-                    } else if (op == 0xD) {  // Display
-                        display_ops++;
                     } else if (op == 0x1 || op == 0x2) {  // Jump/Call
-                        control_flow_ops++;
+                        loop_ops++;
+                    } else if (op == 0x6 || op == 0x7) {  // Load/Add immediate
+                        index_manipulation++;
                     } else if (op == 0xF) {  // Memory operations
                         unsigned char kk_val = instr & 0x00FF;
-                        if (kk_val == 0x1E) {  // ADD I, Vx
+                        if (kk_val == 0x1E) {  // ADD I, Vx - critical for iteration
                             add_i_count++;
-                        } else if (kk_val == 0x55) {  // LD [I], Vx
+                        } else if (kk_val == 0x55) {  // LD [I], Vx - memory write
                             memory_store_count++;
-                        } else if (kk_val == 0x65) {  // LD Vx, [I]
+                        } else if (kk_val == 0x65) {  // LD Vx, [I] - memory read
                             memory_load_count++;
                         }
                     }
                 }
                 
-                // ENHANCED SCORING ALGORITHM
+                // MEMORY-CA SCORING ALGORITHM
                 
-                // 1. Sequential memory access (stronger scoring)
-                if (add_i_count >= 1 && memory_load_count >= 1) {
-                    ca_score += 20.0f;  // Basic memory iteration
-                    if (add_i_count >= 2) ca_score += 10.0f;  // Multiple index ops
-                    if (memory_store_count >= 1) ca_score += 15.0f;  // Read-write cycle
+                // 1. Core memory iteration pattern (highest weight)
+                if (add_i_count >= 1 && (memory_load_count >= 1 || memory_store_count >= 1)) {
+                    ca_score += 40.0f;  // Strong base score for memory iteration
+                    if (add_i_count >= 2) ca_score += 20.0f;  // Multiple index operations
                 }
                 
-                // 2. State evolution patterns (enhanced)
-                if (memory_load_count >= 1 && logical_ops >= 1 && memory_store_count >= 1) {
-                    ca_score += 25.0f;  // Complete read-modify-write
-                    if (xor_count >= 1) ca_score += 10.0f;  // XOR bonus
-                    if (arithmetic_ops >= 1) ca_score += 5.0f;  // Arithmetic bonus
+                // 2. Complete read-modify-write cycle (CA hallmark)
+                if (memory_load_count >= 1 && memory_store_count >= 1) {
+                    ca_score += 35.0f;  // Read-write cycle
+                    if (logical_ops >= 1) ca_score += 25.0f;  // With computation
+                    if (xor_count >= 1) ca_score += 15.0f;  // XOR is prime CA operation
                 }
                 
-                // 3. Display patterns (improved)
-                if (display_ops > 0) {
-                    ca_score += 10.0f;  // Basic display
-                    if (local_display_writes > 10) ca_score += 10.0f;  // Multiple writes
-                    if (total_display_ops > 50) ca_score += 10.0f;  // Frequent display updates
+                // 3. Sequential memory access patterns
+                if (sequential_memory_accesses > 10) {
+                    ca_score += 20.0f;  // Sequential access pattern
+                    if (sequential_memory_accesses > 50) ca_score += 15.0f;  // Heavy sequential access
                 }
                 
-                // 4. Computational complexity indicators
-                if (logical_ops >= 2 && arithmetic_ops >= 1) {
-                    ca_score += 15.0f;  // Complex computation
+                // 4. Memory operation intensity
+                if (total_memory_ops > 100) {
+                    ca_score += 15.0f;  // High memory activity
+                    if (total_memory_ops > 500) ca_score += 10.0f;  // Very high activity
                 }
                 
-                // 5. Loop structure indicators
-                if (control_flow_ops >= 1 && max_frequency > total_frequency / 3) {
-                    ca_score += 10.0f;  // Tight loop with branching
+                // 5. Computational complexity in memory context
+                if (memory_load_count >= 1 && arithmetic_ops >= 2 && logical_ops >= 1) {
+                    ca_score += 20.0f;  // Complex memory-based computation
                 }
                 
-                // 6. Global pattern indicators
+                // 6. Loop structure with memory operations
+                if (loop_ops >= 1 && total_memory_ops > 20) {
+                    ca_score += 15.0f;  // Looped memory operations
+                }
+                
+                // 7. Index manipulation diversity
+                if (index_manipulation >= 2 && add_i_count >= 1) {
+                    ca_score += 10.0f;  // Sophisticated indexing
+                }
+                
+                // 8. Memory write pattern analysis
+                int active_write_buckets = 0;
+                for (int i = 0; i < 128; i++) {
+                    if (local_memory_writes[i] > 0) active_write_buckets++;
+                }
+                if (active_write_buckets > 5) {
+                    ca_score += 10.0f;  // Distributed memory writes
+                    if (active_write_buckets > 15) ca_score += 10.0f;  // Wide memory usage
+                }
+                
+                // 9. Execution concentration bonus
                 float execution_ratio = (float)max_frequency / (float)total_frequency;
-                if (execution_ratio > 0.5f) {
-                    ca_score += 5.0f + (execution_ratio - 0.5f) * 20.0f;  // Scaling bonus
-                }
-                
-                // 7. Instruction diversity bonus (prevents simple loops)
-                int unique_opcodes = 0;
-                for (int i = 0; i < 16; i++) {
-                    if (instruction_counts[i] > 0) unique_opcodes++;
-                }
-                if (unique_opcodes >= 4) {
-                    ca_score += 5.0f;  // Instruction diversity
-                    if (unique_opcodes >= 6) ca_score += 5.0f;  // High diversity
-                }
-                
-                // 8. Memory operation intensity
-                if (total_memory_ops > 20) {
-                    ca_score += 10.0f;  // High memory activity
+                if (execution_ratio > 0.4f) {
+                    ca_score += (execution_ratio - 0.4f) * 25.0f;  // Concentrated execution
                 }
                 
                 // Update CA detection results
@@ -500,33 +476,40 @@ void chip8_mega_kernel_with_ca(
     
     // Update statistics
     instructions_executed[instance] += local_instructions;
-    display_writes[instance] += local_display_writes;
-    pixels_drawn[instance] += local_pixels_drawn;
-    pixels_erased[instance] += local_pixels_erased;
-    sprite_collisions[instance] += local_collisions;
+    memory_operations[instance] += local_memory_operations;
     
-    // Copy local PC frequency to global memory
+    // Copy local frequency data to global memory
     for (int i = 0; i < 256; i++) {
         pc_frequency[pc_freq_base + i] = local_pc_frequency[i];
+    }
+    for (int i = 0; i < 128; i++) {
+        memory_write_frequency[mem_write_base + i] = local_memory_writes[i];
     }
 }
 '''
 
-class MegaKernelChip8Emulator:
+class MemoryCADetector:
     """
-    FIXED: Ultimate performance CHIP-8 emulator with enhanced CUDA CA detection
+    GPU-optimized CHIP-8 emulator focused exclusively on memory-based CA detection
+    Optimized for GTX 1070 and similar GPUs
     """
     
     def __init__(self, num_instances: int, quirks: dict = None, 
-                 ca_detection_interval: int = 1000, ca_threshold: float = 25.0):
+                 ca_detection_interval: int = 500, ca_threshold: float = 30.0):
+        
+        # Get current GPU info
+        current_device = cp.cuda.Device()
+        device_id = current_device.id
+        props = cp.cuda.runtime.getDeviceProperties(device_id)
+        gpu_name = props['name'].decode()
+        gpu_memory_gb = props['totalGlobalMem'] / 1024**3
+        
         self.num_instances = num_instances
         
         # CHIP-8 Quirks configuration
         self.quirks = quirks or {
             'memory': True,      
-            'display_wait': False, 
             'jumping': True,     
-            'shifting': False,   
             'logic': True,       
         }
         
@@ -534,29 +517,34 @@ class MegaKernelChip8Emulator:
         self.ca_detection_interval = ca_detection_interval
         self.ca_threshold = ca_threshold
         
-        # Compile the enhanced mega kernel
-        self.mega_kernel = cp.RawKernel(MEGA_KERNEL_WITH_CA_SOURCE, 'chip8_mega_kernel_with_ca')
+        # Compile the memory-CA kernel
+        self.memory_ca_kernel = cp.RawKernel(MEMORY_CA_KERNEL_SOURCE, 'chip8_memory_ca_kernel')
         
-        # Calculate optimal block/grid sizes
-        self.block_size = min(256, num_instances)
+        # GPU-optimized block/grid sizes
+        if gpu_memory_gb >= 10:  # High-end GPU
+            self.block_size = min(512, num_instances)
+        elif gpu_memory_gb >= 6:  # Mid-range GPU (GTX 1070 level)
+            self.block_size = min(256, num_instances)
+        else:  # Conservative for smaller GPUs
+            self.block_size = min(128, num_instances)
+            
         self.grid_size = (num_instances + self.block_size - 1) // self.block_size
         
-        print(f"FIXED Enhanced Mega-Kernel CHIP-8 with CA Detection: {num_instances} instances")
-        print(f"Block size: {self.block_size}, Grid size: {self.grid_size}")
-        print(f"CA detection interval: {ca_detection_interval} cycles, threshold: {ca_threshold}%")
+        print(f"🚀 Memory-CA Detector: {num_instances:,} instances on {gpu_name}")
+        print(f"   GPU memory: {gpu_memory_gb:.1f} GB")
+        print(f"   Block size: {self.block_size}, Grid size: {self.grid_size}")
+        print(f"   Memory-CA detection interval: {ca_detection_interval} cycles, threshold: {ca_threshold}%")
+        print(f"   Focus: Memory patterns only, display operations ignored")
         
         # Initialize all state
         self._initialize_state()
         self._initialize_stats()
-        self._initialize_ca_detection()
+        self._initialize_memory_ca_detection()
     
     def _initialize_state(self):
         """Initialize all state arrays"""
         # Memory: (instances, memory_size)
         self.memory = cp.zeros((self.num_instances, MEMORY_SIZE), dtype=cp.uint8)
-        
-        # Display: (instances, height, width) - flattened for kernel
-        self.display = cp.zeros((self.num_instances, DISPLAY_HEIGHT * DISPLAY_WIDTH), dtype=cp.uint8)
         
         # Registers: (instances, 16)
         self.registers = cp.zeros((self.num_instances, REGISTER_COUNT), dtype=cp.uint8)
@@ -571,14 +559,9 @@ class MegaKernelChip8Emulator:
         self.delay_timer = cp.zeros(self.num_instances, dtype=cp.uint8)
         self.sound_timer = cp.zeros(self.num_instances, dtype=cp.uint8)
         
-        # Input
-        self.keypad = cp.zeros((self.num_instances, KEYPAD_SIZE), dtype=cp.uint8)
-        
         # State flags
         self.crashed = cp.zeros(self.num_instances, dtype=cp.uint8)
         self.halted = cp.zeros(self.num_instances, dtype=cp.uint8)
-        self.waiting_for_key = cp.zeros(self.num_instances, dtype=cp.uint8)
-        self.key_register = cp.zeros(self.num_instances, dtype=cp.uint8)
         
         # Random number state for RND instruction
         self.rng_state = cp.random.randint(1, 2**32, size=self.num_instances, dtype=cp.uint32)
@@ -588,30 +571,27 @@ class MegaKernelChip8Emulator:
         self.memory[:, FONT_START:FONT_START + len(CHIP8_FONT)] = font_data
     
     def _initialize_stats(self):
-        """Initialize statistics arrays"""
+        """Initialize minimal statistics arrays for memory-CA focus"""
         self.stats = {
             'instructions_executed': cp.zeros(self.num_instances, dtype=cp.uint32),
-            'display_writes': cp.zeros(self.num_instances, dtype=cp.uint32),
-            'pixels_drawn': cp.zeros(self.num_instances, dtype=cp.uint32),
-            'pixels_erased': cp.zeros(self.num_instances, dtype=cp.uint32),
-            'sprite_collisions': cp.zeros(self.num_instances, dtype=cp.uint32),
+            'memory_operations': cp.zeros(self.num_instances, dtype=cp.uint32),
         }
     
-    def _initialize_ca_detection(self):
-        """Initialize CA detection arrays"""
+    def _initialize_memory_ca_detection(self):
+        """Initialize memory-CA detection arrays"""
         # CA detection results
         self.ca_detected = cp.zeros(self.num_instances, dtype=cp.uint8)
         self.ca_likelihood = cp.zeros(self.num_instances, dtype=cp.float32)
         self.hot_loop_start = cp.zeros(self.num_instances, dtype=cp.uint16)
         self.hot_loop_end = cp.zeros(self.num_instances, dtype=cp.uint16)
         
-        # PC frequency tracking (instances x 256 buckets)
+        # Memory tracking (instances x buckets)
         self.pc_frequency = cp.zeros((self.num_instances, 256), dtype=cp.uint32)
+        self.memory_write_frequency = cp.zeros((self.num_instances, 128), dtype=cp.uint32)
     
     def reset(self):
         """Reset all instances"""
         self.memory.fill(0)
-        self.display.fill(0)
         self.registers.fill(0)
         self.index_register.fill(0)
         self.program_counter.fill(PROGRAM_START)
@@ -619,16 +599,14 @@ class MegaKernelChip8Emulator:
         self.stack.fill(0)
         self.delay_timer.fill(0)
         self.sound_timer.fill(0)
-        self.keypad.fill(0)
-        self.waiting_for_key.fill(0)
-        self.key_register.fill(0)
         
-        # Reset CA detection
+        # Reset memory-CA detection
         self.ca_detected.fill(0)
         self.ca_likelihood.fill(0.0)
         self.hot_loop_start.fill(0)
         self.hot_loop_end.fill(0)
         self.pc_frequency.fill(0)
+        self.memory_write_frequency.fill(0)
         
         # Reload font
         font_data = cp.tile(CHIP8_FONT, (self.num_instances, 1))
@@ -660,7 +638,7 @@ class MegaKernelChip8Emulator:
             rom_end = PROGRAM_START + len(rom_bytes)
             self.memory[i, PROGRAM_START:rom_end] = cp.array(rom_bytes)
         
-        print(f"Loaded ROMs into {self.num_instances} instances")
+        print(f"Loaded ROMs into {self.num_instances:,} instances for memory-CA detection")
     
     def load_single_rom(self, rom_data: Union[bytes, np.ndarray]):
         """Load the same ROM into all instances"""
@@ -677,11 +655,11 @@ class MegaKernelChip8Emulator:
         rom_end = PROGRAM_START + len(rom_bytes)
         self.memory[:, PROGRAM_START:rom_end] = rom_gpu[None, :]
         
-        print(f"Loaded single ROM into {self.num_instances} instances")
+        print(f"Loaded single ROM into {self.num_instances:,} instances for memory-CA detection")
     
-    def run(self, cycles: int = 1000, timer_update_interval: int = 16):
-        """Run the FIXED enhanced mega kernel with CA detection for specified cycles"""
-        print(f"Launching FIXED enhanced mega-kernel with CA detection for {cycles} cycles...")
+    def run(self, cycles: int = 5000, timer_update_interval: int = 16):
+        """Run the memory-CA detection kernel"""
+        print(f"🚀 Launching memory-CA detection kernel for {cycles:,} cycles...")
         
         # Reset CA detection for this run
         self.ca_detected.fill(0)
@@ -689,16 +667,16 @@ class MegaKernelChip8Emulator:
         self.hot_loop_start.fill(0)
         self.hot_loop_end.fill(0)
         self.pc_frequency.fill(0)
+        self.memory_write_frequency.fill(0)
         
         start_time = time.time()
         
-        # Launch the FIXED enhanced mega kernel with CA detection
-        self.mega_kernel(
+        # Launch the memory-CA detection kernel
+        self.memory_ca_kernel(
             (self.grid_size,), (self.block_size,),
             (
                 # State arrays
                 self.memory,
-                self.display, 
                 self.registers,
                 self.index_register,
                 self.program_counter,
@@ -706,37 +684,32 @@ class MegaKernelChip8Emulator:
                 self.stack,
                 self.delay_timer,
                 self.sound_timer,
-                self.keypad,
                 
                 # State flags
                 self.crashed,
                 self.halted,
-                self.waiting_for_key,
-                self.key_register,
                 
-                # Statistics
+                # Minimal statistics
                 self.stats['instructions_executed'],
-                self.stats['display_writes'],
-                self.stats['pixels_drawn'],
-                self.stats['pixels_erased'],
-                self.stats['sprite_collisions'],
+                self.stats['memory_operations'],
                 
                 # RNG state
                 self.rng_state,
                 
-                # CA detection arrays
+                # Memory-CA detection arrays
                 self.ca_detected,
                 self.ca_likelihood,
                 self.hot_loop_start,
                 self.hot_loop_end,
                 self.pc_frequency,
+                self.memory_write_frequency,
                 
                 # Parameters
                 self.num_instances,
                 cycles,
                 timer_update_interval,
                 
-                # CA detection parameters
+                # Memory-CA detection parameters
                 self.ca_detection_interval,
                 self.ca_threshold,
                 
@@ -754,23 +727,34 @@ class MegaKernelChip8Emulator:
         execution_time = end_time - start_time
         
         total_instructions = int(cp.sum(self.stats['instructions_executed']))
+        total_memory_ops = int(cp.sum(self.stats['memory_operations']))
         instructions_per_second = total_instructions / execution_time if execution_time > 0 else 0
         
-        print(f"FIXED enhanced mega-kernel execution: {execution_time:.4f}s")
+        print(f"🚀 Memory-CA kernel execution: {execution_time:.4f}s")
         print(f"Total instructions: {total_instructions:,}")
+        print(f"Total memory operations: {total_memory_ops:,}")
         print(f"Instructions/second: {instructions_per_second:,.0f}")
+        print(f"Memory operations/second: {total_memory_ops / execution_time:,.0f}")
         
-        # Report CA detection results
+        # Report memory-CA detection results
         ca_count = int(cp.sum(self.ca_detected))
         if ca_count > 0:
             max_likelihood = float(cp.max(self.ca_likelihood))
-            print(f"🔬 FIXED CA DETECTION: Found {ca_count} potential CA patterns!")
-            print(f"   Max CA likelihood: {max_likelihood:.1f}%")
+            print(f"🔬 MEMORY-CA DETECTION: Found {ca_count} potential memory-CA patterns!")
+            print(f"   Max memory-CA likelihood: {max_likelihood:.1f}%")
+            
+            # Report top CA candidates
+            ca_results = self.get_ca_results()
+            if ca_results['ca_instances']:
+                top_5 = ca_results['ca_instances'][:5]
+                print("   Top memory-CA candidates:")
+                for i, ca in enumerate(top_5, 1):
+                    print(f"   {i}. Instance {ca['instance_id']:04d}: {ca['ca_likelihood']:.1f}% likelihood")
         else:
-            print("   No CA patterns detected in this batch")
+            print("   No memory-CA patterns detected in this batch")
     
     def get_ca_results(self) -> Dict:
-        """Get CA detection results"""
+        """Get memory-CA detection results"""
         ca_detected_np = cp.asnumpy(self.ca_detected).astype(bool)
         ca_likelihood_np = cp.asnumpy(self.ca_likelihood)
         hot_start_np = cp.asnumpy(self.hot_loop_start)
@@ -782,7 +766,8 @@ class MegaKernelChip8Emulator:
                 ca_instances.append({
                     'instance_id': i,
                     'ca_likelihood': float(ca_likelihood_np[i]),
-                    'hot_loop_range': (int(hot_start_np[i]), int(hot_end_np[i]))
+                    'hot_loop_range': (int(hot_start_np[i]), int(hot_end_np[i])),
+                    'memory_operations': int(self.stats['memory_operations'][i])
                 })
         
         # Sort by likelihood (highest first)
@@ -794,33 +779,36 @@ class MegaKernelChip8Emulator:
             'max_ca_likelihood': float(np.max(ca_likelihood_np)) if len(ca_instances) > 0 else 0.0
         }
     
-    def get_displays(self, instance_ids: Optional[List[int]] = None) -> cp.ndarray:
-        """Get display data reshaped back to 2D"""
-        if instance_ids is None:
-            displays = self.display.copy()
-        else:
-            displays = self.display[instance_ids].copy()
+    def get_memory_analysis(self, instance_id: int) -> Dict:
+        """Get detailed memory analysis for a specific instance"""
+        if instance_id >= self.num_instances:
+            raise ValueError(f"Instance {instance_id} out of range")
         
-        # Reshape back to (instances, height, width)
-        return displays.reshape(-1, DISPLAY_HEIGHT, DISPLAY_WIDTH)
-    
-    def get_displays_as_images(self, instance_ids: Optional[List[int]] = None, scale: int = 8) -> np.ndarray:
-        """Get display data as scaled images"""
-        displays = self.get_displays(instance_ids)
-        displays_np = cp.asnumpy(displays)
+        # Get memory write patterns
+        memory_writes = cp.asnumpy(self.memory_write_frequency[instance_id])
+        pc_freq = cp.asnumpy(self.pc_frequency[instance_id])
         
-        if len(displays_np.shape) == 2:
-            displays_np = displays_np[None, ...]
+        # Analyze memory usage
+        active_memory_regions = np.where(memory_writes > 0)[0]
+        total_memory_writes = np.sum(memory_writes)
         
-        scaled_displays = []
-        for display in displays_np:
-            scaled = np.repeat(np.repeat(display, scale, axis=0), scale, axis=1)
-            scaled_displays.append(scaled * 255)
+        # Find most active memory regions
+        top_regions = np.argsort(memory_writes)[-10:][::-1]
         
-        return np.array(scaled_displays, dtype=np.uint8)
+        return {
+            'instance_id': instance_id,
+            'ca_detected': bool(self.ca_detected[instance_id]),
+            'ca_likelihood': float(self.ca_likelihood[instance_id]),
+            'total_memory_writes': int(total_memory_writes),
+            'active_memory_regions': len(active_memory_regions),
+            'top_memory_regions': [(int(r), int(memory_writes[r])) for r in top_regions if memory_writes[r] > 0],
+            'hot_loop_range': (int(self.hot_loop_start[instance_id]), int(self.hot_loop_end[instance_id])),
+            'instructions_executed': int(self.stats['instructions_executed'][instance_id]),
+            'memory_operations': int(self.stats['memory_operations'][instance_id])
+        }
     
     def get_aggregate_stats(self) -> Dict[str, Union[int, float]]:
-        """Get aggregate statistics including CA results"""
+        """Get aggregate statistics including memory-CA results"""
         aggregate = {}
         
         for key, arr in self.stats.items():
@@ -831,91 +819,97 @@ class MegaKernelChip8Emulator:
         
         aggregate['active_instances'] = int(cp.sum(~self.crashed))
         aggregate['crashed_instances'] = int(cp.sum(self.crashed))
-        aggregate['waiting_instances'] = int(cp.sum(self.waiting_for_key))
         aggregate['total_instances'] = self.num_instances
         
-        # Add CA detection stats
+        # Add memory-CA detection stats
         aggregate['ca_detected_count'] = int(cp.sum(self.ca_detected))
         aggregate['max_ca_likelihood'] = float(cp.max(self.ca_likelihood))
+        
+        # Memory-specific stats
+        total_memory_writes = int(cp.sum(self.memory_write_frequency))
+        aggregate['total_memory_writes'] = total_memory_writes
+        aggregate['mean_memory_writes_per_instance'] = total_memory_writes / self.num_instances
         
         return aggregate
     
     def print_aggregate_stats(self):
-        """Print aggregate statistics including CA detection results"""
+        """Print aggregate statistics including memory-CA detection results"""
         stats = self.get_aggregate_stats()
         
-        print("FIXED Enhanced Mega-Kernel CHIP-8 Emulator Statistics:")
+        print("🚀 Memory-CA Detector Statistics:")
         print("=" * 50)
         print(f"Total instances: {stats['total_instances']}")
         print(f"Active instances: {stats['active_instances']}")
         print(f"Crashed instances: {stats['crashed_instances']}")
-        print(f"Waiting for key: {stats['waiting_instances']}")
         print()
         
         print("Execution totals:")
         print(f"Instructions executed: {stats['total_instructions_executed']:,}")
-        print(f"Display writes: {stats['total_display_writes']:,}")
-        print(f"Pixels drawn: {stats['total_pixels_drawn']:,}")
-        print(f"Sprite collisions: {stats['total_sprite_collisions']:,}")
+        print(f"Memory operations: {stats['total_memory_operations']:,}")
+        print(f"Memory writes tracked: {stats['total_memory_writes']:,}")
         print()
         
         print("Per-instance averages:")
         print(f"Instructions: {stats['mean_instructions_executed']:.1f}")
-        print(f"Display writes: {stats['mean_display_writes']:.1f}")
-        print(f"Pixels drawn: {stats['mean_pixels_drawn']:.1f}")
-        print(f"Collisions: {stats['mean_sprite_collisions']:.1f}")
+        print(f"Memory operations: {stats['mean_memory_operations']:.1f}")
+        print(f"Memory writes: {stats['mean_memory_writes_per_instance']:.1f}")
         print()
         
-        print("FIXED CA Detection Results:")
-        print(f"CA patterns detected: {stats['ca_detected_count']}")
-        print(f"Max CA likelihood: {stats['max_ca_likelihood']:.1f}%")
+        print("Memory-CA Detection Results:")
+        print(f"Memory-CA patterns detected: {stats['ca_detected_count']}")
+        print(f"Max memory-CA likelihood: {stats['max_ca_likelihood']:.1f}%")
+        
+        if stats['ca_detected_count'] > 0:
+            memory_op_ratio = stats['total_memory_operations'] / stats['total_instructions_executed'] * 100
+            print(f"Memory operation ratio: {memory_op_ratio:.2f}%")
     
-    def save_displays_as_pngs(self, output_dir: str, instance_ids: Optional[List[int]] = None, 
-                             scale: int = 8, prefix: str = "display"):
-        """Save display outputs as PNG files"""
+    def export_ca_roms(self, output_dir: str, max_exports: int = 10):
+        """Export ROM data for detected CA patterns"""
         import os
-        from PIL import Image
         
         os.makedirs(output_dir, exist_ok=True)
         
-        images = self.get_displays_as_images(instance_ids, scale)
+        ca_results = self.get_ca_results()
+        if not ca_results['ca_instances']:
+            print("No CA patterns to export")
+            return []
         
-        if instance_ids is None:
-            instance_ids = list(range(self.num_instances))
-        elif len(images) != len(instance_ids):
-            images = images[instance_ids]
+        exported_files = []
+        instances_to_export = ca_results['ca_instances'][:max_exports]
         
-        saved_files = []
-        for i, (instance_id, image_data) in enumerate(zip(instance_ids, images)):
-            filename = f"{prefix}_instance_{instance_id:04d}.png"
+        for ca_info in instances_to_export:
+            instance_id = ca_info['instance_id']
+            likelihood = ca_info['ca_likelihood']
+            
+            # Extract ROM data (everything from PROGRAM_START onwards)
+            rom_data = cp.asnumpy(self.memory[instance_id, PROGRAM_START:])
+            
+            # Find actual end of ROM (first long stretch of zeros)
+            rom_end = len(rom_data)
+            zero_count = 0
+            for i in range(len(rom_data)):
+                if rom_data[i] == 0:
+                    zero_count += 1
+                    if zero_count > 32:  # 32 consecutive zeros = end of ROM
+                        rom_end = i - 31
+                        break
+                else:
+                    zero_count = 0
+            
+            rom_data = rom_data[:rom_end]
+            
+            filename = f"memory_ca_instance_{instance_id:04d}_likelihood_{likelihood:.1f}.ch8"
             filepath = os.path.join(output_dir, filename)
             
-            # Convert grayscale to RGB for PNG
-            if len(image_data.shape) == 2:
-                rgb_image = np.stack([image_data] * 3, axis=-1)
-            else:
-                rgb_image = image_data
+            with open(filepath, 'wb') as f:
+                f.write(rom_data.tobytes())
             
-            img = Image.fromarray(rgb_image.astype(np.uint8))
-            img.save(filepath)
-            saved_files.append(filepath)
+            exported_files.append(filepath)
+            print(f"Exported memory-CA ROM: {filename} ({len(rom_data)} bytes, {likelihood:.1f}% likelihood)")
         
-        print(f"Saved {len(saved_files)} display images to {output_dir}")
-        return saved_files
-    
-    def set_keys(self, instance_keys: Dict[int, Dict[int, bool]]):
-        """Set key states for specific instances"""
-        for instance_id, keys in instance_keys.items():
-            if 0 <= instance_id < self.num_instances:
-                for key_id, pressed in keys.items():
-                    if 0 <= key_id <= 0xF:
-                        self.keypad[instance_id, key_id] = 1 if pressed else 0
-                        
-                        # Handle key waiting
-                        if self.waiting_for_key[instance_id] and pressed:
-                            self.registers[instance_id, int(self.key_register[instance_id])] = key_id
-                            self.waiting_for_key[instance_id] = False
+        return exported_files
 
 
-# Backward compatibility
-ParallelChip8Emulator = MegaKernelChip8Emulator
+# Backward compatibility and convenience aliases
+ParallelChip8Emulator = MemoryCADetector
+MegaKernelChip8Emulator = MemoryCADetector
