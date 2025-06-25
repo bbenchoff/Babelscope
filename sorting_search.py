@@ -251,30 +251,42 @@ class BabelscopeSession:
             self._print_final_summary(batch_count)
     
     def _save_session_state(self):
-        """Save current session state"""
-        self.stats['last_saved'] = datetime.now().isoformat()
-        self.stats['total_time'] = time.time() - self.stats['start_time']
-        
-        # Save detailed state
-        state_file = self.logs_dir / "session_state.json"
-        with open(state_file, 'w') as f:
-            json.dump(self.stats, f, indent=2)
-        
-        # Save human-readable summary
-        summary_file = self.logs_dir / "summary.txt"
-        with open(summary_file, 'w') as f:
-            f.write(f"Babelscope Exploration Session {self.stats['session_id']}\n")
-            f.write("=" * 60 + "\n\n")
-            f.write(f"ROMs tested: {self.stats['total_roms_tested']:,}\n")
-            f.write(f"Batches completed: {self.stats['total_batches']}\n")
-            f.write(f"Sorting algorithms found: {self.stats['total_discoveries']}\n")
-            f.write(f"Session time: {self.stats['total_time']/3600:.2f} hours\n")
+        """Save current session state with batch history limit"""
+        try:
+            # Limit batch history to last 100 entries to prevent huge JSON files
+            if len(self.stats['batch_history']) > 100:
+                print(f"   📝 Limiting batch history to last 100 entries (was {len(self.stats['batch_history'])})")
+                self.stats['batch_history'] = self.stats['batch_history'][-100:]
             
-            if self.stats['total_discoveries'] > 0:
-                rate = self.stats['total_roms_tested'] // self.stats['total_discoveries']
-                f.write(f"Discovery rate: 1 in {rate:,} ROMs\n")
+            self.stats['last_saved'] = datetime.now().isoformat()
+            self.stats['total_time'] = time.time() - self.stats['start_time']
             
-            f.write(f"\nLast updated: {datetime.now()}\n")
+            # Save detailed state
+            state_file = self.logs_dir / "session_state.json"
+            with open(state_file, 'w', encoding='utf-8') as f:
+                json.dump(self.stats, f, indent=2, ensure_ascii=True)
+            
+            # Save human-readable summary
+            summary_file = self.logs_dir / "summary.txt"
+            with open(summary_file, 'w', encoding='utf-8') as f:
+                f.write(f"Babelscope Exploration Session {self.stats['session_id']}\n")
+                f.write("=" * 60 + "\n\n")
+                f.write(f"ROMs tested: {self.stats['total_roms_tested']:,}\n")
+                f.write(f"Batches completed: {self.stats['total_batches']}\n")
+                f.write(f"Sorting algorithms found: {self.stats['total_discoveries']}\n")
+                f.write(f"Session time: {self.stats['total_time']/3600:.2f} hours\n")
+                
+                if self.stats['total_discoveries'] > 0:
+                    rate = self.stats['total_roms_tested'] // self.stats['total_discoveries']
+                    f.write(f"Discovery rate: 1 in {rate:,} ROMs\n")
+                
+                f.write(f"\nLast updated: {datetime.now()}\n")
+            
+            print(f"   💾 Session state saved successfully")
+            
+        except Exception as e:
+            print(f"   ⚠️  Failed to save session state: {e}")
+            print(f"       Continuing without saving...")
     
     def _print_final_summary(self, batches_completed: int):
         """Print final session summary"""
@@ -306,9 +318,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python babelscope_runner.py --batch-size 100000 --batches 50
-  python babelscope_runner.py --batch-size 200000 --infinite
-  python babelscope_runner.py --batch-size 50000 --cycles 200000
+  python sorting_search.py --batch-size 100000 --batches 50
+  python sorting_search.py --batch-size 200000 --infinite
+  python sorting_search.py --batch-size 50000 --cycles 200000
         """
     )
     
