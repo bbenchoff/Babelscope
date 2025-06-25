@@ -1,118 +1,115 @@
-# Babelscope
+# Babelscope: Computational Archaeology with CUDA
 
-**Computational Archaeology for the CHIP-8**
+## Sorting Algorithm Discovery
 
-Babelscope generates billions of random CHIP-8 programs and runs them in parallel on GPU hardware to find accidental algorithms, graphics demos, and proto-games hidden in the vast space of random machine code.
+Babelscope explores the vast space of random machine code to discover emergent computational behaviors. The sorting algorithm discovery tool generates millions of random CHIP-8 programs and searches for those that accidentally implement sorting algorithms.
 
-## What Does This Do?
+### How It Works
 
-Instead of writing programs, Babelscope **discovers** them by:
+1. **Generate Random ROMs**: Creates completely random CHIP-8 programs (3584 bytes each)
+2. **Setup Test Data**: Places the unsorted array `[8, 3, 6, 1, 7, 2, 5, 4]` at memory location 0x300-0x307
+3. **Execute Programs**: Runs complete CHIP-8 emulation for each random program
+4. **Monitor for Sorting**: Checks periodically if the array becomes sorted to either:
+   - `[1, 2, 3, 4, 5, 6, 7, 8]` (ascending)
+   - `[8, 7, 6, 5, 4, 3, 2, 1]` (descending)
+5. **Save Discoveries**: When sorting is detected, saves the ROM binary and metadata
 
-1. **Generating pure random data** (3584 bytes each) 
-2. **Testing millions simultaneously** on GPU using a massively parallel CHIP-8 emulator
-3. **Finding the ones that work** - programs that don't crash and produce visual output
-4. **Saving the interesting ones** with screenshots for analysis
+This is computational archaeology - excavating working algorithms from the fossil record of random bit sequences.
 
-Think of it as pointing a telescope at the infinite library of possible programs and cataloging the strange objects you find.
+### Performance
 
-## Results
+On an RTX 5080:
+- **ROM Generation**: ~70M ROMs/second on GPU
+- **Emulation**: ~167K ROMs/second through complete CHIP-8 execution
+- **Memory Usage**: ~7GB GPU memory for 200K parallel instances
+- **GPU Utilization**: 90%+ sustained
 
-Out of millions of random byte sequences, Babelscope finds programs that:
-- Draw structured graphics patterns
-- Create animations and visual effects  
-- Run stable loops without crashing
-- Occasionally respond to input (accidental proto-games!)
+### Quick Start
 
-These aren't hand-coded - they're random data that accidentally works as CHIP-8 programs.
-
-## Quick Start
-
-**Generate and test random programs:**
 ```bash
-python test_random_roms.py --continuous --batch-size 15000 --save-interesting
+# Basic exploration
+python sorting_search.py --batch-size 200000 --batches 100
+
+# Continuous search (Ctrl+C to stop)
+python sorting_search.py --batch-size 200000 --infinite
+
+# High sensitivity detection (checks every 10 cycles instead of 100)
+python sorting_search.py --batch-size 200000 --check-interval 10
 ```
 
-**View discovered programs:**
-```bash
-python view_interesting_roms.py
-```
-
-## Requirements
-
-- Python 3.8+
-- CuPy (for GPU acceleration)
-- PIL (for screenshots)
-- CUDA-capable GPU
-
-## How It Works
-
-### The Generator
-`generators/random_chip8_generator.py` - Creates pure random data on GPU
-- No heuristics, no intelligence
-- Just 3584 bytes of random noise per "ROM"
-- Generated in parallel across thousands of GPU threads
-
-### The Emulator  
-`emulators/mega_kernel_chip8.py` - Massively parallel CHIP-8 emulator
-- Runs 100,000+ instances simultaneously on GPU
-- Each thread emulates a complete CHIP-8 system
-- 350+ million instructions per second throughput
-
-### The Explorer
-`test_random_roms.py` - Finds programs that accidentally work
-- Tests random programs for crashes vs. completion
-- Identifies visual output and structured patterns
-- Saves interesting discoveries with screenshots
-
-### The Viewer
-`view_interesting_roms.py` - Interactive exploration of discoveries
-- Loads found programs in CHIP-8 emulator windows
-- Test for input responsiveness
-- See what random data accidentally created
-
-## Architecture
+### Command Line Options
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Random Data   │───▶│  Mega-Kernel     │───▶│   Interesting   │
-│   Generator     │    │  CHIP-8 Emulator │    │   ROMs + PNGs   │ 
-│                 │    │                  │    │                 │
-│ • Pure randomness│    │ • 100K+ parallel│    │ • Working programs│
-│ • GPU-generated │    │ • 350M+ inst/sec│    │ • Visual output  │
-│ • No filtering  │    │ • Crash detection│    │ • Screenshots    │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+--batch-size N          ROMs per batch (default: 50000)
+--batches N              Number of batches (default: 10)
+--infinite               Run infinite batches until interrupted
+--cycles N               Execution cycles per ROM (default: 100000)
+--check-interval N       Check for sorting every N cycles (default: 100)
+--output-dir DIR         Output directory (default: babelscope_results)
+--save-frequency N       Save session state every N batches (default: 10)
 ```
 
-## Performance
-
-- **Generation**: 100,000+ random ROMs per second
-- **Testing**: 350+ million CHIP-8 instructions per second  
-- **Discovery rate**: ~0.01-0.1% of random data produces "interesting" programs
-- **Scalability**: Nearly linear scaling with GPU cores until memory saturation
-
-## Files
-
-- `generators/random_chip8_generator.py` - Pure random ROM generation
-- `emulators/mega_kernel_chip8.py` - Massively parallel CHIP-8 emulator
-- `emulators/chip8.py` - Single-instance emulator for interactive testing
-- `test_random_roms.py` - Main discovery pipeline
-- `view_interesting_roms.py` - Interactive ROM viewer
-
-## License
+### Output Structure
 
 ```
-           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-                    MODIFIED FOR NERDS 
-                   Version 3, April 2025
-
-Everyone is permitted to copy and distribute verbatim or modified
-copies of this license document, and changing it is allowed as long
-as the name is changed.
- 
-           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-  TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
-
- 0. You just DO WHAT THE FUCK YOU WANT TO.
-
- 1. Anyone who complains about this license is a nerd.
+babelscope_results/
+└── session_YYYYMMDD_HHMMSS/
+    ├── discovered_roms/
+    │   ├── FOUND_B0001D01_C1234_abcd1234.ch8    # Actual ROM binary
+    │   ├── FOUND_B0001D01_C1234_abcd1234.json   # Discovery metadata
+    │   └── ...
+    └── logs/
+        ├── session_state.json                    # Complete session data
+        └── summary.txt                          # Human-readable summary
 ```
+
+### Discovery Metadata
+
+Each discovered ROM includes:
+- **ROM Binary**: The actual random machine code that achieved sorting
+- **Discovery Info**: When and how it was found
+- **Arrays**: Initial `[8,3,6,1,7,2,5,4]` and final sorted state
+- **Memory Access**: Number of reads/writes to the test array
+- **Cycle Count**: When during execution sorting was achieved
+
+### Requirements
+
+- NVIDIA GPU with CUDA support
+- Python 3.7+
+- CuPy: `pip install cupy-cuda12x`
+- NumPy: `pip install numpy`
+
+### Expected Discovery Rate
+
+Finding algorithms that transform `[8,3,6,1,7,2,5,4]` into exactly `[1,2,3,4,5,6,7,8]` or `[8,7,6,5,4,3,2,1]` is extremely rare. Expect discovery rates around:
+
+- **1 in 50-100 million ROMs** for legitimate sorting algorithms
+- **Processing time**: Days to weeks to find first discovery
+- **Storage**: Each discovery is ~4KB ROM + metadata
+
+### Performance Tuning
+
+**Batch Size**: Larger batches improve GPU utilization but use more memory. Try 100K-500K depending on your GPU.
+
+**Check Interval**: Lower values catch more transient sorting but reduce performance:
+- `--check-interval 1`: Perfect detection, ~30% slower
+- `--check-interval 10`: Very good detection, ~10% slower  
+- `--check-interval 100`: Default performance
+- `--check-interval 1000`: Slightly faster, may miss brief sorting
+
+**Cycles**: More cycles allow longer programs to complete sorting:
+- `50000`: Fast, catches obvious sorting
+- `100000`: Default balance
+- `200000+`: Thorough, allows complex algorithms
+
+### Architecture
+
+The system uses a massively parallel CUDA kernel that implements complete CHIP-8 emulation across thousands of instances simultaneously. Each instance:
+
+- Maintains full CHIP-8 state (memory, registers, stack, timers)
+- Executes all 35 CHIP-8 instructions correctly
+- Tracks memory access patterns
+- Monitors for the specific sorting condition
+- Terminates early when sorting is detected
+
+This approach allows exploration of the random program space at unprecedented scale, making computational archaeology practical for the first time.

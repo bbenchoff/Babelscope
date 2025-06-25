@@ -86,6 +86,7 @@ class BabelscopeSession:
     def run_exploration(self, 
                        max_batches: Optional[int] = None,
                        cycles_per_rom: int = 100000,
+                       check_interval: int = 100,
                        save_frequency: int = 10):
         """
         Run the main Babelscope exploration
@@ -93,6 +94,7 @@ class BabelscopeSession:
         Args:
             max_batches: Maximum batches to run (None = infinite)
             cycles_per_rom: Execution cycles per ROM
+            check_interval: Check for sorting every N cycles (lower = more sensitive)
             save_frequency: Save session state every N batches
         """
         
@@ -100,8 +102,9 @@ class BabelscopeSession:
         print("=" * 60)
         print(f"   Test pattern: [8, 3, 6, 1, 7, 2, 5, 4] at 0x300-0x307")
         print(f"   Cycles per ROM: {cycles_per_rom:,}")
+        print(f"   Check interval: every {check_interval} cycles")
         print(f"   Max batches: {max_batches or 'Infinite'}")
-        print(f"   Looking for: Any code that sorts this array")
+        print(f"   Looking for: [1,2,3,4,5,6,7,8] or [8,7,6,5,4,3,2,1]")
         print()
         
         batch_count = 0
@@ -148,7 +151,7 @@ class BabelscopeSession:
                     search_start = time.time()
                     discoveries = self.detector.run_babelscope_search(
                         cycles=cycles_per_rom, 
-                        check_interval=100
+                        check_interval=check_interval
                     )
                     search_time = time.time() - search_start
                     
@@ -317,6 +320,8 @@ Examples:
                        help='Run infinite batches (Ctrl+C to stop)')
     parser.add_argument('--cycles', type=int, default=100000,
                        help='Execution cycles per ROM (default: 100000)')
+    parser.add_argument('--check-interval', type=int, default=100,
+                       help='Check for sorting every N cycles (default: 100, lower = more sensitive)')
     parser.add_argument('--output-dir', type=str, default='babelscope_results',
                        help='Output directory (default: babelscope_results)')
     parser.add_argument('--save-frequency', type=int, default=10,
@@ -359,6 +364,7 @@ Examples:
         session.run_exploration(
             max_batches=max_batches,
             cycles_per_rom=args.cycles,
+            check_interval=args.check_interval,
             save_frequency=args.save_frequency
         )
         

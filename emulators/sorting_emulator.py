@@ -601,7 +601,7 @@ class PureBabelscopeDetector:
         print(f"   ✅ Loaded ROMs with test pattern at 0x{SORT_ARRAY_START:03X}")
     
     def run_babelscope_search(self, cycles: int = 100000, check_interval: int = 100) -> int:
-        """Run the pure Babelscope search"""
+        """Run the pure Babelscope search with configurable check interval"""
         print(f"🔍 Running Babelscope search: {cycles:,} cycles, check every {check_interval}")
         
         start_time = time.time()
@@ -641,7 +641,7 @@ class PureBabelscopeDetector:
                 # Parameters
                 self.num_instances,
                 cycles,
-                check_interval,
+                check_interval,  # Now configurable!
                 
                 # RNG
                 self.rng_state
