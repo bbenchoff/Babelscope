@@ -1,8 +1,16 @@
+![license: WTFPL-3](https://img.shields.io/badge/license-WTFPL_3-brightgreen)
+![CUDA 12.x](https://img.shields.io/badge/cuda-12.x-blue)
+
 # Babelscope: Computational Archaeology with CUDA
 
 This repository contains *Babelscope*, a system where we use GPUs to fill a virtual machine with random code, then execute it. Sometimes, the programs actually run. This is great, because this tool can emulate 200,000 independent instances of this VM at a time, find interesting stuff, then save these random program files for later inspection.
 
 **A much better description of this project [is on my website](https://bbenchoff.github.io/pages/Babelscope.html).** If sharing on social media, I encourage you to post _that_.
+
+- [Introduction](#introduction)  
+- [Experiment 1 – Random Games](#experiment-1-finding-random-games)  
+- [Experiment 2: Discovering A Sorting Algorithm](#experiment-2-discovering-a-sorting-algorithm)
+
 
 ## Introduction
 
@@ -13,6 +21,10 @@ This project eschews the Atari 2600 for the CHIP-8. It's a vastly simpler comput
 For this project, I'm generating _billions_ of programs for the CHIP-8, and running them all in parallel. Instrumentation in the emulator allows me to select interesting ones on the fly (output to the display, responds to user input). Because the emulator is instrumented, I can also inspect memory while the emulator is running. With this, I'm able to find novel algorithms, like simple sorting algorithms.
 
 This repo, or rather this README, is broken up into several sections, each detailing an experiment I conducted in massively parallel emulation of a virtual machine loaded with random data. Why? I'd suggest you [read the blog post that accompanies this project](https://bbenchoff.github.io/pages/Babelscope.html).
+
+# Experiment 1: Finding Random Games
+
+The inspiration for this project, [Finite Atari Project](https://bbenchoff.github.io/pages/FiniteAtari.html), generated billions of random ROMs for the Atari 2600 to find ones that would run. I found a bunch and one was even a proto-game, a program with visual output that responded to user input. Why not do the same with CHIP-8.
 
 # Experiment 2: Discovering A Sorting Algorithm
 
@@ -106,8 +118,6 @@ THE RESULTS GO HERE WHEN I FIND THEM
 ## Discussion
 
 I'm of two minds about the fact that I found a sorting algorithm in random data. Firstly, _of course I would_. There are billions of ways to write an algorithm that would sort the data between `0x300` and `0x307`. After emulating billions of ROMs, _something_ interesting was bound to happen. On the other hand, this is _very weird_. This wasn't created, because it's just a pile of random data that happened to do something. It was just there in the huge computational space of all possible CHIP-8 programs. This isn't computer science, it's more like computer archaeology. Or astronomy.
-
-
 
 # License
 
