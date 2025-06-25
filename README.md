@@ -1,5 +1,9 @@
 # Babelscope: Computational Archaeology with CUDA
 
+This repository contains *Babelscope*, a system where we use GPUs to fill a virtual machine with random code, then execute it. Sometimes, the programs actually run. This is great, because this tool can emulate 200,000 independent instances of this VM at a time.
+
+**A much better description of this project [is on my website](https://bbenchoff.github.io/pages/Babelscope.html).** If sharing on social media, I encourage you to post _that_.
+
 ## Sorting Algorithm Discovery
 
 Babelscope explores the vast space of random machine code to discover emergent computational behaviors. The sorting algorithm discovery tool generates millions of random CHIP-8 programs and searches for those that accidentally implement sorting algorithms.
@@ -113,3 +117,22 @@ The system uses a massively parallel CUDA kernel that implements complete CHIP-8
 - Terminates early when sorting is detected
 
 This approach allows exploration of the random program space at unprecedented scale, making computational archaeology practical for the first time.
+
+## License
+
+```
+           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+                    MODIFIED FOR NERDS 
+                   Version 3, April 2025
+
+Everyone is permitted to copy and distribute verbatim or modified
+copies of this license document, and changing it is allowed as long
+as the name is changed.
+ 
+           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+  TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+
+ 0. You just DO WHAT THE FUCK YOU WANT TO.
+
+ 1. Anyone who complains about this license is a nerd.
+```
