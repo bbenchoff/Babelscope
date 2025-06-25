@@ -16,29 +16,47 @@ This repo, or rather this README, is broken up into several sections, each detai
 
 # Experiment 1: Discovering A Sorting Algorithm
 
-## Sorting Algorithm Discovery
+The idea of this is simple. I generate billions of programs filled with random data, except for `[8 3 6 1 7 2 5 4]` at memory locations `0x300 to 0x307`. I inspect these programs while they're running. If I ever get `[1 2 3 4 5 6 7 8]` or `[8 7 6 5 4 3 2 1]`, I may have found a sorting algorithm. I might rediscover quicksort. I may find something else entirely. Who knows.
 
-Babelscope explores the vast space of random machine code to discover emergent computational behaviors. The sorting algorithm discovery tool generates millions of random CHIP-8 programs and searches for those that accidentally implement sorting algorithms.
+## Method
+
+This experiment used a specially instrumented emulator, [sorting_emulator.py](emulators/sorting_emulator.py) which is a CUDA-based CHIP-8 emulator that provides real-time memory monitoring, and program capture with metadata. This script is used by a runner file, [sorting_search.py](sorting_search.py), that generates the program batches on the GPU, coordinates the parallel emulation effort, and handles discovery processing and analysis.
 
 ### How It Works
 
 1. **Generate Random ROMs**: Creates completely random CHIP-8 programs (3584 bytes each)
 2. **Setup Test Data**: Places the unsorted array `[8, 3, 6, 1, 7, 2, 5, 4]` at memory location 0x300-0x307
-3. **Execute Programs**: Runs complete CHIP-8 emulation for each random program
+3. **Execute Programs**: Runs complete CHIP-8 emulation for each random program for 100,000 cycles
 4. **Monitor for Sorting**: Checks periodically if the array becomes sorted to either:
    - `[1, 2, 3, 4, 5, 6, 7, 8]` (ascending)
    - `[8, 7, 6, 5, 4, 3, 2, 1]` (descending)
 5. **Save Discoveries**: When sorting is detected, saves the ROM binary and metadata
 
-This is computational archaeology - excavating working algorithms from the fossil record of random bit sequences.
-
 ### Performance
 
-On an RTX 5080:
+I bit the bullet and bought an RTX 5080 for this project:
 - **ROM Generation**: ~70M ROMs/second on GPU
 - **Emulation**: ~170K ROMs/second through complete CHIP-8 execution
 - **Memory Usage**: ~7GB GPU memory for 200K parallel instances
 - **GPU Utilization**: 90%+ sustained
+
+## Results
+
+THE RESULTS GO HERE WHEN I FIND THEM
+
+## Discussion
+
+I'm of two minds about the fact that I found a sorting algorithm in random data. Firstly, _of course I would_. There are billions of ways to write an algorithm that would sort the data between `0x300` and `0x307`. After emulating billions of ROMs, _something_ interesting was bound to happen. On the other hand, this is _very weird_. This wasn't created, because it's just a pile of random data that happened to do something. It was just there in the huge computational space of all possible CHIP-8 programs. This isn't computer science, it's more like computer archaeology. Or astronomy.
+
+## Sorting Algorithm Discovery
+
+Babelscope explores the vast space of random machine code to discover emergent computational behaviors. The sorting algorithm discovery tool generates millions of random CHIP-8 programs and searches for those that accidentally implement sorting algorithms.
+
+
+
+This is computational archaeology - excavating working algorithms from the fossil record of random bit sequences.
+
+
 
 ### Quick Start
 
