@@ -1,11 +1,15 @@
 ![license: WTFPL-3](https://img.shields.io/badge/license-WTFPL_3-brightgreen)
 ![CUDA 12.x](https://img.shields.io/badge/cuda-12.x-blue)
+![Not AI](https://img.shields.io/badge/Not-AI-informational)
+![Made with CUDA](https://img.shields.io/badge/Made%20with-CUDA-green)
 
 # Babelscope: Computational Archaeology with CUDA
 
 This repository contains *Babelscope*, a system where we use GPUs to fill a virtual machine with random code, then execute it. Sometimes, the programs actually run. This is great, because this tool can emulate 200,000 independent instances of this VM at a time, find interesting stuff, then save these random program files for later inspection.
 
 **A much better description of this project [is on my website](https://bbenchoff.github.io/pages/Babelscope.html).** If sharing on social media, I encourage you to post _that_.
+
+## Table Of Contents
 
 - [Introduction](#introduction)  
 - [Experiment 1 – Random Games](#experiment-1-finding-random-games)  
