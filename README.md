@@ -14,7 +14,7 @@ For this project, I'm generating _billions_ of programs for the CHIP-8, and runn
 
 This repo, or rather this README, is broken up into several sections, each detailing an experiment I conducted in massively parallel emulation of a virtual machine loaded with random data. Why? I'd suggest you [read the blog post that accompanies this project](https://bbenchoff.github.io/pages/Babelscope.html).
 
-# Experiment 1: Discovering A Sorting Algorithm
+# Experiment 2: Discovering A Sorting Algorithm
 
 The idea of this is simple. I generate billions of programs filled with random data, except for `[8 3 6 1 7 2 5 4]` at memory locations `0x300 to 0x307`. I inspect these programs while they're running. If I ever get `[1 2 3 4 5 6 7 8]` or `[8 7 6 5 4 3 2 1]`, I may have found a sorting algorithm. I might rediscover quicksort. I may find something else entirely. Who knows.
 
@@ -40,23 +40,12 @@ I bit the bullet and bought an RTX 5080 for this project:
 - **Memory Usage**: ~7GB GPU memory for 200K parallel instances
 - **GPU Utilization**: 90%+ sustained
 
-## Results
+### Requirements
 
-THE RESULTS GO HERE WHEN I FIND THEM
-
-## Discussion
-
-I'm of two minds about the fact that I found a sorting algorithm in random data. Firstly, _of course I would_. There are billions of ways to write an algorithm that would sort the data between `0x300` and `0x307`. After emulating billions of ROMs, _something_ interesting was bound to happen. On the other hand, this is _very weird_. This wasn't created, because it's just a pile of random data that happened to do something. It was just there in the huge computational space of all possible CHIP-8 programs. This isn't computer science, it's more like computer archaeology. Or astronomy.
-
-## Sorting Algorithm Discovery
-
-Babelscope explores the vast space of random machine code to discover emergent computational behaviors. The sorting algorithm discovery tool generates millions of random CHIP-8 programs and searches for those that accidentally implement sorting algorithms.
-
-
-
-This is computational archaeology - excavating working algorithms from the fossil record of random bit sequences.
-
-
+- NVIDIA GPU with CUDA support
+- Python 3.7+
+- CuPy: `pip install cupy-cuda12x`
+- NumPy: `pip install numpy`
 
 ### Quick Start
 
@@ -82,44 +71,6 @@ python sorting_search.py --batch-size 200000 --check-interval 10
 --output-dir DIR         Output directory (default: babelscope_results)
 --save-frequency N       Save session state every N batches (default: 10)
 ```
-
-### Output Structure
-
-```
-babelscope_results/
-└── session_YYYYMMDD_HHMMSS/
-    ├── discovered_roms/
-    │   ├── FOUND_B0001D01_C1234_abcd1234.ch8    # Actual ROM binary
-    │   ├── FOUND_B0001D01_C1234_abcd1234.json   # Discovery metadata
-    │   └── ...
-    └── logs/
-        ├── session_state.json                    # Complete session data
-        └── summary.txt                          # Human-readable summary
-```
-
-### Discovery Metadata
-
-Each discovered ROM includes:
-- **ROM Binary**: The actual random machine code that achieved sorting
-- **Discovery Info**: When and how it was found
-- **Arrays**: Initial `[8,3,6,1,7,2,5,4]` and final sorted state
-- **Memory Access**: Number of reads/writes to the test array
-- **Cycle Count**: When during execution sorting was achieved
-
-### Requirements
-
-- NVIDIA GPU with CUDA support
-- Python 3.7+
-- CuPy: `pip install cupy-cuda12x`
-- NumPy: `pip install numpy`
-
-### Expected Discovery Rate
-
-Finding algorithms that transform `[8,3,6,1,7,2,5,4]` into exactly `[1,2,3,4,5,6,7,8]` or `[8,7,6,5,4,3,2,1]` is extremely rare. Expect discovery rates around:
-
-- **1 in 50-100 million ROMs** for legitimate sorting algorithms
-- **Processing time**: Days to weeks to find first discovery
-- **Storage**: Each discovery is ~4KB ROM + metadata
 
 ### Performance Tuning
 
@@ -148,7 +99,17 @@ The system uses a massively parallel CUDA kernel that implements complete CHIP-8
 
 This approach allows exploration of the random program space at unprecedented scale, making computational archaeology practical for the first time.
 
-## License
+## Results
+
+THE RESULTS GO HERE WHEN I FIND THEM
+
+## Discussion
+
+I'm of two minds about the fact that I found a sorting algorithm in random data. Firstly, _of course I would_. There are billions of ways to write an algorithm that would sort the data between `0x300` and `0x307`. After emulating billions of ROMs, _something_ interesting was bound to happen. On the other hand, this is _very weird_. This wasn't created, because it's just a pile of random data that happened to do something. It was just there in the huge computational space of all possible CHIP-8 programs. This isn't computer science, it's more like computer archaeology. Or astronomy.
+
+
+
+# License
 
 ```
            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
