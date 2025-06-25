@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Enhanced Babelscope Main Runner - Multi-Location Detection
 Massive improvement: Instead of checking one 8-byte location, now checks
@@ -47,17 +48,154 @@ try:
     print(f"✅ Multi-location enhancement: {SORT_LOCATIONS_COUNT} locations per ROM")
 except ImportError as e:
     print(f"❌ Failed to import from emulators/sorting_emulator.py: {e}")
+    print("Available items in sorting_emulator:")
+    try:
+        import sorting_emulator
+        print([name for name in dir(sorting_emulator) if not name.startswith('_')])
+    except:
+        pass
     print("Make sure the updated sorting_emulator.py exists in the emulators/ directory")
     sys.exit(1)
+
+class GlobalStatsManager:
+    """Manages persistent global statistics across all Babelscope runs"""
+    
+    def __init__(self, base_dir: Path = Path(".")):
+        self.stats_file = base_dir / "babelscope_global_stats.json"
+        self.stats = self._load_global_stats()
+    
+    def _load_global_stats(self) -> Dict:
+        """Load global stats from file, create if doesn't exist"""
+        if self.stats_file.exists():
+            try:
+                with open(self.stats_file, 'r') as f:
+                    stats = json.load(f)
+                print(f"📊 Loaded global stats: {stats['total_roms_tested']:,} ROMs tested across {stats['total_sessions']} sessions")
+                return stats
+            except Exception as e:
+                print(f"⚠️ Error loading global stats: {e}, creating new stats file")
+        
+        # Create new stats file
+        return {
+            'total_roms_tested': 0,
+            'total_location_checks': 0,
+            'total_discoveries': 0,
+            'total_sessions': 0,
+            'total_batches': 0,
+            'total_runtime_hours': 0.0,
+            'first_run': datetime.now().isoformat(),
+            'last_run': datetime.now().isoformat(),
+            'sessions': []
+        }
+    
+    def start_session(self, session_id: str, batch_size: int) -> None:
+        """Record the start of a new session"""
+        self.stats['total_sessions'] += 1
+        self.stats['last_run'] = datetime.now().isoformat()
+        
+        session_info = {
+            'session_id': session_id,
+            'start_time': datetime.now().isoformat(),
+            'batch_size': batch_size,
+            'status': 'running'
+        }
+        
+        self.stats['sessions'].append(session_info)
+        self._save_stats()
+    
+    def update_session_progress(self, session_id: str, roms_tested: int, location_checks: int, 
+                              batches: int, discoveries: int, runtime_hours: float) -> None:
+        """Update progress for current session"""
+        # Update global totals
+        session_stats = self.stats['sessions'][-1] if self.stats['sessions'] else {}
+        
+        # Calculate incremental changes
+        prev_roms = session_stats.get('roms_tested', 0)
+        prev_checks = session_stats.get('location_checks', 0)
+        prev_batches = session_stats.get('batches', 0)
+        prev_discoveries = session_stats.get('discoveries', 0)
+        prev_runtime = session_stats.get('runtime_hours', 0.0)
+        
+        # Add incremental changes to global totals
+        self.stats['total_roms_tested'] += (roms_tested - prev_roms)
+        self.stats['total_location_checks'] += (location_checks - prev_checks)
+        self.stats['total_batches'] += (batches - prev_batches)
+        self.stats['total_discoveries'] += (discoveries - prev_discoveries)
+        self.stats['total_runtime_hours'] += (runtime_hours - prev_runtime)
+        
+        # Update current session
+        if self.stats['sessions']:
+            self.stats['sessions'][-1].update({
+                'roms_tested': roms_tested,
+                'location_checks': location_checks,
+                'batches': batches,
+                'discoveries': discoveries,
+                'runtime_hours': runtime_hours,
+                'last_update': datetime.now().isoformat()
+            })
+        
+        self._save_stats()
+    
+    def finish_session(self, session_id: str) -> None:
+        """Mark session as completed"""
+        if self.stats['sessions']:
+            self.stats['sessions'][-1]['status'] = 'completed'
+            self.stats['sessions'][-1]['end_time'] = datetime.now().isoformat()
+        
+        self._save_stats()
+    
+    def _save_stats(self) -> None:
+        """Save stats to file with atomic write for safety"""
+        try:
+            # Use a temporary file and atomic move to prevent corruption
+            temp_file = self.stats_file.with_suffix('.tmp')
+            with open(temp_file, 'w') as f:
+                json.dump(self.stats, f, indent=2)
+            
+            # Atomic move (works on both Windows and Unix)
+            if os.name == 'nt':  # Windows
+                if self.stats_file.exists():
+                    self.stats_file.unlink()  # Windows requires explicit delete before replace
+            temp_file.replace(self.stats_file)
+        except Exception as e:
+            print(f"⚠️ Error saving global stats: {e}")
+            # Clean up temp file if it exists
+            if temp_file.exists():
+                temp_file.unlink()
+    
+    def print_global_summary(self) -> None:
+        """Print a nice summary of all-time stats"""
+        print("\n" + "="*70)
+        print("🌍 BABELSCOPE GLOBAL STATISTICS")
+        print("="*70)
+        print(f"🎯 Total ROMs tested: {self.stats['total_roms_tested']:,}")
+        print(f"🔍 Total location-checks: {self.stats['total_location_checks']:,}")
+        print(f"🏆 Total discoveries: {self.stats['total_discoveries']}")
+        print(f"📊 Total sessions: {self.stats['total_sessions']}")
+        print(f"⚡ Total batches: {self.stats['total_batches']:,}")
+        print(f"⏱️  Total runtime: {self.stats['total_runtime_hours']:.1f} hours")
+        
+        if self.stats['total_discoveries'] > 0:
+            discovery_rate = self.stats['total_roms_tested'] // self.stats['total_discoveries']
+            print(f"📈 All-time discovery rate: 1 in {discovery_rate:,} ROMs")
+        
+        if self.stats['total_runtime_hours'] > 0:
+            avg_rate = self.stats['total_roms_tested'] / self.stats['total_runtime_hours']
+            print(f"🚀 Average processing rate: {avg_rate:,.0f} ROMs/hour")
+        
+        print(f"📅 First run: {self.stats['first_run'][:10]}")
+        print(f"📅 Last run: {self.stats['last_run'][:10]}")
+        print("="*70 + "\n")
+
 
 class EnhancedBabelscopeSession:
     """Manages an Enhanced Multi-Location Babelscope exploration session"""
     
-    def __init__(self, batch_size: int, output_dir: str = "enhanced_babelscope_results"):
+    def __init__(self, batch_size: int, output_dir: str = "output/sorting"):
         self.batch_size = batch_size
         self.output_dir = Path(output_dir)
         self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.session_dir = self.output_dir / f"enhanced_session_{self.session_id}"
+        self.session_dir = self.output_dir / f"session_{self.session_id}"
         
         # Create directory structure
         self.session_dir.mkdir(parents=True, exist_ok=True)
@@ -65,6 +203,9 @@ class EnhancedBabelscopeSession:
         self.logs_dir = self.session_dir / "logs"
         self.roms_dir.mkdir(exist_ok=True)
         self.logs_dir.mkdir(exist_ok=True)
+        
+        # Initialize global stats manager
+        self.global_stats = GlobalStatsManager()
         
         # Session state
         self.running = True
@@ -87,6 +228,12 @@ class EnhancedBabelscopeSession:
         print(f"📁 Output directory: {self.session_dir}")
         print(f"📊 Batch size: {batch_size:,}")
         print(f"🎯 Enhancement: {SORT_LOCATIONS_COUNT} locations per ROM (~{SORT_LOCATIONS_COUNT}x discovery rate)")
+        
+        # Print global stats
+        self.global_stats.print_global_summary()
+        
+        # Register this session
+        self.global_stats.start_session(self.session_id, batch_size)
         
         self.detector = EnhancedBabelscopeDetector(batch_size)
         
@@ -222,6 +369,17 @@ class EnhancedBabelscopeSession:
                 self.stats['total_batches'] = batch_count
                 self.stats['total_discoveries'] += discoveries_saved
                 
+                # Update global stats
+                session_time = time.time() - self.stats['start_time']
+                self.global_stats.update_session_progress(
+                    self.session_id,
+                    self.stats['total_roms_tested'],
+                    self.stats['total_location_checks'],
+                    self.stats['total_batches'],
+                    self.stats['total_discoveries'],
+                    session_time / 3600  # Convert to hours
+                )
+                
                 # Record batch info
                 batch_record = {
                     'batch': batch_count,
@@ -287,9 +445,14 @@ class EnhancedBabelscopeSession:
             traceback.print_exc()
         
         finally:
-            # Final save and summary
+            # Mark session as completed and final save
+            self.global_stats.finish_session(self.session_id)
             self._save_session_state()
             self._print_final_summary(batch_count)
+            
+            # Print updated global stats
+            print("\n" + "🌍 UPDATED GLOBAL STATISTICS:")
+            self.global_stats.print_global_summary()
     
     def _save_session_state(self):
         """Save current session state with enhanced metrics"""
@@ -399,8 +562,8 @@ dramatically increasing discovery probability!
                        help='Execution cycles per ROM (default: 100000)')
     parser.add_argument('--check-interval', type=int, default=100,
                        help='Check for sorting every N cycles (default: 100, lower = more sensitive)')
-    parser.add_argument('--output-dir', type=str, default='enhanced_babelscope_results',
-                       help='Output directory (default: enhanced_babelscope_results)')
+    parser.add_argument('--output-dir', type=str, default='output/sorting',
+                       help='Output directory (default: output/sorting)')
     parser.add_argument('--save-frequency', type=int, default=10,
                        help='Save state every N batches (default: 10)')
     
