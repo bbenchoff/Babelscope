@@ -1,8 +1,20 @@
 # Babelscope: Computational Archaeology with CUDA
 
-This repository contains *Babelscope*, a system where we use GPUs to fill a virtual machine with random code, then execute it. Sometimes, the programs actually run. This is great, because this tool can emulate 200,000 independent instances of this VM at a time.
+This repository contains *Babelscope*, a system where we use GPUs to fill a virtual machine with random code, then execute it. Sometimes, the programs actually run. This is great, because this tool can emulate 200,000 independent instances of this VM at a time, find interesting stuff, then save these random program files for later inspection.
 
 **A much better description of this project [is on my website](https://bbenchoff.github.io/pages/Babelscope.html).** If sharing on social media, I encourage you to post _that_.
+
+## Introduction
+
+Following my [Finite Atari Project](https://bbenchoff.github.io/pages/FiniteAtari.html), I wondered if the technique could be improved to generate random ROMs for the Atari 2600 and find interesting things. I wanted more games that responded to input and the generation of novel algorithms. The only way to do this is to both generate programs on the GPU and emulate them in parallel. It's the halting problem; you don't know what a program is going to do until you run it.
+
+This project eschews the Atari 2600 for the CHIP-8. It's a vastly simpler computer with a flatter memory model. Also you don't have to generate thousands of NTSC waveforms in a GPU.
+
+For this project, I'm generating _billions_ of programs for the CHIP-8, and running them all in parallel. Instrumentation in the emulator allows me to select interesting ones on the fly (output to the display, responds to user input). Because the emulator is instrumented, I can also inspect memory while the emulator is running. With this, I'm able to find novel algorithms, like simple sorting algorithms.
+
+This repo, or rather this README, is broken up into several sections, each detailing an experiment I conducted in massively parallel emulation of a virtual machine loaded with random data. Why? I'd suggest you [read the blog post that accompanies this project](https://bbenchoff.github.io/pages/Babelscope.html).
+
+# Experiment 1: Discovering A Sorting Algorithm
 
 ## Sorting Algorithm Discovery
 
