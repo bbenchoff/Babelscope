@@ -34,7 +34,7 @@ The inspiration for this project, [Finite Atari Project](https://bbenchoff.githu
 
 # Experiment 2: Discovering A Sorting Algorithm
 
-The idea of this is simple. I generate billions of programs filled with random data, except for `[8 3 6 1 7 2 5 4]` at memory locations `0x300 to 0x307`. I inspect these programs while they're running. If I ever get `[1 2 3 4 5 6 7 8]` or `[8 7 6 5 4 3 2 1]`, I may have found a sorting algorithm. I might rediscover quicksort. I may find something else entirely. Who knows.
+The idea of this is simple. I generate billions of programs filled with random data, except for `[8 3 6 1 7 2 5 4]` at memory locations `0x300 to 0x307` and every other 8-byte memory location until `0xEF8`. I am effectively populating the program with 480 different arrays. I inspect these programs while they're running. If I ever get `[1 2 3 4 5 6 7 8]` or `[8 7 6 5 4 3 2 1]` at any memory location, I may have found a sorting algorithm. I might rediscover quicksort. I may find something else entirely. Who knows.
 
 ## Method
 
@@ -43,7 +43,7 @@ This experiment used a specially instrumented emulator, [sorting_emulator.py](em
 ### How It Works
 
 1. **Generate Random ROMs**: Creates completely random CHIP-8 programs (3584 bytes each)
-2. **Setup Test Data**: Places the unsorted array `[8, 3, 6, 1, 7, 2, 5, 4]` at memory location 0x300-0x307
+2. **Setup Test Data**: Places the unsorted array `[8, 3, 6, 1, 7, 2, 5, 4]` at memory location 0x300-0x307, and every of 8-byte location until 0xEF8.
 3. **Execute Programs**: Runs complete CHIP-8 emulation for each random program for 100,000 cycles
 4. **Monitor for Sorting**: Checks periodically if the array becomes sorted to either:
    - `[1, 2, 3, 4, 5, 6, 7, 8]` (ascending)
@@ -60,7 +60,7 @@ I bit the bullet and bought an RTX 5080 for this project:
 
 ### Requirements
 
-- NVIDIA GPU with CUDA support
+- NVIDIA GPU with CUDA support (I'm using a 5080)
 - Python 3.7+
 - CuPy: `pip install cupy-cuda12x`
 - NumPy: `pip install numpy`
@@ -119,7 +119,11 @@ This approach allows exploration of the random program space at unprecedented sc
 
 ## Results
 
-THE RESULTS GO HERE WHEN I FIND THEM
+My first test in this experiment populated the entire program with random data, except for a single memory segment from `0x300` to `0x307`, which was filled with `[8, 3, 6, 1, 7, 2, 5, 4]`. Running this for ~11 hours generated **3,903,200,000 random programs** at a rate of **100,761 programs/second**. Nothing was found. It was a negative result, although that doesn't really mean anything because I barely scratched the surface of the space of possible programs.
+
+The next test fixed the obvious problem. Instead of testing one memory location, from `0x300` to `0x307`, I'm pre-seeding all 8-byte wide memory locations above `0x300`. This is 480 different arrays for each program that could be sorted. There is still random data; the CHIP-8 starts execution at memory location `0x200`, and from there to `0x300` is filled with random data. I am massively reducing the computational space of the programs, but not so much that it actually matters. In any case, now I am explicitly looking for an algorithm in memory locations `0x200` to `0x2FF` that will sort an array above that memory space.
+
+
 
 ## Discussion
 

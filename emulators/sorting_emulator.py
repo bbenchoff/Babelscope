@@ -1,7 +1,7 @@
 """
-Correct Babelscope Implementation: Pure Random Code Exploration
-Based on the actual blog post requirements - complete CHIP-8 emulation
-with pure random ROM generation and simple sort detection.
+Enhanced Babelscope Implementation: Multi-location Sorting Detection
+Now searches for sorting algorithms across multiple 8-byte chunks in memory range 0x300-0xF000
+This dramatically increases the discovery probability by ~480x!
 """
 
 import cupy as cp
@@ -22,9 +22,14 @@ KEYPAD_SIZE = 16
 PROGRAM_START = 0x200
 FONT_START = 0x50
 
-# Sort test constants
-SORT_ARRAY_START = 0x300
+# Multi-location sort test constants
 SORT_ARRAY_SIZE = 8
+SORT_SEARCH_START = 0x300
+SORT_SEARCH_END = 0xF00  # Leave some room at the end
+# Calculate number of 8-byte chunks we can fit
+SORT_LOCATIONS_COUNT = (SORT_SEARCH_END - SORT_SEARCH_START) // SORT_ARRAY_SIZE
+
+print(f"🎯 Multi-location setup: {SORT_LOCATIONS_COUNT} locations from 0x{SORT_SEARCH_START:03X} to 0x{SORT_SEARCH_END:03X}")
 
 # Font data (must be loaded into all instances)
 CHIP8_FONT = cp.array([
@@ -46,13 +51,13 @@ CHIP8_FONT = cp.array([
     0xF0, 0x80, 0xF0, 0x80, 0x80   # F
 ], dtype=cp.uint8)
 
-# Complete CHIP-8 emulation kernel - ALL 35 instructions implemented
-COMPLETE_CHIP8_KERNEL = r'''
+# Enhanced CHIP-8 emulation kernel with multi-location sort detection
+ENHANCED_CHIP8_KERNEL = r'''
 extern "C" __global__ __launch_bounds__(256, 4)
-void chip8_babelscope_kernel(
+void chip8_multilocation_kernel(
     // Core CHIP-8 state
     unsigned char* __restrict__ memory,              // [instances][4096]
-    unsigned char* __restrict__ display,             // [instances][32*64] - kept for completeness
+    unsigned char* __restrict__ display,             // [instances][32*64]
     unsigned char* __restrict__ registers,           // [instances][16]
     unsigned short* __restrict__ index_registers,    // [instances]
     unsigned short* __restrict__ program_counters,   // [instances]
@@ -68,20 +73,25 @@ void chip8_babelscope_kernel(
     unsigned char* __restrict__ waiting_for_key,     // [instances]
     unsigned char* __restrict__ key_registers,       // [instances]
     
-    // Sort detection arrays
-    unsigned char* __restrict__ initial_sort_arrays, // [instances][8]
-    unsigned char* __restrict__ current_sort_arrays, // [instances][8]
+    // Multi-location sort detection arrays
     unsigned int* __restrict__ sort_cycles,          // [instances] - cycle when sorted
     unsigned char* __restrict__ sort_achieved,       // [instances] - 1 if sorted
+    unsigned short* __restrict__ sort_locations,     // [instances] - which location got sorted
+    unsigned char* __restrict__ sort_directions,     // [instances] - 0=ascending, 1=descending
     
     // Memory access tracking
-    unsigned int* __restrict__ array_reads,          // [instances]
-    unsigned int* __restrict__ array_writes,         // [instances]
+    unsigned int* __restrict__ total_reads,          // [instances]
+    unsigned int* __restrict__ total_writes,         // [instances]
+    unsigned int* __restrict__ sort_area_reads,      // [instances]
+    unsigned int* __restrict__ sort_area_writes,     // [instances]
     
     // Execution parameters
     int num_instances,
     int cycles_to_run,
     int sort_check_interval,
+    int sort_search_start,
+    int sort_search_end,
+    int sort_array_size,
     
     // RNG state
     unsigned int* __restrict__ rng_state
@@ -95,7 +105,6 @@ void chip8_babelscope_kernel(
     const int reg_base = instance * 16;
     const int stack_base = instance * 16;
     const int keypad_base = instance * 16;
-    const int sort_array_base = instance * 8;
     
     // Load state into registers for performance
     unsigned short pc = program_counters[instance];
@@ -105,8 +114,10 @@ void chip8_babelscope_kernel(
     unsigned char st = sound_timers[instance];
     
     // Local counters
-    unsigned int local_array_reads = 0;
-    unsigned int local_array_writes = 0;
+    unsigned int local_total_reads = 0;
+    unsigned int local_total_writes = 0;
+    unsigned int local_sort_area_reads = 0;
+    unsigned int local_sort_area_writes = 0;
     
     // Early exit if crashed or already sorted
     if (crashed[instance] || sort_achieved[instance]) {
@@ -158,7 +169,6 @@ void chip8_babelscope_kernel(
                         crashed[instance] = 1;
                     }
                 }
-                // SYS instructions ignored (as per modern interpreters)
                 break;
                 
             case 0x1:
@@ -220,15 +230,15 @@ void chip8_babelscope_kernel(
                             break;
                         case 0x1: // OR Vx, Vy
                             registers[reg_base + x] = vx | vy;
-                            registers[reg_base + 0xF] = 0; // VF reset quirk
+                            registers[reg_base + 0xF] = 0;
                             break;
                         case 0x2: // AND Vx, Vy
                             registers[reg_base + x] = vx & vy;
-                            registers[reg_base + 0xF] = 0; // VF reset quirk
+                            registers[reg_base + 0xF] = 0;
                             break;
                         case 0x3: // XOR Vx, Vy
                             registers[reg_base + x] = vx ^ vy;
-                            registers[reg_base + 0xF] = 0; // VF reset quirk
+                            registers[reg_base + 0xF] = 0;
                             break;
                         case 0x4: // ADD Vx, Vy
                             {
@@ -280,7 +290,6 @@ void chip8_babelscope_kernel(
             case 0xC:
                 // RND Vx, byte - Random number AND byte
                 {
-                    // Simple LCG random
                     rng_state[instance] = rng_state[instance] * 1664525 + 1013904223;
                     const unsigned char rand_byte = (rng_state[instance] >> 16) & 0xFF;
                     registers[reg_base + x] = rand_byte & kk;
@@ -292,7 +301,7 @@ void chip8_babelscope_kernel(
                 {
                     const unsigned char start_x = registers[reg_base + x] % 64;
                     const unsigned char start_y = registers[reg_base + y] % 32;
-                    registers[reg_base + 0xF] = 0; // Clear collision flag
+                    registers[reg_base + 0xF] = 0;
                     
                     for (int row = 0; row < n; row++) {
                         if (start_y + row >= 32) break;
@@ -307,10 +316,10 @@ void chip8_babelscope_kernel(
                                 const int pixel_index = display_base + (start_y + row) * 64 + (start_x + col);
                                 
                                 if (display[pixel_index]) {
-                                    registers[reg_base + 0xF] = 1; // Collision
+                                    registers[reg_base + 0xF] = 1;
                                 }
                                 
-                                display[pixel_index] ^= 1; // XOR pixel
+                                display[pixel_index] ^= 1;
                             }
                         }
                     }
@@ -359,7 +368,7 @@ void chip8_babelscope_kernel(
                     case 0x29: // LD F, Vx - Set I to font location
                         {
                             const unsigned char digit = registers[reg_base + x] & 0xF;
-                            index_reg = 0x50 + digit * 5; // Font starts at 0x50
+                            index_reg = 0x50 + digit * 5;
                         }
                         break;
                     case 0x33: // LD B, Vx - Store BCD
@@ -376,27 +385,29 @@ void chip8_babelscope_kernel(
                         for (int i = 0; i <= x; i++) {
                             if (index_reg + i < 4096) {
                                 memory[mem_base + index_reg + i] = registers[reg_base + i];
+                                local_total_writes++;
                                 
-                                // Track array writes
-                                if (index_reg + i >= 0x300 && index_reg + i < 0x308) {
-                                    local_array_writes++;
+                                // Track sort area writes
+                                if (index_reg + i >= sort_search_start && index_reg + i < sort_search_end) {
+                                    local_sort_area_writes++;
                                 }
                             }
                         }
-                        index_reg = (index_reg + x + 1) & 0xFFFF; // Memory quirk
+                        index_reg = (index_reg + x + 1) & 0xFFFF;
                         break;
                     case 0x65: // LD Vx, [I] - Load registers
                         for (int i = 0; i <= x; i++) {
                             if (index_reg + i < 4096) {
                                 registers[reg_base + i] = memory[mem_base + index_reg + i];
+                                local_total_reads++;
                                 
-                                // Track array reads
-                                if (index_reg + i >= 0x300 && index_reg + i < 0x308) {
-                                    local_array_reads++;
+                                // Track sort area reads
+                                if (index_reg + i >= sort_search_start && index_reg + i < sort_search_end) {
+                                    local_sort_area_reads++;
                                 }
                             }
                         }
-                        index_reg = (index_reg + x + 1) & 0xFFFF; // Memory quirk
+                        index_reg = (index_reg + x + 1) & 0xFFFF;
                         break;
                     default:
                         crashed[instance] = 1;
@@ -409,31 +420,39 @@ void chip8_babelscope_kernel(
                 break;
         }
         
-        // Check for sorting every N cycles
+        // Check for sorting at multiple locations every N cycles
         if ((cycle % sort_check_interval) == 0 && !sort_achieved[instance]) {
-            // Check if array is exactly [1,2,3,4,5,6,7,8] OR [8,7,6,5,4,3,2,1]
-            bool is_ascending = true;
-            bool is_descending = true;
-            
-            for (int i = 0; i < 8; i++) {
-                const unsigned char value = memory[mem_base + 0x300 + i];
-                current_sort_arrays[sort_array_base + i] = value;
+            // Check all possible 8-byte chunks in the search range
+            for (int offset = sort_search_start; offset <= sort_search_end - sort_array_size; offset += sort_array_size) {
+                bool is_ascending = true;
+                bool is_descending = true;
                 
-                // Check ascending: [1,2,3,4,5,6,7,8]
-                if (value != (i + 1)) {
-                    is_ascending = false;
+                // Check if this 8-byte chunk is sorted
+                for (int i = 0; i < sort_array_size; i++) {
+                    const unsigned char value = memory[mem_base + offset + i];
+                    
+                    // Check ascending: [1,2,3,4,5,6,7,8]
+                    if (value != (i + 1)) {
+                        is_ascending = false;
+                    }
+                    
+                    // Check descending: [8,7,6,5,4,3,2,1]
+                    if (value != (sort_array_size - i)) {
+                        is_descending = false;
+                    }
                 }
                 
-                // Check descending: [8,7,6,5,4,3,2,1]
-                if (value != (8 - i)) {
-                    is_descending = false;
+                if (is_ascending || is_descending) {
+                    sort_achieved[instance] = 1;
+                    sort_cycles[instance] = cycle;
+                    sort_locations[instance] = offset;
+                    sort_directions[instance] = is_descending ? 1 : 0;
+                    break; // Found one! Early termination
                 }
             }
             
-            if (is_ascending || is_descending) {
-                sort_achieved[instance] = 1;
-                sort_cycles[instance] = cycle;
-                break; // Early termination - we found what we wanted!
+            if (sort_achieved[instance]) {
+                break; // Exit main loop early
             }
         }
         
@@ -451,21 +470,26 @@ void chip8_babelscope_kernel(
     delay_timers[instance] = dt;
     sound_timers[instance] = st;
     
-    // Write back array access counts
-    array_reads[instance] += local_array_reads;
-    array_writes[instance] += local_array_writes;
+    // Write back access counts
+    total_reads[instance] += local_total_reads;
+    total_writes[instance] += local_total_writes;
+    sort_area_reads[instance] += local_sort_area_reads;
+    sort_area_writes[instance] += local_sort_area_writes;
 }
 '''
 
-class PureBabelscopeDetector:
+class EnhancedBabelscopeDetector:
     """
-    Pure Babelscope implementation: random code + sort detection
-    No fancy optimizations, just the core idea working correctly
+    Enhanced Babelscope implementation: Multi-location sorting detection
+    Dramatically increases discovery probability by monitoring many locations
     """
     
     def __init__(self, num_instances: int):
-        print(f"🔬 Initializing Pure Babelscope Detector")
+        print(f"🔬 Initializing Enhanced Multi-Location Babelscope Detector")
         print(f"   Instances: {num_instances:,}")
+        print(f"   Monitoring {SORT_LOCATIONS_COUNT} locations (8-byte chunks)")
+        print(f"   Search range: 0x{SORT_SEARCH_START:03X} to 0x{SORT_SEARCH_END:03X}")
+        print(f"   Effective discovery area increased by ~{SORT_LOCATIONS_COUNT}x!")
         
         self.num_instances = num_instances
         
@@ -476,8 +500,8 @@ class PureBabelscopeDetector:
         print(f"   Block size: {self.block_size}")
         print(f"   Grid size: {self.grid_size}")
         
-        # Compile the complete CHIP-8 kernel
-        print("   Compiling complete CHIP-8 kernel...")
+        # Compile the enhanced CHIP-8 kernel
+        print("   Compiling enhanced multi-location CHIP-8 kernel...")
         try:
             device = cp.cuda.Device()
             device_props = cp.cuda.runtime.getDeviceProperties(device.id)
@@ -490,18 +514,18 @@ class PureBabelscopeDetector:
             ]
             
             self.kernel = cp.RawKernel(
-                COMPLETE_CHIP8_KERNEL, 
-                'chip8_babelscope_kernel',
+                ENHANCED_CHIP8_KERNEL, 
+                'chip8_multilocation_kernel',
                 options=compile_options
             )
         except Exception as e:
             print(f"   ⚠️  Compiling without GPU-specific optimizations: {e}")
-            self.kernel = cp.RawKernel(COMPLETE_CHIP8_KERNEL, 'chip8_babelscope_kernel')
+            self.kernel = cp.RawKernel(ENHANCED_CHIP8_KERNEL, 'chip8_multilocation_kernel')
         
         # Initialize state
         self._initialize_state()
         
-        print("✅ Pure Babelscope ready!")
+        print("✅ Enhanced Multi-Location Babelscope ready!")
     
     def _initialize_state(self):
         """Initialize all GPU arrays"""
@@ -525,15 +549,17 @@ class PureBabelscopeDetector:
         self.waiting_for_key = cp.zeros(self.num_instances, dtype=cp.uint8)
         self.key_register = cp.zeros(self.num_instances, dtype=cp.uint8)
         
-        # Sort detection
-        self.initial_sort_arrays = cp.zeros((self.num_instances, SORT_ARRAY_SIZE), dtype=cp.uint8)
-        self.current_sort_arrays = cp.zeros((self.num_instances, SORT_ARRAY_SIZE), dtype=cp.uint8)
+        # Enhanced sort detection - now tracks which location and direction
         self.sort_cycles = cp.zeros(self.num_instances, dtype=cp.uint32)
         self.sort_achieved = cp.zeros(self.num_instances, dtype=cp.uint8)
+        self.sort_locations = cp.zeros(self.num_instances, dtype=cp.uint16)  # Which address got sorted
+        self.sort_directions = cp.zeros(self.num_instances, dtype=cp.uint8)  # 0=ascending, 1=descending
         
-        # Memory access tracking
-        self.array_reads = cp.zeros(self.num_instances, dtype=cp.uint32)
-        self.array_writes = cp.zeros(self.num_instances, dtype=cp.uint32)
+        # Enhanced memory access tracking
+        self.total_reads = cp.zeros(self.num_instances, dtype=cp.uint32)
+        self.total_writes = cp.zeros(self.num_instances, dtype=cp.uint32)
+        self.sort_area_reads = cp.zeros(self.num_instances, dtype=cp.uint32)
+        self.sort_area_writes = cp.zeros(self.num_instances, dtype=cp.uint32)
         
         # RNG state
         self.rng_state = cp.random.randint(1, 2**32, size=self.num_instances, dtype=cp.uint32)
@@ -544,36 +570,31 @@ class PureBabelscopeDetector:
         
         memory_usage = (
             self.memory.nbytes + self.display.nbytes + self.registers.nbytes +
-            self.initial_sort_arrays.nbytes + self.current_sort_arrays.nbytes +
-            self.array_reads.nbytes + self.array_writes.nbytes
+            self.sort_cycles.nbytes + self.sort_achieved.nbytes + 
+            self.sort_locations.nbytes + self.sort_directions.nbytes +
+            self.total_reads.nbytes + self.total_writes.nbytes +
+            self.sort_area_reads.nbytes + self.sort_area_writes.nbytes
         ) / (1024**3)
         
         print(f"   Memory allocated: {memory_usage:.2f} GB")
     
-    def load_random_roms_and_setup_sort_test(self, rom_data):
-        """Load random ROMs and setup the sort test - accepts GPU arrays or CPU lists"""
+    def load_random_roms_and_setup_multilocation_test(self, rom_data):
+        """Load random ROMs and setup multi-location sort test"""
         
         if isinstance(rom_data, cp.ndarray):
-            # GPU array input - much faster!
             print(f"📥 Loading {rom_data.shape[0]:,} random ROMs from GPU array...")
             
-            # Ensure we don't exceed our instance count
             num_roms_to_load = min(rom_data.shape[0], self.num_instances)
-            
-            # Direct GPU-to-GPU copy - very fast!
             rom_size = min(rom_data.shape[1], MEMORY_SIZE - PROGRAM_START)
             rom_end = PROGRAM_START + rom_size
             
             self.memory[:num_roms_to_load, PROGRAM_START:rom_end] = rom_data[:num_roms_to_load, :rom_size]
             
-            # If we have fewer ROMs than instances, repeat the ROMs
             if num_roms_to_load < self.num_instances:
                 for i in range(num_roms_to_load, self.num_instances):
                     rom_idx = i % num_roms_to_load
                     self.memory[i, PROGRAM_START:rom_end] = rom_data[rom_idx, :rom_size]
-            
         else:
-            # Legacy CPU list input
             print(f"📥 Loading {len(rom_data):,} random ROMs from CPU list...")
             
             for i in range(self.num_instances):
@@ -585,28 +606,35 @@ class PureBabelscopeDetector:
                 rom_end = PROGRAM_START + len(rom_array)
                 self.memory[i, PROGRAM_START:rom_end] = cp.array(rom_array)
         
-        # Setup the UNIQUE, UNSORTED test pattern at 0x300-0x307
-        # Using a hardcoded pattern that's definitely unsorted
+        # Setup the test pattern at MULTIPLE locations
         test_pattern = np.array([8, 3, 6, 1, 7, 2, 5, 4], dtype=np.uint8)
         
+        print(f"🎯 Setting up multi-location test:")
         print(f"   Test pattern: {test_pattern}")
+        print(f"   Locations: {SORT_LOCATIONS_COUNT} chunks from 0x{SORT_SEARCH_START:03X} to 0x{SORT_SEARCH_END:03X}")
         
-        # Place test pattern in all instances
+        # Place test pattern at ALL possible 8-byte aligned locations
         test_pattern_gpu = cp.array(test_pattern)
-        self.memory[:, SORT_ARRAY_START:SORT_ARRAY_START + SORT_ARRAY_SIZE] = test_pattern_gpu[None, :]
         
-        # Save initial pattern for comparison
-        self.initial_sort_arrays[:] = test_pattern_gpu[None, :]
+        location_count = 0
+        for offset in range(SORT_SEARCH_START, SORT_SEARCH_END, SORT_ARRAY_SIZE):
+            if offset + SORT_ARRAY_SIZE <= SORT_SEARCH_END:
+                self.memory[:, offset:offset + SORT_ARRAY_SIZE] = test_pattern_gpu[None, :]
+                location_count += 1
         
-        print(f"   ✅ Loaded ROMs with test pattern at 0x{SORT_ARRAY_START:03X}")
+        print(f"   ✅ Placed test pattern at {location_count} locations")
+        print(f"   🎯 Discovery probability increased by ~{location_count}x!")
     
-    def run_babelscope_search(self, cycles: int = 100000, check_interval: int = 100) -> int:
-        """Run the pure Babelscope search with configurable check interval"""
-        print(f"🔍 Running Babelscope search: {cycles:,} cycles, check every {check_interval}")
+    def run_enhanced_babelscope_search(self, cycles: int = 100000, check_interval: int = 100) -> int:
+        """Run the enhanced multi-location Babelscope search"""
+        print(f"🔍 Running Enhanced Multi-Location Babelscope search:")
+        print(f"   Cycles: {cycles:,}, Check interval: {check_interval}")
+        print(f"   Monitoring {SORT_LOCATIONS_COUNT} locations per ROM")
+        print(f"   Effective search rate: {self.num_instances * SORT_LOCATIONS_COUNT:,} location-checks")
         
         start_time = time.time()
         
-        # Launch the complete CHIP-8 kernel
+        # Launch the enhanced CHIP-8 kernel
         self.kernel(
             (self.grid_size,), (self.block_size,),
             (
@@ -628,20 +656,25 @@ class PureBabelscopeDetector:
                 self.waiting_for_key,
                 self.key_register,
                 
-                # Sort detection
-                self.initial_sort_arrays,
-                self.current_sort_arrays,
+                # Enhanced sort detection
                 self.sort_cycles,
                 self.sort_achieved,
+                self.sort_locations,
+                self.sort_directions,
                 
-                # Memory access tracking
-                self.array_reads,
-                self.array_writes,
+                # Enhanced memory access tracking
+                self.total_reads,
+                self.total_writes,
+                self.sort_area_reads,
+                self.sort_area_writes,
                 
                 # Parameters
                 self.num_instances,
                 cycles,
-                check_interval,  # Now configurable!
+                check_interval,
+                SORT_SEARCH_START,
+                SORT_SEARCH_END,
+                SORT_ARRAY_SIZE,
                 
                 # RNG
                 self.rng_state
@@ -655,21 +688,35 @@ class PureBabelscopeDetector:
         # Count results
         sorts_found = int(cp.sum(self.sort_achieved))
         crashed_count = int(cp.sum(self.crashed))
-        arrays_accessed = int(cp.sum((self.array_reads > 0) | (self.array_writes > 0)))
+        sort_area_accessed = int(cp.sum((self.sort_area_reads > 0) | (self.sort_area_writes > 0)))
         
         # Performance metrics
         roms_per_second = self.num_instances / execution_time
+        effective_checks_per_second = (self.num_instances * SORT_LOCATIONS_COUNT) / execution_time
         
         print(f"⚡ Execution time: {execution_time:.3f}s")
         print(f"⚡ {roms_per_second:,.0f} ROMs/sec")
+        print(f"⚡ {effective_checks_per_second:,.0f} location-checks/sec")
         print(f"🎯 Sorting algorithms found: {sorts_found}")
         print(f"💥 Crashed instances: {crashed_count}")
-        print(f"📊 Instances that accessed array: {arrays_accessed}")
+        print(f"📊 Instances that accessed sort area: {sort_area_accessed}")
+        
+        if sorts_found > 0:
+            print(f"🎉 SUCCESS! Found {sorts_found} sorting algorithm(s)!")
+            
+            # Show details of discoveries
+            sorted_indices = cp.where(self.sort_achieved)[0]
+            for idx in sorted_indices[:5]:  # Show first 5
+                idx = int(idx)
+                location = int(self.sort_locations[idx])
+                direction = "descending" if self.sort_directions[idx] else "ascending"
+                cycle = int(self.sort_cycles[idx])
+                print(f"   Discovery {idx}: 0x{location:03X} -> {direction} at cycle {cycle}")
         
         return sorts_found
     
-    def get_discoveries(self) -> List[Dict]:
-        """Get all discovered sorting algorithms"""
+    def get_enhanced_discoveries(self) -> List[Dict]:
+        """Get all discovered sorting algorithms with enhanced metadata"""
         discoveries = []
         
         # Find instances that achieved sorting
@@ -678,14 +725,29 @@ class PureBabelscopeDetector:
         for idx in sorted_indices:
             idx = int(idx)
             
+            # Get the sorted location and extract the final array
+            sort_location = int(self.sort_locations[idx])
+            final_array = cp.asnumpy(self.memory[idx, sort_location:sort_location + SORT_ARRAY_SIZE]).tolist()
+            
             discovery = {
                 'instance_id': idx,
                 'sort_cycle': int(self.sort_cycles[idx]),
-                'initial_array': cp.asnumpy(self.initial_sort_arrays[idx]).tolist(),
-                'final_array': cp.asnumpy(self.current_sort_arrays[idx]).tolist(),
-                'array_reads': int(self.array_reads[idx]),
-                'array_writes': int(self.array_writes[idx]),
-                'rom_data': cp.asnumpy(self.memory[idx, PROGRAM_START:]).tobytes()
+                'sort_location': sort_location,
+                'sort_direction': 'descending' if int(self.sort_directions[idx]) else 'ascending',
+                'initial_array': [8, 3, 6, 1, 7, 2, 5, 4],  # We know what we put there
+                'final_array': final_array,
+                'memory_access': {
+                    'total_reads': int(self.total_reads[idx]),
+                    'total_writes': int(self.total_writes[idx]),
+                    'sort_area_reads': int(self.sort_area_reads[idx]),
+                    'sort_area_writes': int(self.sort_area_writes[idx])
+                },
+                'rom_data': cp.asnumpy(self.memory[idx, PROGRAM_START:]).tobytes(),
+                'multilocation_info': {
+                    'total_locations_monitored': SORT_LOCATIONS_COUNT,
+                    'search_range': f"0x{SORT_SEARCH_START:03X}-0x{SORT_SEARCH_END:03X}",
+                    'discovery_probability_multiplier': SORT_LOCATIONS_COUNT
+                }
             }
             
             discoveries.append(discovery)
@@ -709,14 +771,17 @@ class PureBabelscopeDetector:
         self.waiting_for_key.fill(0)
         self.key_register.fill(0)
         
-        # Reset sort detection
-        self.current_sort_arrays.fill(0)
+        # Reset enhanced sort detection
         self.sort_cycles.fill(0)
         self.sort_achieved.fill(0)
+        self.sort_locations.fill(0)
+        self.sort_directions.fill(0)
         
-        # Reset counters
-        self.array_reads.fill(0)
-        self.array_writes.fill(0)
+        # Reset enhanced counters
+        self.total_reads.fill(0)
+        self.total_writes.fill(0)
+        self.sort_area_reads.fill(0)
+        self.sort_area_writes.fill(0)
         
         # Reset RNG
         self.rng_state = cp.random.randint(1, 2**32, size=self.num_instances, dtype=cp.uint32)
@@ -774,8 +839,8 @@ def generate_pure_random_roms(num_roms: int, rom_size: int = 3584) -> List[np.nd
     return rom_list
 
 
-def save_discovery_rom(discovery: Dict, output_dir: Path, batch_num: int, discovery_num: int) -> str:
-    """Save a discovered ROM with metadata"""
+def save_enhanced_discovery_rom(discovery: Dict, output_dir: Path, batch_num: int, discovery_num: int) -> str:
+    """Save a discovered ROM with enhanced metadata"""
     # Extract ROM data
     rom_data = discovery['rom_data']
     
@@ -798,16 +863,18 @@ def save_discovery_rom(discovery: Dict, output_dir: Path, batch_num: int, discov
     # Generate hash for filename
     rom_hash = hashlib.sha256(actual_rom.tobytes()).hexdigest()[:8]
     
-    # Create filename
+    # Create enhanced filename with location info
     cycle = discovery['sort_cycle']
-    filename = f"FOUND_B{batch_num:04d}D{discovery_num:02d}_C{cycle}_{rom_hash}"
+    location = discovery['sort_location']
+    direction = discovery['sort_direction'][:3].upper()  # ASC or DESC
+    filename = f"MULTILOC_B{batch_num:04d}D{discovery_num:02d}_0x{location:03X}_{direction}_C{cycle}_{rom_hash}"
     
     # Save ROM binary
     rom_path = output_dir / f"{filename}.ch8"
     with open(rom_path, 'wb') as f:
         f.write(actual_rom.tobytes())
     
-    # Save metadata
+    # Save enhanced metadata
     metadata = {
         'filename': f"{filename}.ch8",
         'discovery_info': {
@@ -815,16 +882,17 @@ def save_discovery_rom(discovery: Dict, output_dir: Path, batch_num: int, discov
             'discovery_number': discovery_num,
             'instance_id': discovery['instance_id'],
             'sort_cycle': discovery['sort_cycle'],
-            'timestamp': time.time()
+            'sort_location': f"0x{discovery['sort_location']:03X}",
+            'sort_direction': discovery['sort_direction'],
+            'timestamp': time.time(),
+            'discovery_type': 'multi_location_enhanced'
         },
         'arrays': {
             'initial': discovery['initial_array'],
             'final': discovery['final_array']
         },
-        'memory_access': {
-            'array_reads': discovery['array_reads'],
-            'array_writes': discovery['array_writes']
-        },
+        'memory_access': discovery['memory_access'],
+        'multilocation_enhancement': discovery['multilocation_info'],
         'rom_info': {
             'size_bytes': len(actual_rom),
             'sha256_hash': rom_hash
@@ -836,14 +904,15 @@ def save_discovery_rom(discovery: Dict, output_dir: Path, batch_num: int, discov
         json.dump(metadata, f, indent=2)
     
     print(f"   💾 Saved: {filename}.ch8 ({len(actual_rom)} bytes)")
+    print(f"      Location: 0x{discovery['sort_location']:03X}, Direction: {discovery['sort_direction']}")
     
     return filename
 
 
-class SimpleBabelscopeRunner:
-    """Simple runner for the pure Babelscope approach"""
+class EnhancedBabelscopeRunner:
+    """Enhanced runner for the multi-location Babelscope approach"""
     
-    def __init__(self, batch_size: int = 50000, output_dir: str = "babelscope_output"):
+    def __init__(self, batch_size: int = 50000, output_dir: str = "enhanced_babelscope_output"):
         self.batch_size = batch_size
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
@@ -853,20 +922,26 @@ class SimpleBabelscopeRunner:
             'total_roms_tested': 0,
             'total_batches': 0,
             'total_discoveries': 0,
-            'start_time': time.time()
+            'effective_location_checks': 0,
+            'start_time': time.time(),
+            'enhancement_type': 'multi_location',
+            'locations_per_rom': SORT_LOCATIONS_COUNT
         }
         
-        print(f"🔬 Simple Babelscope Runner")
+        print(f"🔬 Enhanced Multi-Location Babelscope Runner")
         print(f"   Batch size: {batch_size:,}")
+        print(f"   Locations per ROM: {SORT_LOCATIONS_COUNT}")
+        print(f"   Effective discovery rate multiplier: ~{SORT_LOCATIONS_COUNT}x")
         print(f"   Output: {output_dir}")
         
-        # Initialize detector
-        self.detector = PureBabelscopeDetector(batch_size)
+        # Initialize enhanced detector
+        self.detector = EnhancedBabelscopeDetector(batch_size)
     
-    def run_search(self, num_batches: int = 10, cycles_per_rom: int = 100000):
-        """Run the Babelscope search for specified batches"""
-        print(f"🏹 Starting Babelscope search: {num_batches} batches")
+    def run_enhanced_search(self, num_batches: int = 10, cycles_per_rom: int = 100000):
+        """Run the enhanced multi-location Babelscope search"""
+        print(f"🏹 Starting Enhanced Multi-Location Babelscope search: {num_batches} batches")
         print(f"   Cycles per ROM: {cycles_per_rom:,}")
+        print(f"   Expected discovery rate: ~{SORT_LOCATIONS_COUNT}x better than single-location")
         print()
         
         total_discoveries = 0
@@ -876,44 +951,55 @@ class SimpleBabelscopeRunner:
             print("-" * 40)
             
             # Generate pure random ROMs
-            rom_data = generate_pure_random_roms(self.batch_size)
+            rom_data = generate_pure_random_roms_gpu(self.batch_size)
             
-            # Load ROMs and setup sort test
-            self.detector.load_random_roms_and_setup_sort_test(rom_data)
+            # Load ROMs and setup multi-location sort test
+            self.detector.load_random_roms_and_setup_multilocation_test(rom_data)
             
-            # Run the search
-            sorts_found = self.detector.run_babelscope_search(cycles_per_rom, check_interval=100)
+            # Run the enhanced search
+            sorts_found = self.detector.run_enhanced_babelscope_search(cycles_per_rom, check_interval=100)
             
             # Process discoveries
             if sorts_found > 0:
-                discoveries = self.detector.get_discoveries()
+                discoveries = self.detector.get_enhanced_discoveries()
                 
                 print(f"🎉 Found {len(discoveries)} sorting algorithms!")
                 
                 for i, discovery in enumerate(discoveries):
-                    filename = save_discovery_rom(discovery, self.output_dir, batch_num, i + 1)
+                    filename = save_enhanced_discovery_rom(discovery, self.output_dir, batch_num, i + 1)
                     total_discoveries += 1
                     
-                    print(f"      Discovery {i+1}: cycle {discovery['sort_cycle']:,}, "
-                          f"{discovery['array_reads']}R/{discovery['array_writes']}W")
+                    location = discovery['sort_location']
+                    direction = discovery['sort_direction']
+                    cycle = discovery['sort_cycle']
+                    reads = discovery['memory_access']['sort_area_reads']
+                    writes = discovery['memory_access']['sort_area_writes']
+                    
+                    print(f"      Discovery {i+1}: 0x{location:03X} {direction} @ cycle {cycle:,} ({reads}R/{writes}W)")
             
             # Update session stats
             self.session_stats['total_roms_tested'] += self.batch_size
             self.session_stats['total_batches'] = batch_num
             self.session_stats['total_discoveries'] = total_discoveries
+            self.session_stats['effective_location_checks'] += self.batch_size * SORT_LOCATIONS_COUNT
             
             # Print session summary
             total_time = time.time() - self.session_stats['start_time']
             total_rate = self.session_stats['total_roms_tested'] / total_time
+            effective_rate = self.session_stats['effective_location_checks'] / total_time
             
             print(f"📊 Session totals:")
             print(f"   ROMs tested: {self.session_stats['total_roms_tested']:,}")
+            print(f"   Location-checks: {self.session_stats['effective_location_checks']:,}")
             print(f"   Discoveries: {total_discoveries}")
-            print(f"   Rate: {total_rate:,.0f} ROMs/sec")
+            print(f"   ROM rate: {total_rate:,.0f} ROMs/sec")
+            print(f"   Location-check rate: {effective_rate:,.0f} checks/sec")
             
             if total_discoveries > 0:
                 discovery_rate = self.session_stats['total_roms_tested'] // total_discoveries
-                print(f"   Discovery rate: 1 in {discovery_rate:,}")
+                effective_discovery_rate = self.session_stats['effective_location_checks'] // total_discoveries
+                print(f"   Discovery rate: 1 in {discovery_rate:,} ROMs")
+                print(f"   Effective discovery rate: 1 in {effective_discovery_rate:,} location-checks")
             
             print()
             
@@ -924,96 +1010,64 @@ class SimpleBabelscopeRunner:
             del rom_data
             cp.get_default_memory_pool().free_all_blocks()
         
-        print("🏁 Babelscope search complete!")
+        print("🏁 Enhanced Babelscope search complete!")
         print(f"   Total discoveries: {total_discoveries}")
+        print(f"   Enhancement factor: ~{SORT_LOCATIONS_COUNT}x detection area")
         print(f"   Results saved in: {self.output_dir}")
         
         return total_discoveries
 
 
-def test_pure_babelscope():
-    """Test the pure Babelscope implementation"""
-    print("🧪 Testing Pure Babelscope Implementation")
-    print("=" * 50)
+def test_enhanced_babelscope():
+    """Test the enhanced multi-location Babelscope implementation"""
+    print("🧪 Testing Enhanced Multi-Location Babelscope Implementation")
+    print("=" * 60)
     
     # Small test first
     print("Running small test (1000 ROMs)...")
-    detector = PureBabelscopeDetector(1000)
+    detector = EnhancedBabelscopeDetector(1000)
     
     # Generate test ROMs
-    test_roms = generate_pure_random_roms(100)  # Generate 100, use repeatedly
-    detector.load_random_roms_and_setup_sort_test(test_roms)
+    test_roms = generate_pure_random_roms_gpu(100)
+    detector.load_random_roms_and_setup_multilocation_test(test_roms)
     
     # Run short test
-    sorts_found = detector.run_babelscope_search(cycles=10000, check_interval=100)
+    sorts_found = detector.run_enhanced_babelscope_search(cycles=10000, check_interval=100)
     
     print(f"✅ Test complete: {sorts_found} sorts found")
     
     if sorts_found > 0:
-        discoveries = detector.get_discoveries()
+        discoveries = detector.get_enhanced_discoveries()
         print("Sample discovery:")
         discovery = discoveries[0]
         print(f"  Initial: {discovery['initial_array']}")
         print(f"  Final: {discovery['final_array']}")
+        print(f"  Location: 0x{discovery['sort_location']:03X}")
+        print(f"  Direction: {discovery['sort_direction']}")
         print(f"  Cycle: {discovery['sort_cycle']}")
-        print(f"  Access: {discovery['array_reads']}R/{discovery['array_writes']}W")
+        print(f"  Access: {discovery['memory_access']['sort_area_reads']}R/{discovery['memory_access']['sort_area_writes']}W")
     
     return sorts_found > 0
 
 
-def benchmark_pure_babelscope():
-    """Benchmark the pure implementation"""
-    print("🏁 Benchmarking Pure Babelscope")
-    print("=" * 50)
-    
-    test_sizes = [1000, 10000, 50000]
-    
-    for size in test_sizes:
-        print(f"\n🚀 Testing {size:,} instances...")
-        
-        try:
-            detector = PureBabelscopeDetector(size)
-            test_roms = generate_pure_random_roms(min(1000, size))
-            detector.load_random_roms_and_setup_sort_test(test_roms)
-            
-            start_time = time.time()
-            sorts_found = detector.run_babelscope_search(cycles=5000, check_interval=100)
-            total_time = time.time() - start_time
-            
-            rate = size / total_time
-            
-            print(f"   ✅ {rate:,.0f} ROMs/sec, {sorts_found} discoveries")
-            
-            # Cleanup
-            del detector
-            cp.get_default_memory_pool().free_all_blocks()
-            
-        except Exception as e:
-            print(f"   ❌ Failed: {e}")
-    
-    print("\n✅ Benchmark complete!")
-
-
 if __name__ == "__main__":
-    print("🔬 PURE BABELSCOPE: Random Code Exploration")
+    print("🔬 ENHANCED MULTI-LOCATION BABELSCOPE")
     print("=" * 60)
-    print("🎯 Complete CHIP-8 emulation + pure random ROMs + sort detection")
-    print("📊 No bias, no templates, just computational archaeology")
+    print("🎯 Complete CHIP-8 emulation + multi-location sort detection")
+    print(f"📊 Monitoring {SORT_LOCATIONS_COUNT} locations per ROM (~{SORT_LOCATIONS_COUNT}x discovery rate)")
+    print("🧬 Pure computational archaeology with enhanced detection area")
     print()
     
     # Test basic functionality
-    if test_pure_babelscope():
-        print("✅ Pure Babelscope working correctly!")
+    if test_enhanced_babelscope():
+        print("✅ Enhanced Multi-Location Babelscope working correctly!")
     else:
-        print("⚠️  No discoveries in test run (normal - they're rare)")
-    
-    # Run benchmark
-    benchmark_pure_babelscope()
+        print("⚠️  No discoveries in test run (still possible, but less likely now)")
     
     # Example usage
     print("\n🚀 Example usage:")
-    print("runner = SimpleBabelscopeRunner(batch_size=100000)")
-    print("runner.run_search(num_batches=100, cycles_per_rom=50000)")
+    print("runner = EnhancedBabelscopeRunner(batch_size=100000)")
+    print("runner.run_enhanced_search(num_batches=100, cycles_per_rom=50000)")
     print()
-    print("Expected discovery rate: ~1 in 2-5 million ROMs")
-    print("RTX 5080 should process ~100K+ ROMs/sec")
+    print(f"Expected discovery rate: ~{SORT_LOCATIONS_COUNT}x better than single location")
+    print("RTX 5080 should process ~100K+ ROMs/sec with millions of location-checks/sec")
