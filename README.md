@@ -20,7 +20,7 @@ This is computational archaeology - excavating working algorithms from the fossi
 
 On an RTX 5080:
 - **ROM Generation**: ~70M ROMs/second on GPU
-- **Emulation**: ~167K ROMs/second through complete CHIP-8 execution
+- **Emulation**: ~170K ROMs/second through complete CHIP-8 execution
 - **Memory Usage**: ~7GB GPU memory for 200K parallel instances
 - **GPU Utilization**: 90%+ sustained
 
