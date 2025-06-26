@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-Enhanced Babelscope Main Runner - Multi-Location Detection
-Massive improvement: Instead of checking one 8-byte location, now checks
-hundreds of locations simultaneously, increasing discovery probability by ~480x!
+Enhanced Babelscope Main Runner - Register-Based Detection
+Revolutionary improvement: Instead of checking memory locations, now monitors
+registers V0-V7 directly - the most actively manipulated data in CHIP-8!
 
-Pure implementation matching the enhanced blog post requirements:
+Pure implementation targeting the highest-activity data area:
 1. Generate completely random ROMs
-2. Put unique unsorted values at MULTIPLE 8-byte chunks (0x600-0xF00)
+2. Put unique unsorted values in registers V0-V7: [8,3,6,1,7,2,5,4]
 3. Run complete CHIP-8 emulation
-4. Check if ANY location gets sorted
-5. Save ROMs that achieve sorting with location metadata
+4. Check if registers get sorted to [1,2,3,4,5,6,7,8] or [8,7,6,5,4,3,2,1]
+5. Save ROMs that achieve register-based sorting with metadata
 
-Enhancement: ~480x better discovery rate through multi-location monitoring!
+Enhancement: Direct monitoring of most manipulated data area in CHIP-8!
 """
 
 import os
@@ -39,13 +39,10 @@ try:
     from sorting_emulator import (
         EnhancedBabelscopeDetector, 
         generate_pure_random_roms_gpu, 
-        save_enhanced_discovery_rom,
-        SORT_LOCATIONS_COUNT,
-        SORT_SEARCH_START,
-        SORT_SEARCH_END
+        save_enhanced_discovery_rom
     )
-    print("✅ Enhanced sorting emulator modules loaded")
-    print(f"✅ Multi-location enhancement: {SORT_LOCATIONS_COUNT} locations per ROM")
+    print("✅ Register-based sorting emulator modules loaded")
+    print("✅ Enhancement: Direct register V0-V7 monitoring")
 except ImportError as e:
     print(f"❌ Failed to import from emulators/sorting_emulator.py: {e}")
     print("Available items in sorting_emulator:")
@@ -70,6 +67,17 @@ class GlobalStatsManager:
             try:
                 with open(self.stats_file, 'r') as f:
                     stats = json.load(f)
+                
+                # Handle backwards compatibility - convert old location_checks to register_checks
+                if 'total_location_checks' in stats and 'total_register_checks' not in stats:
+                    print(f"🔄 Converting old location-checks to register-checks for compatibility")
+                    stats['total_register_checks'] = stats.get('total_location_checks', 0)
+                    # Keep the old field for backwards compatibility
+                
+                # Ensure all required fields exist
+                if 'total_register_checks' not in stats:
+                    stats['total_register_checks'] = 0
+                
                 print(f"📊 Loaded global stats: {stats['total_roms_tested']:,} ROMs tested across {stats['total_sessions']} sessions")
                 return stats
             except Exception as e:
@@ -78,7 +86,7 @@ class GlobalStatsManager:
         # Create new stats file
         return {
             'total_roms_tested': 0,
-            'total_location_checks': 0,
+            'total_register_checks': 0,
             'total_discoveries': 0,
             'total_sessions': 0,
             'total_batches': 0,
@@ -103,7 +111,7 @@ class GlobalStatsManager:
         self.stats['sessions'].append(session_info)
         self._save_stats()
     
-    def update_session_progress(self, session_id: str, roms_tested: int, location_checks: int, 
+    def update_session_progress(self, session_id: str, roms_tested: int, register_checks: int, 
                               batches: int, discoveries: int, runtime_hours: float) -> None:
         """Update progress for current session"""
         # Update global totals
@@ -111,14 +119,14 @@ class GlobalStatsManager:
         
         # Calculate incremental changes
         prev_roms = session_stats.get('roms_tested', 0)
-        prev_checks = session_stats.get('location_checks', 0)
+        prev_checks = session_stats.get('register_checks', 0)
         prev_batches = session_stats.get('batches', 0)
         prev_discoveries = session_stats.get('discoveries', 0)
         prev_runtime = session_stats.get('runtime_hours', 0.0)
         
         # Add incremental changes to global totals
         self.stats['total_roms_tested'] += (roms_tested - prev_roms)
-        self.stats['total_location_checks'] += (location_checks - prev_checks)
+        self.stats['total_register_checks'] += (register_checks - prev_checks)
         self.stats['total_batches'] += (batches - prev_batches)
         self.stats['total_discoveries'] += (discoveries - prev_discoveries)
         self.stats['total_runtime_hours'] += (runtime_hours - prev_runtime)
@@ -127,7 +135,7 @@ class GlobalStatsManager:
         if self.stats['sessions']:
             self.stats['sessions'][-1].update({
                 'roms_tested': roms_tested,
-                'location_checks': location_checks,
+                'register_checks': register_checks,
                 'batches': batches,
                 'discoveries': discoveries,
                 'runtime_hours': runtime_hours,
@@ -169,7 +177,19 @@ class GlobalStatsManager:
         print("🌍 BABELSCOPE GLOBAL STATISTICS")
         print("="*70)
         print(f"🎯 Total ROMs tested: {self.stats['total_roms_tested']:,}")
-        print(f"🔍 Total location-checks: {self.stats['total_location_checks']:,}")
+        
+        # Handle both old and new field names for backwards compatibility
+        register_checks = self.stats.get('total_register_checks', 0)
+        location_checks = self.stats.get('total_location_checks', 0)
+        total_checks = max(register_checks, location_checks)
+        
+        if register_checks > 0:
+            print(f"🔍 Total register-checks: {register_checks:,}")
+        if location_checks > 0:
+            print(f"🔍 Total location-checks: {location_checks:,}")
+        if total_checks > 0:
+            print(f"🔍 Total checks (combined): {total_checks:,}")
+        
         print(f"🏆 Total discoveries: {self.stats['total_discoveries']}")
         print(f"📊 Total sessions: {self.stats['total_sessions']}")
         print(f"⚡ Total batches: {self.stats['total_batches']:,}")
@@ -188,8 +208,8 @@ class GlobalStatsManager:
         print("="*70 + "\n")
 
 
-class EnhancedBabelscopeSession:
-    """Manages an Enhanced Multi-Location Babelscope exploration session"""
+class RegisterBabelscopeSession:
+    """Manages a Register-Based Babelscope exploration session"""
     
     def __init__(self, batch_size: int, output_dir: str = "output/sorting"):
         self.batch_size = batch_size
@@ -211,23 +231,22 @@ class EnhancedBabelscopeSession:
         self.running = True
         self.stats = {
             'session_id': self.session_id,
-            'enhancement_type': 'multi_location',
-            'locations_per_rom': SORT_LOCATIONS_COUNT,
-            'search_range': f"0x{SORT_SEARCH_START:03X}-0x{SORT_SEARCH_END:03X}",
-            'discovery_multiplier': SORT_LOCATIONS_COUNT,
+            'enhancement_type': 'register_based',
+            'target_registers': 'V0-V7',
+            'detection_method': 'direct_register_monitoring',
             'start_time': time.time(),
             'total_roms_tested': 0,
-            'total_location_checks': 0,
+            'total_register_checks': 0,
             'total_batches': 0,
             'total_discoveries': 0,
             'batch_history': []
         }
         
-        # Initialize enhanced detector
-        print(f"🔬 Initializing Enhanced Multi-Location Babelscope session: {self.session_id}")
+        # Initialize register-based detector
+        print(f"🔬 Initializing Register-Based Babelscope session: {self.session_id}")
         print(f"📁 Output directory: {self.session_dir}")
         print(f"📊 Batch size: {batch_size:,}")
-        print(f"🎯 Enhancement: {SORT_LOCATIONS_COUNT} locations per ROM (~{SORT_LOCATIONS_COUNT}x discovery rate)")
+        print(f"🎯 Enhancement: Direct register V0-V7 monitoring")
         
         # Print global stats
         self.global_stats.print_global_summary()
@@ -252,7 +271,7 @@ class EnhancedBabelscopeSession:
                        check_interval: int = 100,
                        save_frequency: int = 10):
         """
-        Run the main Enhanced Multi-Location Babelscope exploration
+        Run the main Register-Based Babelscope exploration
         
         Args:
             max_batches: Maximum batches to run (None = infinite)
@@ -261,15 +280,15 @@ class EnhancedBabelscopeSession:
             save_frequency: Save session state every N batches
         """
         
-        print("\n🏹 STARTING ENHANCED MULTI-LOCATION BABELSCOPE EXPLORATION")
+        print("\n🏹 STARTING REGISTER-BASED BABELSCOPE EXPLORATION")
         print("=" * 70)
-        print(f"   Enhancement: Multi-location detection (~{SORT_LOCATIONS_COUNT}x discovery rate)")
-        print(f"   Test pattern: [8, 3, 6, 1, 7, 2, 5, 4] at {SORT_LOCATIONS_COUNT} locations")
-        print(f"   Search range: 0x{SORT_SEARCH_START:03X} to 0x{SORT_SEARCH_END:03X}")
+        print(f"   Enhancement: Direct register monitoring (V0-V7)")
+        print(f"   Test pattern: [8, 3, 6, 1, 7, 2, 5, 4] in registers V0-V7")
+        print(f"   Target: Most actively manipulated data in CHIP-8")
         print(f"   Cycles per ROM: {cycles_per_rom:,}")
         print(f"   Check interval: every {check_interval} cycles")
         print(f"   Max batches: {max_batches or 'Infinite'}")
-        print(f"   Looking for: [1,2,3,4,5,6,7,8] or [8,7,6,5,4,3,2,1] at ANY location")
+        print(f"   Looking for: [1,2,3,4,5,6,7,8] or [8,7,6,5,4,3,2,1] in registers")
         print()
         
         batch_count = 0
@@ -298,21 +317,21 @@ class EnhancedBabelscopeSession:
                     print(f"   ❌ ROM generation failed: {e}")
                     continue
                 
-                # Step 2: Load ROMs and setup enhanced multi-location test
-                print(f"📥 Loading ROMs with multi-location test pattern...")
+                # Step 2: Load ROMs and setup register-based test
+                print(f"📥 Loading ROMs with register-based test pattern...")
                 try:
                     load_start = time.time()
-                    self.detector.load_random_roms_and_setup_multilocation_test(random_roms_gpu)
+                    self.detector.load_random_roms_and_setup_register_test(random_roms_gpu)
                     load_time = time.time() - load_start
                     
                     print(f"   ✅ Loaded in {load_time:.2f}s")
-                    print(f"   🎯 Monitoring {SORT_LOCATIONS_COUNT} locations per ROM")
+                    print(f"   🎯 Monitoring registers V0-V7 directly")
                 except Exception as e:
                     print(f"   ❌ ROM loading failed: {e}")
                     continue
                 
-                # Step 3: Run enhanced CHIP-8 emulation with multi-location detection
-                print(f"🔍 Running enhanced CHIP-8 emulation and multi-location sort detection...")
+                # Step 3: Run register-based CHIP-8 emulation and detection
+                print(f"🔍 Running register-based CHIP-8 emulation and sort detection...")
                 try:
                     search_start = time.time()
                     discoveries = self.detector.run_enhanced_babelscope_search(
@@ -321,23 +340,23 @@ class EnhancedBabelscopeSession:
                     )
                     search_time = time.time() - search_start
                     
-                    effective_checks = self.batch_size * SORT_LOCATIONS_COUNT
-                    checks_per_second = effective_checks / search_time
+                    register_checks = self.batch_size  # Each ROM = 1 register check
+                    checks_per_second = register_checks / search_time
                     
                     print(f"   ✅ Search completed in {search_time:.2f}s")
                     print(f"   🎯 Discoveries: {discoveries}")
-                    print(f"   📊 Location-checks: {effective_checks:,} ({checks_per_second:,.0f}/sec)")
+                    print(f"   📊 Register-checks: {register_checks:,} ({checks_per_second:,.0f}/sec)")
                     
                 except Exception as e:
                     print(f"   ❌ Search failed: {e}")
                     discoveries = 0
-                    effective_checks = 0
+                    register_checks = 0
                     continue
                 
-                # Step 4: Save any discovered ROMs with enhanced metadata
+                # Step 4: Save any discovered ROMs with register metadata
                 discoveries_saved = 0
                 if discoveries > 0:
-                    print(f"💾 Saving discovered ROMs with location metadata...")
+                    print(f"💾 Saving discovered ROMs with register metadata...")
                     try:
                         discovery_list = self.detector.get_enhanced_discoveries()
                         
@@ -350,11 +369,11 @@ class EnhancedBabelscopeSession:
                             )
                             discoveries_saved += 1
                             
-                            location = discovery['sort_location']
                             direction = discovery['sort_direction']
                             cycle = discovery['sort_cycle']
+                            ops = discovery['register_activity']['total_register_ops']
                             
-                            print(f"      {filename}: 0x{location:03X} {direction} @ cycle {cycle:,}")
+                            print(f"      {filename}: V0-V7 {direction} @ cycle {cycle:,} ({ops} ops)")
                         
                     except Exception as e:
                         print(f"   ❌ Failed to save discoveries: {e}")
@@ -362,10 +381,10 @@ class EnhancedBabelscopeSession:
                 # Update statistics
                 batch_time = time.time() - batch_start_time
                 roms_per_second = self.batch_size / batch_time
-                effective_checks_this_batch = self.batch_size * SORT_LOCATIONS_COUNT
+                register_checks_this_batch = self.batch_size
                 
                 self.stats['total_roms_tested'] += self.batch_size
-                self.stats['total_location_checks'] += effective_checks_this_batch
+                self.stats['total_register_checks'] += register_checks_this_batch
                 self.stats['total_batches'] = batch_count
                 self.stats['total_discoveries'] += discoveries_saved
                 
@@ -374,7 +393,7 @@ class EnhancedBabelscopeSession:
                 self.global_stats.update_session_progress(
                     self.session_id,
                     self.stats['total_roms_tested'],
-                    self.stats['total_location_checks'],
+                    self.stats['total_register_checks'],
                     self.stats['total_batches'],
                     self.stats['total_discoveries'],
                     session_time / 3600  # Convert to hours
@@ -384,11 +403,11 @@ class EnhancedBabelscopeSession:
                 batch_record = {
                     'batch': batch_count,
                     'roms_tested': self.batch_size,
-                    'location_checks': effective_checks_this_batch,
+                    'register_checks': register_checks_this_batch,
                     'discoveries': discoveries_saved,
                     'batch_time': batch_time,
                     'roms_per_second': roms_per_second,
-                    'location_checks_per_second': effective_checks_this_batch / batch_time,
+                    'register_checks_per_second': register_checks_this_batch / batch_time,
                     'timestamp': datetime.now().isoformat()
                 }
                 self.stats['batch_history'].append(batch_record)
@@ -396,32 +415,31 @@ class EnhancedBabelscopeSession:
                 # Print batch summary
                 print(f"📊 Batch {batch_count} summary:")
                 print(f"   ROMs tested: {self.batch_size:,}")
-                print(f"   Location-checks: {effective_checks_this_batch:,}")
+                print(f"   Register-checks: {register_checks_this_batch:,}")
                 print(f"   Discoveries: {discoveries_saved}")
                 print(f"   Batch time: {batch_time:.2f}s")
                 print(f"   ROM rate: {roms_per_second:,.0f} ROMs/sec")
-                print(f"   Location-check rate: {effective_checks_this_batch / batch_time:,.0f} checks/sec")
+                print(f"   Register-check rate: {register_checks_this_batch / batch_time:,.0f} checks/sec")
                 
                 # Print session totals
                 session_time = time.time() - self.stats['start_time']
                 total_rom_rate = self.stats['total_roms_tested'] / session_time
-                total_check_rate = self.stats['total_location_checks'] / session_time
+                total_check_rate = self.stats['total_register_checks'] / session_time
                 
                 print(f"🎯 Session totals:")
                 print(f"   Total ROMs: {self.stats['total_roms_tested']:,}")
-                print(f"   Total location-checks: {self.stats['total_location_checks']:,}")
+                print(f"   Total register-checks: {self.stats['total_register_checks']:,}")
                 print(f"   Total discoveries: {self.stats['total_discoveries']}")
                 print(f"   Session time: {session_time/3600:.2f} hours")
                 print(f"   Avg ROM rate: {total_rom_rate:,.0f} ROMs/sec")
-                print(f"   Avg location-check rate: {total_check_rate:,.0f} checks/sec")
+                print(f"   Avg register-check rate: {total_check_rate:,.0f} checks/sec")
                 
                 if self.stats['total_discoveries'] > 0:
                     rom_discovery_rate = self.stats['total_roms_tested'] // self.stats['total_discoveries']
-                    check_discovery_rate = self.stats['total_location_checks'] // self.stats['total_discoveries']
+                    check_discovery_rate = self.stats['total_register_checks'] // self.stats['total_discoveries']
                     print(f"   Discovery rate: 1 in {rom_discovery_rate:,} ROMs")
-                    print(f"   Effective discovery rate: 1 in {check_discovery_rate:,} location-checks")
-                    improvement = SORT_LOCATIONS_COUNT
-                    print(f"   Enhancement factor: ~{improvement}x better than single-location")
+                    print(f"   Register discovery rate: 1 in {check_discovery_rate:,} register-checks")
+                    print(f"   Enhancement: Direct access to most active data area")
                 
                 print()
                 
@@ -455,7 +473,7 @@ class EnhancedBabelscopeSession:
             self.global_stats.print_global_summary()
     
     def _save_session_state(self):
-        """Save current session state with enhanced metrics"""
+        """Save current session state with register-based metrics"""
         try:
             # Limit batch history to last 100 entries to prevent huge JSON files
             if len(self.stats['batch_history']) > 100:
@@ -465,72 +483,71 @@ class EnhancedBabelscopeSession:
             self.stats['last_saved'] = datetime.now().isoformat()
             self.stats['total_time'] = time.time() - self.stats['start_time']
             
-            # Calculate enhancement metrics
+            # Calculate register-based metrics
             if self.stats['total_discoveries'] > 0:
                 self.stats['rom_discovery_rate'] = self.stats['total_roms_tested'] // self.stats['total_discoveries']
-                self.stats['location_discovery_rate'] = self.stats['total_location_checks'] // self.stats['total_discoveries']
+                self.stats['register_discovery_rate'] = self.stats['total_register_checks'] // self.stats['total_discoveries']
             
             # Save detailed state
-            state_file = self.logs_dir / "enhanced_session_state.json"
+            state_file = self.logs_dir / "register_session_state.json"
             with open(state_file, 'w', encoding='utf-8') as f:
                 json.dump(self.stats, f, indent=2, ensure_ascii=True)
             
             # Save human-readable summary
-            summary_file = self.logs_dir / "enhanced_summary.txt"
+            summary_file = self.logs_dir / "register_summary.txt"
             with open(summary_file, 'w', encoding='utf-8') as f:
-                f.write(f"Enhanced Multi-Location Babelscope Session {self.stats['session_id']}\n")
+                f.write(f"Register-Based Babelscope Session {self.stats['session_id']}\n")
                 f.write("=" * 70 + "\n\n")
-                f.write(f"Enhancement: Multi-location detection (~{SORT_LOCATIONS_COUNT}x discovery rate)\n")
-                f.write(f"Search range: {self.stats['search_range']}\n")
-                f.write(f"Locations per ROM: {self.stats['locations_per_rom']}\n\n")
+                f.write(f"Enhancement: Direct register monitoring (V0-V7)\n")
+                f.write(f"Target registers: {self.stats['target_registers']}\n")
+                f.write(f"Detection method: {self.stats['detection_method']}\n\n")
                 f.write(f"ROMs tested: {self.stats['total_roms_tested']:,}\n")
-                f.write(f"Location-checks performed: {self.stats['total_location_checks']:,}\n")
+                f.write(f"Register-checks performed: {self.stats['total_register_checks']:,}\n")
                 f.write(f"Batches completed: {self.stats['total_batches']}\n")
                 f.write(f"Sorting algorithms found: {self.stats['total_discoveries']}\n")
                 f.write(f"Session time: {self.stats['total_time']/3600:.2f} hours\n")
                 
                 if self.stats['total_discoveries'] > 0:
                     f.write(f"ROM discovery rate: 1 in {self.stats['total_roms_tested'] // self.stats['total_discoveries']:,} ROMs\n")
-                    f.write(f"Location-check discovery rate: 1 in {self.stats['total_location_checks'] // self.stats['total_discoveries']:,} checks\n")
-                    f.write(f"Enhancement effectiveness: ~{SORT_LOCATIONS_COUNT}x improvement\n")
+                    f.write(f"Register discovery rate: 1 in {self.stats['total_register_checks'] // self.stats['total_discoveries']:,} checks\n")
+                    f.write(f"Enhancement advantage: Direct access to most active data\n")
                 
                 f.write(f"\nLast updated: {datetime.now()}\n")
             
-            print(f"   💾 Enhanced session state saved successfully")
+            print(f"   💾 Register-based session state saved successfully")
             
         except Exception as e:
             print(f"   ⚠️  Failed to save session state: {e}")
             print(f"       Continuing without saving...")
     
     def _print_final_summary(self, batches_completed: int):
-        """Print final enhanced session summary"""
+        """Print final register-based session summary"""
         total_time = time.time() - self.stats['start_time']
         final_rom_rate = self.stats['total_roms_tested'] / total_time if total_time > 0 else 0
-        final_check_rate = self.stats['total_location_checks'] / total_time if total_time > 0 else 0
+        final_check_rate = self.stats['total_register_checks'] / total_time if total_time > 0 else 0
         
-        print("\n🏁 ENHANCED MULTI-LOCATION BABELSCOPE EXPLORATION COMPLETE")
+        print("\n🏁 REGISTER-BASED BABELSCOPE EXPLORATION COMPLETE")
         print("=" * 70)
         print(f"Session ID: {self.stats['session_id']}")
-        print(f"Enhancement: Multi-location detection (~{SORT_LOCATIONS_COUNT}x discovery rate)")
+        print(f"Enhancement: Direct register monitoring (V0-V7)")
         print(f"Batches completed: {batches_completed}")
         print(f"Total ROMs tested: {self.stats['total_roms_tested']:,}")
-        print(f"Total location-checks: {self.stats['total_location_checks']:,}")
+        print(f"Total register-checks: {self.stats['total_register_checks']:,}")
         print(f"Total time: {total_time/3600:.2f} hours")
         print(f"Average ROM rate: {final_rom_rate:,.0f} ROMs/sec")
-        print(f"Average location-check rate: {final_check_rate:,.0f} checks/sec")
+        print(f"Average register-check rate: {final_check_rate:,.0f} checks/sec")
         print(f"🎯 SORTING ALGORITHMS DISCOVERED: {self.stats['total_discoveries']}")
         
         if self.stats['total_discoveries'] > 0:
             final_rom_discovery_rate = self.stats['total_roms_tested'] // self.stats['total_discoveries']
-            final_check_discovery_rate = self.stats['total_location_checks'] // self.stats['total_discoveries']
+            final_check_discovery_rate = self.stats['total_register_checks'] // self.stats['total_discoveries']
             print(f"🔢 Final ROM discovery rate: 1 in {final_rom_discovery_rate:,}")
-            print(f"🔢 Final location-check discovery rate: 1 in {final_check_discovery_rate:,}")
-            print(f"⚡ Enhancement effectiveness: ~{SORT_LOCATIONS_COUNT}x improvement over single-location")
+            print(f"🔢 Final register discovery rate: 1 in {final_check_discovery_rate:,}")
+            print(f"⚡ Enhancement advantage: Direct access to most active CHIP-8 data")
             print(f"📁 Discovered ROMs saved in: {self.roms_dir}")
         else:
-            expected_improvement = self.stats['total_location_checks'] / self.stats['total_roms_tested']
-            print(f"📊 No discoveries, but searched {expected_improvement:.0f}x more locations than single-location method")
-            print(f"📊 Equivalent to testing {self.stats['total_location_checks']:,} single-location ROMs")
+            print(f"📊 No discoveries, but monitored most active data area directly")
+            print(f"📊 Searched {self.stats['total_register_checks']:,} register states")
         
         print(f"📋 Session data: {self.logs_dir}")
         print(f"📁 All results: {self.session_dir}")
@@ -539,7 +556,7 @@ class EnhancedBabelscopeSession:
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(
-        description='Enhanced Babelscope: Find sorting algorithms with multi-location detection (~480x better)',
+        description='Register-Based Babelscope: Find sorting algorithms with direct register monitoring',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -547,8 +564,8 @@ Examples:
   python sorting_search.py --batch-size 200000 --infinite
   python sorting_search.py --batch-size 50000 --cycles 200000
 
-Enhancement: Multi-location detection monitors ~480 locations per ROM instead of 1,
-dramatically increasing discovery probability!
+Enhancement: Direct register monitoring targets the most actively manipulated
+data area in CHIP-8 programs - registers V0-V7!
         """
     )
     
@@ -569,12 +586,12 @@ dramatically increasing discovery probability!
     
     args = parser.parse_args()
     
-    print("🔬 ENHANCED MULTI-LOCATION BABELSCOPE: COMPUTATIONAL ARCHAEOLOGY")
+    print("🔬 REGISTER-BASED BABELSCOPE: COMPUTATIONAL ARCHAEOLOGY")
     print("=" * 70)
     print("🎯 Searching for sorting algorithms in random machine code")
-    print("⚡ ENHANCEMENT: Multi-location detection (~480x better discovery rate)")
-    print("📊 Method: Generate random ROMs, run CHIP-8 emulation, detect sorting at ANY location")
-    print("🧬 Pure exploration - no bias, no templates, just enhanced entropy detection")
+    print("⚡ ENHANCEMENT: Direct register monitoring (V0-V7)")
+    print("📊 Method: Generate random ROMs, run CHIP-8 emulation, detect register sorting")
+    print("🧬 Pure exploration targeting the most active data manipulation area")
     print()
     
     # Validate GPU
@@ -594,16 +611,16 @@ dramatically increasing discovery probability!
         return 1
     
     # Show enhancement details
-    print("🚀 MULTI-LOCATION ENHANCEMENT DETAILS:")
-    print(f"   Locations monitored per ROM: {SORT_LOCATIONS_COUNT}")
-    print(f"   Search range: 0x{SORT_SEARCH_START:03X} to 0x{SORT_SEARCH_END:03X}")
-    print(f"   Discovery probability multiplier: ~{SORT_LOCATIONS_COUNT}x")
-    print(f"   Expected discovery rate improvement: Massive!")
+    print("🚀 REGISTER-BASED ENHANCEMENT DETAILS:")
+    print(f"   Target registers: V0-V7")
+    print(f"   Test pattern: [8,3,6,1,7,2,5,4] -> [1,2,3,4,5,6,7,8] or [8,7,6,5,4,3,2,1]")
+    print(f"   Advantage: Direct access to most manipulated data in CHIP-8")
+    print(f"   Theory: Registers are used constantly, more likely to show sorting")
     print()
     
-    # Create and run enhanced session
+    # Create and run register-based session
     try:
-        session = EnhancedBabelscopeSession(
+        session = RegisterBabelscopeSession(
             batch_size=args.batch_size,
             output_dir=args.output_dir
         )
@@ -617,11 +634,11 @@ dramatically increasing discovery probability!
             save_frequency=args.save_frequency
         )
         
-        print("🎉 Enhanced exploration completed successfully!")
+        print("🎉 Register-based exploration completed successfully!")
         return 0
         
     except Exception as e:
-        print(f"❌ Enhanced exploration failed: {e}")
+        print(f"❌ Register-based exploration failed: {e}")
         import traceback
         traceback.print_exc()
         return 1

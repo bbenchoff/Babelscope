@@ -1,7 +1,7 @@
 """
-Enhanced Babelscope Implementation: Multi-location Sorting Detection
-Now searches for sorting algorithms across multiple 8-byte chunks in memory range 0x300-0xF000
-This dramatically increases the discovery probability by ~480x!
+Enhanced Babelscope Implementation: Register-Based Sorting Detection
+Now searches for sorting algorithms operating on register data V0-V7
+This targets the most active data manipulation area in CHIP-8!
 """
 
 import cupy as cp
@@ -22,14 +22,11 @@ KEYPAD_SIZE = 16
 PROGRAM_START = 0x200
 FONT_START = 0x50
 
-# Multi-location sort test constants
+# Register-based sort test constants
 SORT_ARRAY_SIZE = 8
-SORT_SEARCH_START = 0x600
-SORT_SEARCH_END = 0xF00  # Leave some room at the end
-# Calculate number of 8-byte chunks we can fit
-SORT_LOCATIONS_COUNT = (SORT_SEARCH_END - SORT_SEARCH_START) // SORT_ARRAY_SIZE
+SORT_REGISTERS = list(range(8))  # V0 through V7
 
-print(f"🎯 Multi-location setup: {SORT_LOCATIONS_COUNT} locations from 0x{SORT_SEARCH_START:03X} to 0x{SORT_SEARCH_END:03X}")
+print(f"🎯 Register-based setup: Monitoring registers V0-V7 for sorting")
 
 # Font data (must be loaded into all instances)
 CHIP8_FONT = cp.array([
@@ -51,10 +48,10 @@ CHIP8_FONT = cp.array([
     0xF0, 0x80, 0xF0, 0x80, 0x80   # F
 ], dtype=cp.uint8)
 
-# Enhanced CHIP-8 emulation kernel with multi-location sort detection
+# Enhanced CHIP-8 emulation kernel with register-based sort detection
 ENHANCED_CHIP8_KERNEL = r'''
 extern "C" __global__ __launch_bounds__(256, 4)
-void chip8_multilocation_kernel(
+void chip8_register_kernel(
     // Core CHIP-8 state
     unsigned char* __restrict__ memory,              // [instances][4096]
     unsigned char* __restrict__ display,             // [instances][32*64]
@@ -73,25 +70,20 @@ void chip8_multilocation_kernel(
     unsigned char* __restrict__ waiting_for_key,     // [instances]
     unsigned char* __restrict__ key_registers,       // [instances]
     
-    // Multi-location sort detection arrays
+    // Register-based sort detection arrays
     unsigned int* __restrict__ sort_cycles,          // [instances] - cycle when sorted
     unsigned char* __restrict__ sort_achieved,       // [instances] - 1 if sorted
-    unsigned short* __restrict__ sort_locations,     // [instances] - which location got sorted
     unsigned char* __restrict__ sort_directions,     // [instances] - 0=ascending, 1=descending
     
-    // Memory access tracking
-    unsigned int* __restrict__ total_reads,          // [instances]
-    unsigned int* __restrict__ total_writes,         // [instances]
-    unsigned int* __restrict__ sort_area_reads,      // [instances]
-    unsigned int* __restrict__ sort_area_writes,     // [instances]
+    // Register access tracking
+    unsigned int* __restrict__ total_register_ops,   // [instances]
+    unsigned int* __restrict__ register_reads,       // [instances]
+    unsigned int* __restrict__ register_writes,      // [instances]
     
     // Execution parameters
     int num_instances,
     int cycles_to_run,
     int sort_check_interval,
-    int sort_search_start,
-    int sort_search_end,
-    int sort_array_size,
     
     // RNG state
     unsigned int* __restrict__ rng_state
@@ -114,10 +106,9 @@ void chip8_multilocation_kernel(
     unsigned char st = sound_timers[instance];
     
     // Local counters
-    unsigned int local_total_reads = 0;
-    unsigned int local_total_writes = 0;
-    unsigned int local_sort_area_reads = 0;
-    unsigned int local_sort_area_writes = 0;
+    unsigned int local_register_ops = 0;
+    unsigned int local_register_reads = 0;
+    unsigned int local_register_writes = 0;
     
     // Early exit if crashed or already sorted
     if (crashed[instance] || sort_achieved[instance]) {
@@ -189,6 +180,7 @@ void chip8_multilocation_kernel(
                 
             case 0x3:
                 // SE Vx, byte - Skip if Vx == byte
+                local_register_reads++;
                 if (registers[reg_base + x] == kk) {
                     pc += 2;
                 }
@@ -196,6 +188,7 @@ void chip8_multilocation_kernel(
                 
             case 0x4:
                 // SNE Vx, byte - Skip if Vx != byte
+                local_register_reads++;
                 if (registers[reg_base + x] != kk) {
                     pc += 2;
                 }
@@ -203,18 +196,24 @@ void chip8_multilocation_kernel(
                 
             case 0x5:
                 // SE Vx, Vy - Skip if Vx == Vy
-                if (n == 0 && registers[reg_base + x] == registers[reg_base + y]) {
-                    pc += 2;
+                if (n == 0) {
+                    local_register_reads += 2;
+                    if (registers[reg_base + x] == registers[reg_base + y]) {
+                        pc += 2;
+                    }
                 }
                 break;
                 
             case 0x6:
                 // LD Vx, byte - Load byte into Vx
                 registers[reg_base + x] = kk;
+                local_register_writes++;
                 break;
                 
             case 0x7:
                 // ADD Vx, byte - Add byte to Vx
+                local_register_reads++;
+                local_register_writes++;
                 registers[reg_base + x] = (registers[reg_base + x] + kk) & 0xFF;
                 break;
                 
@@ -223,57 +222,71 @@ void chip8_multilocation_kernel(
                 {
                     const unsigned char vx = registers[reg_base + x];
                     const unsigned char vy = registers[reg_base + y];
+                    local_register_reads += 2;
                     
                     switch (n) {
                         case 0x0: // LD Vx, Vy
                             registers[reg_base + x] = vy;
+                            local_register_writes++;
                             break;
                         case 0x1: // OR Vx, Vy
                             registers[reg_base + x] = vx | vy;
                             registers[reg_base + 0xF] = 0;
+                            local_register_writes += 2;
                             break;
                         case 0x2: // AND Vx, Vy
                             registers[reg_base + x] = vx & vy;
                             registers[reg_base + 0xF] = 0;
+                            local_register_writes += 2;
                             break;
                         case 0x3: // XOR Vx, Vy
                             registers[reg_base + x] = vx ^ vy;
                             registers[reg_base + 0xF] = 0;
+                            local_register_writes += 2;
                             break;
                         case 0x4: // ADD Vx, Vy
                             {
                                 const int result = vx + vy;
                                 registers[reg_base + x] = result & 0xFF;
                                 registers[reg_base + 0xF] = (result > 255) ? 1 : 0;
+                                local_register_writes += 2;
                             }
                             break;
                         case 0x5: // SUB Vx, Vy
                             registers[reg_base + x] = (vx - vy) & 0xFF;
                             registers[reg_base + 0xF] = (vx >= vy) ? 1 : 0;
+                            local_register_writes += 2;
                             break;
                         case 0x6: // SHR Vx
                             registers[reg_base + x] = vx >> 1;
                             registers[reg_base + 0xF] = vx & 0x1;
+                            local_register_writes += 2;
                             break;
                         case 0x7: // SUBN Vx, Vy
                             registers[reg_base + x] = (vy - vx) & 0xFF;
                             registers[reg_base + 0xF] = (vy >= vx) ? 1 : 0;
+                            local_register_writes += 2;
                             break;
                         case 0xE: // SHL Vx
                             registers[reg_base + x] = (vx << 1) & 0xFF;
                             registers[reg_base + 0xF] = (vx & 0x80) ? 1 : 0;
+                            local_register_writes += 2;
                             break;
                         default:
                             crashed[instance] = 1;
                             break;
                     }
+                    local_register_ops++;
                 }
                 break;
                 
             case 0x9:
                 // SNE Vx, Vy - Skip if Vx != Vy
-                if (n == 0 && registers[reg_base + x] != registers[reg_base + y]) {
-                    pc += 2;
+                if (n == 0) {
+                    local_register_reads += 2;
+                    if (registers[reg_base + x] != registers[reg_base + y]) {
+                        pc += 2;
+                    }
                 }
                 break;
                 
@@ -284,6 +297,7 @@ void chip8_multilocation_kernel(
                 
             case 0xB:
                 // JP V0, addr - Jump to V0 + addr
+                local_register_reads++;
                 pc = nnn + registers[reg_base + 0];
                 break;
                 
@@ -293,6 +307,7 @@ void chip8_multilocation_kernel(
                     rng_state[instance] = rng_state[instance] * 1664525 + 1013904223;
                     const unsigned char rand_byte = (rng_state[instance] >> 16) & 0xFF;
                     registers[reg_base + x] = rand_byte & kk;
+                    local_register_writes++;
                 }
                 break;
                 
@@ -301,7 +316,9 @@ void chip8_multilocation_kernel(
                 {
                     const unsigned char start_x = registers[reg_base + x] % 64;
                     const unsigned char start_y = registers[reg_base + y] % 32;
+                    local_register_reads += 2;
                     registers[reg_base + 0xF] = 0;
+                    local_register_writes++;
                     
                     for (int row = 0; row < n; row++) {
                         if (start_y + row >= 32) break;
@@ -317,6 +334,7 @@ void chip8_multilocation_kernel(
                                 
                                 if (display[pixel_index]) {
                                     registers[reg_base + 0xF] = 1;
+                                    local_register_writes++;
                                 }
                                 
                                 display[pixel_index] ^= 1;
@@ -330,6 +348,7 @@ void chip8_multilocation_kernel(
                 // Key operations
                 {
                     const unsigned char key = registers[reg_base + x] & 0xF;
+                    local_register_reads++;
                     if (kk == 0x9E) {
                         // SKP Vx - Skip if key pressed
                         if (keypad[keypad_base + key]) {
@@ -351,6 +370,7 @@ void chip8_multilocation_kernel(
                 switch (kk) {
                     case 0x07: // LD Vx, DT
                         registers[reg_base + x] = dt;
+                        local_register_writes++;
                         break;
                     case 0x0A: // LD Vx, K - Wait for key
                         waiting_for_key[instance] = 1;
@@ -358,22 +378,27 @@ void chip8_multilocation_kernel(
                         break;
                     case 0x15: // LD DT, Vx
                         dt = registers[reg_base + x];
+                        local_register_reads++;
                         break;
                     case 0x18: // LD ST, Vx
                         st = registers[reg_base + x];
+                        local_register_reads++;
                         break;
                     case 0x1E: // ADD I, Vx
                         index_reg = (index_reg + registers[reg_base + x]) & 0xFFFF;
+                        local_register_reads++;
                         break;
                     case 0x29: // LD F, Vx - Set I to font location
                         {
                             const unsigned char digit = registers[reg_base + x] & 0xF;
+                            local_register_reads++;
                             index_reg = 0x50 + digit * 5;
                         }
                         break;
                     case 0x33: // LD B, Vx - Store BCD
                         {
                             const unsigned char value = registers[reg_base + x];
+                            local_register_reads++;
                             if (index_reg + 2 < 4096) {
                                 memory[mem_base + index_reg] = value / 100;
                                 memory[mem_base + index_reg + 1] = (value / 10) % 10;
@@ -385,12 +410,7 @@ void chip8_multilocation_kernel(
                         for (int i = 0; i <= x; i++) {
                             if (index_reg + i < 4096) {
                                 memory[mem_base + index_reg + i] = registers[reg_base + i];
-                                local_total_writes++;
-                                
-                                // Track sort area writes
-                                if (index_reg + i >= sort_search_start && index_reg + i < sort_search_end) {
-                                    local_sort_area_writes++;
-                                }
+                                local_register_reads++;
                             }
                         }
                         index_reg = (index_reg + x + 1) & 0xFFFF;
@@ -399,12 +419,7 @@ void chip8_multilocation_kernel(
                         for (int i = 0; i <= x; i++) {
                             if (index_reg + i < 4096) {
                                 registers[reg_base + i] = memory[mem_base + index_reg + i];
-                                local_total_reads++;
-                                
-                                // Track sort area reads
-                                if (index_reg + i >= sort_search_start && index_reg + i < sort_search_end) {
-                                    local_sort_area_reads++;
-                                }
+                                local_register_writes++;
                             }
                         }
                         index_reg = (index_reg + x + 1) & 0xFFFF;
@@ -420,39 +435,31 @@ void chip8_multilocation_kernel(
                 break;
         }
         
-        // Check for sorting at multiple locations every N cycles
+        // Check for register sorting every N cycles
         if ((cycle % sort_check_interval) == 0 && !sort_achieved[instance]) {
-            // Check all possible 8-byte chunks in the search range
-            for (int offset = sort_search_start; offset <= sort_search_end - sort_array_size; offset += sort_array_size) {
-                bool is_ascending = true;
-                bool is_descending = true;
+            bool is_ascending = true;
+            bool is_descending = true;
+            
+            // Check if registers V0-V7 are sorted
+            for (int i = 0; i < 8; i++) {
+                const unsigned char value = registers[reg_base + i];
                 
-                // Check if this 8-byte chunk is sorted
-                for (int i = 0; i < sort_array_size; i++) {
-                    const unsigned char value = memory[mem_base + offset + i];
-                    
-                    // Check ascending: [1,2,3,4,5,6,7,8]
-                    if (value != (i + 1)) {
-                        is_ascending = false;
-                    }
-                    
-                    // Check descending: [8,7,6,5,4,3,2,1]
-                    if (value != (sort_array_size - i)) {
-                        is_descending = false;
-                    }
+                // Check ascending: [1,2,3,4,5,6,7,8]
+                if (value != (i + 1)) {
+                    is_ascending = false;
                 }
                 
-                if (is_ascending || is_descending) {
-                    sort_achieved[instance] = 1;
-                    sort_cycles[instance] = cycle;
-                    sort_locations[instance] = offset;
-                    sort_directions[instance] = is_descending ? 1 : 0;
-                    break; // Found one! Early termination
+                // Check descending: [8,7,6,5,4,3,2,1]
+                if (value != (8 - i)) {
+                    is_descending = false;
                 }
             }
             
-            if (sort_achieved[instance]) {
-                break; // Exit main loop early
+            if (is_ascending || is_descending) {
+                sort_achieved[instance] = 1;
+                sort_cycles[instance] = cycle;
+                sort_directions[instance] = is_descending ? 1 : 0;
+                break; // Found one! Early termination
             }
         }
         
@@ -471,25 +478,23 @@ void chip8_multilocation_kernel(
     sound_timers[instance] = st;
     
     // Write back access counts
-    total_reads[instance] += local_total_reads;
-    total_writes[instance] += local_total_writes;
-    sort_area_reads[instance] += local_sort_area_reads;
-    sort_area_writes[instance] += local_sort_area_writes;
+    total_register_ops[instance] += local_register_ops;
+    register_reads[instance] += local_register_reads;
+    register_writes[instance] += local_register_writes;
 }
 '''
 
 class EnhancedBabelscopeDetector:
     """
-    Enhanced Babelscope implementation: Multi-location sorting detection
-    Dramatically increases discovery probability by monitoring many locations
+    Enhanced Babelscope implementation: Register-based sorting detection
+    Monitors registers V0-V7 for sorting behavior - targets the most active data area!
     """
     
     def __init__(self, num_instances: int):
-        print(f"🔬 Initializing Enhanced Multi-Location Babelscope Detector")
+        print(f"🔬 Initializing Register-Based Babelscope Detector")
         print(f"   Instances: {num_instances:,}")
-        print(f"   Monitoring {SORT_LOCATIONS_COUNT} locations (8-byte chunks)")
-        print(f"   Search range: 0x{SORT_SEARCH_START:03X} to 0x{SORT_SEARCH_END:03X}")
-        print(f"   Effective discovery area increased by ~{SORT_LOCATIONS_COUNT}x!")
+        print(f"   Monitoring registers V0-V7 for sorting")
+        print(f"   Target: Most active data manipulation area in CHIP-8!")
         
         self.num_instances = num_instances
         
@@ -501,7 +506,7 @@ class EnhancedBabelscopeDetector:
         print(f"   Grid size: {self.grid_size}")
         
         # Compile the enhanced CHIP-8 kernel
-        print("   Compiling enhanced multi-location CHIP-8 kernel...")
+        print("   Compiling register-based CHIP-8 kernel...")
         try:
             device = cp.cuda.Device()
             device_props = cp.cuda.runtime.getDeviceProperties(device.id)
@@ -515,17 +520,17 @@ class EnhancedBabelscopeDetector:
             
             self.kernel = cp.RawKernel(
                 ENHANCED_CHIP8_KERNEL, 
-                'chip8_multilocation_kernel',
+                'chip8_register_kernel',
                 options=compile_options
             )
         except Exception as e:
             print(f"   ⚠️  Compiling without GPU-specific optimizations: {e}")
-            self.kernel = cp.RawKernel(ENHANCED_CHIP8_KERNEL, 'chip8_multilocation_kernel')
+            self.kernel = cp.RawKernel(ENHANCED_CHIP8_KERNEL, 'chip8_register_kernel')
         
         # Initialize state
         self._initialize_state()
         
-        print("✅ Enhanced Multi-Location Babelscope ready!")
+        print("✅ Register-Based Babelscope ready!")
     
     def _initialize_state(self):
         """Initialize all GPU arrays"""
@@ -549,17 +554,15 @@ class EnhancedBabelscopeDetector:
         self.waiting_for_key = cp.zeros(self.num_instances, dtype=cp.uint8)
         self.key_register = cp.zeros(self.num_instances, dtype=cp.uint8)
         
-        # Enhanced sort detection - now tracks which location and direction
+        # Register-based sort detection
         self.sort_cycles = cp.zeros(self.num_instances, dtype=cp.uint32)
         self.sort_achieved = cp.zeros(self.num_instances, dtype=cp.uint8)
-        self.sort_locations = cp.zeros(self.num_instances, dtype=cp.uint16)  # Which address got sorted
         self.sort_directions = cp.zeros(self.num_instances, dtype=cp.uint8)  # 0=ascending, 1=descending
         
-        # Enhanced memory access tracking
-        self.total_reads = cp.zeros(self.num_instances, dtype=cp.uint32)
-        self.total_writes = cp.zeros(self.num_instances, dtype=cp.uint32)
-        self.sort_area_reads = cp.zeros(self.num_instances, dtype=cp.uint32)
-        self.sort_area_writes = cp.zeros(self.num_instances, dtype=cp.uint32)
+        # Register access tracking
+        self.total_register_ops = cp.zeros(self.num_instances, dtype=cp.uint32)
+        self.register_reads = cp.zeros(self.num_instances, dtype=cp.uint32)
+        self.register_writes = cp.zeros(self.num_instances, dtype=cp.uint32)
         
         # RNG state
         self.rng_state = cp.random.randint(1, 2**32, size=self.num_instances, dtype=cp.uint32)
@@ -571,15 +574,14 @@ class EnhancedBabelscopeDetector:
         memory_usage = (
             self.memory.nbytes + self.display.nbytes + self.registers.nbytes +
             self.sort_cycles.nbytes + self.sort_achieved.nbytes + 
-            self.sort_locations.nbytes + self.sort_directions.nbytes +
-            self.total_reads.nbytes + self.total_writes.nbytes +
-            self.sort_area_reads.nbytes + self.sort_area_writes.nbytes
+            self.sort_directions.nbytes +
+            self.total_register_ops.nbytes + self.register_reads.nbytes + self.register_writes.nbytes
         ) / (1024**3)
         
         print(f"   Memory allocated: {memory_usage:.2f} GB")
     
-    def load_random_roms_and_setup_multilocation_test(self, rom_data):
-        """Load random ROMs and setup multi-location sort test"""
+    def load_random_roms_and_setup_register_test(self, rom_data):
+        """Load random ROMs and setup register-based sort test"""
         
         if isinstance(rom_data, cp.ndarray):
             print(f"📥 Loading {rom_data.shape[0]:,} random ROMs from GPU array...")
@@ -606,36 +608,34 @@ class EnhancedBabelscopeDetector:
                 rom_end = PROGRAM_START + len(rom_array)
                 self.memory[i, PROGRAM_START:rom_end] = cp.array(rom_array)
         
-        # Setup the test pattern at MULTIPLE locations
+        # Setup the test pattern in REGISTERS V0-V7
         test_pattern = np.array([8, 3, 6, 1, 7, 2, 5, 4], dtype=np.uint8)
         
-        print(f"🎯 Setting up multi-location test:")
+        print(f"🎯 Setting up register-based test:")
         print(f"   Test pattern: {test_pattern}")
-        print(f"   Locations: {SORT_LOCATIONS_COUNT} chunks from 0x{SORT_SEARCH_START:03X} to 0x{SORT_SEARCH_END:03X}")
+        print(f"   Target registers: V0-V7")
+        print(f"   Enhancement: Direct access to most active data area!")
         
-        # Place test pattern at ALL possible 8-byte aligned locations
+        # Place test pattern in registers V0-V7 for all instances
         test_pattern_gpu = cp.array(test_pattern)
         
-        location_count = 0
-        for offset in range(SORT_SEARCH_START, SORT_SEARCH_END, SORT_ARRAY_SIZE):
-            if offset + SORT_ARRAY_SIZE <= SORT_SEARCH_END:
-                self.memory[:, offset:offset + SORT_ARRAY_SIZE] = test_pattern_gpu[None, :]
-                location_count += 1
+        for i in range(8):  # V0 through V7
+            self.registers[:, i] = test_pattern_gpu[i]
         
-        print(f"   ✅ Placed test pattern at {location_count} locations")
-        print(f"   🎯 Random code space: 1024 bytes (4x larger!)")
-        print(f"   🎯 Discovery probability increased by ~{location_count}x!")
+        print(f"   ✅ Loaded test pattern into registers V0-V7")
+        print(f"   🎯 Random code space: 3584 bytes (0x200-0xFFF)")
+        print(f"   🎯 Target area: Registers (highest activity zone!)")
     
     def run_enhanced_babelscope_search(self, cycles: int = 100000, check_interval: int = 100) -> int:
-        """Run the enhanced multi-location Babelscope search"""
-        print(f"🔍 Running Enhanced Multi-Location Babelscope search:")
+        """Run the register-based Babelscope search"""
+        print(f"🔍 Running Register-Based Babelscope search:")
         print(f"   Cycles: {cycles:,}, Check interval: {check_interval}")
-        print(f"   Monitoring {SORT_LOCATIONS_COUNT} locations per ROM")
-        print(f"   Effective search rate: {self.num_instances * SORT_LOCATIONS_COUNT:,} location-checks")
+        print(f"   Monitoring registers V0-V7 for sorting")
+        print(f"   Target: Most manipulated data in CHIP-8 programs")
         
         start_time = time.time()
         
-        # Launch the enhanced CHIP-8 kernel
+        # Launch the register-based CHIP-8 kernel
         self.kernel(
             (self.grid_size,), (self.block_size,),
             (
@@ -657,25 +657,20 @@ class EnhancedBabelscopeDetector:
                 self.waiting_for_key,
                 self.key_register,
                 
-                # Enhanced sort detection
+                # Register-based sort detection
                 self.sort_cycles,
                 self.sort_achieved,
-                self.sort_locations,
                 self.sort_directions,
                 
-                # Enhanced memory access tracking
-                self.total_reads,
-                self.total_writes,
-                self.sort_area_reads,
-                self.sort_area_writes,
+                # Register access tracking
+                self.total_register_ops,
+                self.register_reads,
+                self.register_writes,
                 
                 # Parameters
                 self.num_instances,
                 cycles,
                 check_interval,
-                SORT_SEARCH_START,
-                SORT_SEARCH_END,
-                SORT_ARRAY_SIZE,
                 
                 # RNG
                 self.rng_state
@@ -689,35 +684,35 @@ class EnhancedBabelscopeDetector:
         # Count results
         sorts_found = int(cp.sum(self.sort_achieved))
         crashed_count = int(cp.sum(self.crashed))
-        sort_area_accessed = int(cp.sum((self.sort_area_reads > 0) | (self.sort_area_writes > 0)))
+        register_active = int(cp.sum((self.register_reads > 0) | (self.register_writes > 0)))
         
         # Performance metrics
         roms_per_second = self.num_instances / execution_time
-        effective_checks_per_second = (self.num_instances * SORT_LOCATIONS_COUNT) / execution_time
         
         print(f"⚡ Execution time: {execution_time:.3f}s")
         print(f"⚡ {roms_per_second:,.0f} ROMs/sec")
-        print(f"⚡ {effective_checks_per_second:,.0f} location-checks/sec")
         print(f"🎯 Sorting algorithms found: {sorts_found}")
         print(f"💥 Crashed instances: {crashed_count}")
-        print(f"📊 Instances that accessed sort area: {sort_area_accessed}")
+        print(f"📊 Instances with register activity: {register_active}")
         
         if sorts_found > 0:
-            print(f"🎉 SUCCESS! Found {sorts_found} sorting algorithm(s)!")
+            print(f"🎉 SUCCESS! Found {sorts_found} register-based sorting algorithm(s)!")
             
             # Show details of discoveries
             sorted_indices = cp.where(self.sort_achieved)[0]
             for idx in sorted_indices[:5]:  # Show first 5
                 idx = int(idx)
-                location = int(self.sort_locations[idx])
                 direction = "descending" if self.sort_directions[idx] else "ascending"
                 cycle = int(self.sort_cycles[idx])
-                print(f"   Discovery {idx}: 0x{location:03X} -> {direction} at cycle {cycle}")
+                ops = int(self.total_register_ops[idx])
+                reads = int(self.register_reads[idx])
+                writes = int(self.register_writes[idx])
+                print(f"   Discovery {idx}: V0-V7 -> {direction} at cycle {cycle} ({ops} ops, {reads}R/{writes}W)")
         
         return sorts_found
     
     def get_enhanced_discoveries(self) -> List[Dict]:
-        """Get all discovered sorting algorithms with enhanced metadata"""
+        """Get all discovered sorting algorithms with register metadata"""
         discoveries = []
         
         # Find instances that achieved sorting
@@ -726,28 +721,25 @@ class EnhancedBabelscopeDetector:
         for idx in sorted_indices:
             idx = int(idx)
             
-            # Get the sorted location and extract the final array
-            sort_location = int(self.sort_locations[idx])
-            final_array = cp.asnumpy(self.memory[idx, sort_location:sort_location + SORT_ARRAY_SIZE]).tolist()
+            # Get the sorted registers V0-V7
+            final_registers = cp.asnumpy(self.registers[idx, :8]).tolist()
             
             discovery = {
                 'instance_id': idx,
                 'sort_cycle': int(self.sort_cycles[idx]),
-                'sort_location': sort_location,
                 'sort_direction': 'descending' if int(self.sort_directions[idx]) else 'ascending',
-                'initial_array': [8, 3, 6, 1, 7, 2, 5, 4],  # We know what we put there
-                'final_array': final_array,
-                'memory_access': {
-                    'total_reads': int(self.total_reads[idx]),
-                    'total_writes': int(self.total_writes[idx]),
-                    'sort_area_reads': int(self.sort_area_reads[idx]),
-                    'sort_area_writes': int(self.sort_area_writes[idx])
+                'initial_registers': [8, 3, 6, 1, 7, 2, 5, 4],  # We know what we put there
+                'final_registers': final_registers,
+                'register_activity': {
+                    'total_register_ops': int(self.total_register_ops[idx]),
+                    'register_reads': int(self.register_reads[idx]),
+                    'register_writes': int(self.register_writes[idx])
                 },
                 'rom_data': cp.asnumpy(self.memory[idx, PROGRAM_START:]).tobytes(),
-                'multilocation_info': {
-                    'total_locations_monitored': SORT_LOCATIONS_COUNT,
-                    'search_range': f"0x{SORT_SEARCH_START:03X}-0x{SORT_SEARCH_END:03X}",
-                    'discovery_probability_multiplier': SORT_LOCATIONS_COUNT
+                'register_info': {
+                    'target_registers': 'V0-V7',
+                    'detection_method': 'register_based',
+                    'enhancement_type': 'direct_register_monitoring'
                 }
             }
             
@@ -772,17 +764,15 @@ class EnhancedBabelscopeDetector:
         self.waiting_for_key.fill(0)
         self.key_register.fill(0)
         
-        # Reset enhanced sort detection
+        # Reset register-based sort detection
         self.sort_cycles.fill(0)
         self.sort_achieved.fill(0)
-        self.sort_locations.fill(0)
         self.sort_directions.fill(0)
         
-        # Reset enhanced counters
-        self.total_reads.fill(0)
-        self.total_writes.fill(0)
-        self.sort_area_reads.fill(0)
-        self.sort_area_writes.fill(0)
+        # Reset register counters
+        self.total_register_ops.fill(0)
+        self.register_reads.fill(0)
+        self.register_writes.fill(0)
         
         # Reset RNG
         self.rng_state = cp.random.randint(1, 2**32, size=self.num_instances, dtype=cp.uint32)
@@ -792,14 +782,14 @@ class EnhancedBabelscopeDetector:
         self.memory[:, FONT_START:FONT_START + len(CHIP8_FONT)] = font_data
 
 
-def generate_pure_random_roms_gpu(num_roms: int, rom_size: int = 1024) -> cp.ndarray:
+def generate_pure_random_roms_gpu(num_roms: int, rom_size: int = 3584) -> cp.ndarray:
     """Generate completely random ROMs on GPU - returns GPU array for efficiency"""
     print(f"🎲 Generating {num_roms:,} pure random ROMs on GPU ({rom_size} bytes each)...")
-    print(f"   Random code will fill: 0x200-0x5FF")
+    print(f"   Random code will fill: 0x200-0xFFF")
     
     start_time = time.time()
     
-    # Generate random data only for the random code section (1024 bytes)
+    # Generate random data for the entire available program space (3584 bytes)
     all_random_data_gpu = cp.random.randint(0, 256, size=(num_roms, rom_size), dtype=cp.uint8)
     
     generation_time = time.time() - start_time
@@ -810,7 +800,7 @@ def generate_pure_random_roms_gpu(num_roms: int, rom_size: int = 1024) -> cp.nda
     return all_random_data_gpu
 
 
-def generate_pure_random_roms(num_roms: int, rom_size: int = 1024) -> List[np.ndarray]:
+def generate_pure_random_roms(num_roms: int, rom_size: int = 3584) -> List[np.ndarray]:
     """Generate completely random ROMs - legacy interface for compatibility"""
     print(f"🎲 Generating {num_roms:,} pure random ROMs ({rom_size} bytes each)...")
     
@@ -842,7 +832,7 @@ def generate_pure_random_roms(num_roms: int, rom_size: int = 1024) -> List[np.nd
 
 
 def save_enhanced_discovery_rom(discovery: Dict, output_dir: Path, batch_num: int, discovery_num: int) -> str:
-    """Save a discovered ROM with enhanced metadata"""
+    """Save a discovered ROM with register-based metadata"""
     # Extract ROM data
     rom_data = discovery['rom_data']
     
@@ -865,18 +855,17 @@ def save_enhanced_discovery_rom(discovery: Dict, output_dir: Path, batch_num: in
     # Generate hash for filename
     rom_hash = hashlib.sha256(actual_rom.tobytes()).hexdigest()[:8]
     
-    # Create enhanced filename with location info
+    # Create register-based filename
     cycle = discovery['sort_cycle']
-    location = discovery['sort_location']
     direction = discovery['sort_direction'][:3].upper()  # ASC or DESC
-    filename = f"MULTILOC_B{batch_num:04d}D{discovery_num:02d}_0x{location:03X}_{direction}_C{cycle}_{rom_hash}"
+    filename = f"REGISTER_B{batch_num:04d}D{discovery_num:02d}_V0V7_{direction}_C{cycle}_{rom_hash}"
     
     # Save ROM binary
     rom_path = output_dir / f"{filename}.ch8"
     with open(rom_path, 'wb') as f:
         f.write(actual_rom.tobytes())
     
-    # Save enhanced metadata
+    # Save register-based metadata
     metadata = {
         'filename': f"{filename}.ch8",
         'discovery_info': {
@@ -884,17 +873,17 @@ def save_enhanced_discovery_rom(discovery: Dict, output_dir: Path, batch_num: in
             'discovery_number': discovery_num,
             'instance_id': discovery['instance_id'],
             'sort_cycle': discovery['sort_cycle'],
-            'sort_location': f"0x{discovery['sort_location']:03X}",
             'sort_direction': discovery['sort_direction'],
             'timestamp': time.time(),
-            'discovery_type': 'multi_location_enhanced'
+            'discovery_type': 'register_based'
         },
-        'arrays': {
-            'initial': discovery['initial_array'],
-            'final': discovery['final_array']
+        'registers': {
+            'initial': discovery['initial_registers'],
+            'final': discovery['final_registers'],
+            'target_range': 'V0-V7'
         },
-        'memory_access': discovery['memory_access'],
-        'multilocation_enhancement': discovery['multilocation_info'],
+        'register_activity': discovery['register_activity'],
+        'register_enhancement': discovery['register_info'],
         'rom_info': {
             'size_bytes': len(actual_rom),
             'sha256_hash': rom_hash
@@ -906,15 +895,15 @@ def save_enhanced_discovery_rom(discovery: Dict, output_dir: Path, batch_num: in
         json.dump(metadata, f, indent=2)
     
     print(f"   💾 Saved: {filename}.ch8 ({len(actual_rom)} bytes)")
-    print(f"      Location: 0x{discovery['sort_location']:03X}, Direction: {discovery['sort_direction']}")
+    print(f"      Registers: V0-V7, Direction: {discovery['sort_direction']}")
     
     return filename
 
 
 class EnhancedBabelscopeRunner:
-    """Enhanced runner for the multi-location Babelscope approach"""
+    """Register-based runner for the Babelscope approach"""
     
-    def __init__(self, batch_size: int = 50000, output_dir: str = "enhanced_babelscope_output"):
+    def __init__(self, batch_size: int = 50000, output_dir: str = "register_babelscope_output"):
         self.batch_size = batch_size
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
@@ -924,26 +913,25 @@ class EnhancedBabelscopeRunner:
             'total_roms_tested': 0,
             'total_batches': 0,
             'total_discoveries': 0,
-            'effective_location_checks': 0,
             'start_time': time.time(),
-            'enhancement_type': 'multi_location',
-            'locations_per_rom': SORT_LOCATIONS_COUNT
+            'enhancement_type': 'register_based',
+            'target_registers': 'V0-V7'
         }
         
-        print(f"🔬 Enhanced Multi-Location Babelscope Runner")
+        print(f"🔬 Register-Based Babelscope Runner")
         print(f"   Batch size: {batch_size:,}")
-        print(f"   Locations per ROM: {SORT_LOCATIONS_COUNT}")
-        print(f"   Effective discovery rate multiplier: ~{SORT_LOCATIONS_COUNT}x")
+        print(f"   Target: Registers V0-V7")
+        print(f"   Enhancement: Direct monitoring of most active data area")
         print(f"   Output: {output_dir}")
         
-        # Initialize enhanced detector
+        # Initialize register-based detector
         self.detector = EnhancedBabelscopeDetector(batch_size)
     
     def run_enhanced_search(self, num_batches: int = 10, cycles_per_rom: int = 100000):
-        """Run the enhanced multi-location Babelscope search"""
-        print(f"🏹 Starting Enhanced Multi-Location Babelscope search: {num_batches} batches")
+        """Run the register-based Babelscope search"""
+        print(f"🏹 Starting Register-Based Babelscope search: {num_batches} batches")
         print(f"   Cycles per ROM: {cycles_per_rom:,}")
-        print(f"   Expected discovery rate: ~{SORT_LOCATIONS_COUNT}x better than single-location")
+        print(f"   Target: Highest activity data area in CHIP-8")
         print()
         
         total_discoveries = 0
@@ -955,53 +943,47 @@ class EnhancedBabelscopeRunner:
             # Generate pure random ROMs
             rom_data = generate_pure_random_roms_gpu(self.batch_size)
             
-            # Load ROMs and setup multi-location sort test
-            self.detector.load_random_roms_and_setup_multilocation_test(rom_data)
+            # Load ROMs and setup register-based sort test
+            self.detector.load_random_roms_and_setup_register_test(rom_data)
             
-            # Run the enhanced search
+            # Run the register-based search
             sorts_found = self.detector.run_enhanced_babelscope_search(cycles_per_rom, check_interval=100)
             
             # Process discoveries
             if sorts_found > 0:
                 discoveries = self.detector.get_enhanced_discoveries()
                 
-                print(f"🎉 Found {len(discoveries)} sorting algorithms!")
+                print(f"🎉 Found {len(discoveries)} register-based sorting algorithms!")
                 
                 for i, discovery in enumerate(discoveries):
                     filename = save_enhanced_discovery_rom(discovery, self.output_dir, batch_num, i + 1)
                     total_discoveries += 1
                     
-                    location = discovery['sort_location']
                     direction = discovery['sort_direction']
                     cycle = discovery['sort_cycle']
-                    reads = discovery['memory_access']['sort_area_reads']
-                    writes = discovery['memory_access']['sort_area_writes']
+                    ops = discovery['register_activity']['total_register_ops']
+                    reads = discovery['register_activity']['register_reads']
+                    writes = discovery['register_activity']['register_writes']
                     
-                    print(f"      Discovery {i+1}: 0x{location:03X} {direction} @ cycle {cycle:,} ({reads}R/{writes}W)")
+                    print(f"      Discovery {i+1}: V0-V7 {direction} @ cycle {cycle:,} ({ops} ops, {reads}R/{writes}W)")
             
             # Update session stats
             self.session_stats['total_roms_tested'] += self.batch_size
             self.session_stats['total_batches'] = batch_num
             self.session_stats['total_discoveries'] = total_discoveries
-            self.session_stats['effective_location_checks'] += self.batch_size * SORT_LOCATIONS_COUNT
             
             # Print session summary
             total_time = time.time() - self.session_stats['start_time']
             total_rate = self.session_stats['total_roms_tested'] / total_time
-            effective_rate = self.session_stats['effective_location_checks'] / total_time
             
             print(f"📊 Session totals:")
             print(f"   ROMs tested: {self.session_stats['total_roms_tested']:,}")
-            print(f"   Location-checks: {self.session_stats['effective_location_checks']:,}")
             print(f"   Discoveries: {total_discoveries}")
             print(f"   ROM rate: {total_rate:,.0f} ROMs/sec")
-            print(f"   Location-check rate: {effective_rate:,.0f} checks/sec")
             
             if total_discoveries > 0:
                 discovery_rate = self.session_stats['total_roms_tested'] // total_discoveries
-                effective_discovery_rate = self.session_stats['effective_location_checks'] // total_discoveries
                 print(f"   Discovery rate: 1 in {discovery_rate:,} ROMs")
-                print(f"   Effective discovery rate: 1 in {effective_discovery_rate:,} location-checks")
             
             print()
             
@@ -1012,17 +994,17 @@ class EnhancedBabelscopeRunner:
             del rom_data
             cp.get_default_memory_pool().free_all_blocks()
         
-        print("🏁 Enhanced Babelscope search complete!")
+        print("🏁 Register-based Babelscope search complete!")
         print(f"   Total discoveries: {total_discoveries}")
-        print(f"   Enhancement factor: ~{SORT_LOCATIONS_COUNT}x detection area")
+        print(f"   Enhancement: Direct register monitoring")
         print(f"   Results saved in: {self.output_dir}")
         
         return total_discoveries
 
 
 def test_enhanced_babelscope():
-    """Test the enhanced multi-location Babelscope implementation"""
-    print("🧪 Testing Enhanced Multi-Location Babelscope Implementation")
+    """Test the register-based Babelscope implementation"""
+    print("🧪 Testing Register-Based Babelscope Implementation")
     print("=" * 60)
     
     # Small test first
@@ -1031,7 +1013,7 @@ def test_enhanced_babelscope():
     
     # Generate test ROMs
     test_roms = generate_pure_random_roms_gpu(100)
-    detector.load_random_roms_and_setup_multilocation_test(test_roms)
+    detector.load_random_roms_and_setup_register_test(test_roms)
     
     # Run short test
     sorts_found = detector.run_enhanced_babelscope_search(cycles=10000, check_interval=100)
@@ -1042,34 +1024,34 @@ def test_enhanced_babelscope():
         discoveries = detector.get_enhanced_discoveries()
         print("Sample discovery:")
         discovery = discoveries[0]
-        print(f"  Initial: {discovery['initial_array']}")
-        print(f"  Final: {discovery['final_array']}")
-        print(f"  Location: 0x{discovery['sort_location']:03X}")
+        print(f"  Initial: {discovery['initial_registers']}")
+        print(f"  Final: {discovery['final_registers']}")
         print(f"  Direction: {discovery['sort_direction']}")
         print(f"  Cycle: {discovery['sort_cycle']}")
-        print(f"  Access: {discovery['memory_access']['sort_area_reads']}R/{discovery['memory_access']['sort_area_writes']}W")
+        print(f"  Activity: {discovery['register_activity']['register_reads']}R/{discovery['register_activity']['register_writes']}W")
     
     return sorts_found > 0
 
 
 if __name__ == "__main__":
-    print("🔬 ENHANCED MULTI-LOCATION BABELSCOPE")
+    print("🔬 REGISTER-BASED BABELSCOPE")
     print("=" * 60)
-    print("🎯 Complete CHIP-8 emulation + multi-location sort detection")
-    print(f"📊 Monitoring {SORT_LOCATIONS_COUNT} locations per ROM (~{SORT_LOCATIONS_COUNT}x discovery rate)")
-    print("🧬 Pure computational archaeology with enhanced detection area")
+    print("🎯 Complete CHIP-8 emulation + register-based sort detection")
+    print("📊 Monitoring registers V0-V7 (highest activity data area)")
+    print("🧬 Pure computational archaeology with direct register access")
     print()
     
     # Test basic functionality
     if test_enhanced_babelscope():
-        print("✅ Enhanced Multi-Location Babelscope working correctly!")
+        print("✅ Register-Based Babelscope working correctly!")
     else:
-        print("⚠️  No discoveries in test run (still possible, but less likely now)")
+        print("⚠️  No discoveries in test run (expected for pure random data)")
     
     # Example usage
     print("\n🚀 Example usage:")
     print("runner = EnhancedBabelscopeRunner(batch_size=100000)")
     print("runner.run_enhanced_search(num_batches=100, cycles_per_rom=50000)")
     print()
-    print(f"Expected discovery rate: ~{SORT_LOCATIONS_COUNT}x better than single location")
-    print("RTX 5080 should process ~100K+ ROMs/sec with millions of location-checks/sec")
+    print("Expected advantage: Direct access to most manipulated data in CHIP-8")
+    print("Enhanced: Now fills entire 3584-byte program space (0x200-0xFFF)")
+    print("RTX 5080 should process ~100K+ ROMs/sec with register monitoring")
