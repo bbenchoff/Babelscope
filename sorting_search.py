@@ -6,7 +6,7 @@ hundreds of locations simultaneously, increasing discovery probability by ~480x!
 
 Pure implementation matching the enhanced blog post requirements:
 1. Generate completely random ROMs
-2. Put unique unsorted values at MULTIPLE 8-byte chunks (0x300-0xF00)
+2. Put unique unsorted values at MULTIPLE 8-byte chunks (0x600-0xF00)
 3. Run complete CHIP-8 emulation
 4. Check if ANY location gets sorted
 5. Save ROMs that achieve sorting with location metadata

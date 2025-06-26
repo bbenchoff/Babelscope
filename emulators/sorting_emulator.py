@@ -24,7 +24,7 @@ FONT_START = 0x50
 
 # Multi-location sort test constants
 SORT_ARRAY_SIZE = 8
-SORT_SEARCH_START = 0x300
+SORT_SEARCH_START = 0x600
 SORT_SEARCH_END = 0xF00  # Leave some room at the end
 # Calculate number of 8-byte chunks we can fit
 SORT_LOCATIONS_COUNT = (SORT_SEARCH_END - SORT_SEARCH_START) // SORT_ARRAY_SIZE
@@ -623,6 +623,7 @@ class EnhancedBabelscopeDetector:
                 location_count += 1
         
         print(f"   ✅ Placed test pattern at {location_count} locations")
+        print(f"   🎯 Random code space: 1024 bytes (4x larger!)")
         print(f"   🎯 Discovery probability increased by ~{location_count}x!")
     
     def run_enhanced_babelscope_search(self, cycles: int = 100000, check_interval: int = 100) -> int:
@@ -791,13 +792,14 @@ class EnhancedBabelscopeDetector:
         self.memory[:, FONT_START:FONT_START + len(CHIP8_FONT)] = font_data
 
 
-def generate_pure_random_roms_gpu(num_roms: int, rom_size: int = 3584) -> cp.ndarray:
+def generate_pure_random_roms_gpu(num_roms: int, rom_size: int = 1024) -> cp.ndarray:
     """Generate completely random ROMs on GPU - returns GPU array for efficiency"""
     print(f"🎲 Generating {num_roms:,} pure random ROMs on GPU ({rom_size} bytes each)...")
+    print(f"   Random code will fill: 0x200-0x5FF")
     
     start_time = time.time()
     
-    # Generate all random data on GPU and keep it there!
+    # Generate random data only for the random code section (1024 bytes)
     all_random_data_gpu = cp.random.randint(0, 256, size=(num_roms, rom_size), dtype=cp.uint8)
     
     generation_time = time.time() - start_time
@@ -808,7 +810,7 @@ def generate_pure_random_roms_gpu(num_roms: int, rom_size: int = 3584) -> cp.nda
     return all_random_data_gpu
 
 
-def generate_pure_random_roms(num_roms: int, rom_size: int = 3584) -> List[np.ndarray]:
+def generate_pure_random_roms(num_roms: int, rom_size: int = 1024) -> List[np.ndarray]:
     """Generate completely random ROMs - legacy interface for compatibility"""
     print(f"🎲 Generating {num_roms:,} pure random ROMs ({rom_size} bytes each)...")
     
