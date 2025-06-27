@@ -31,7 +31,11 @@ This repo, or rather this README, is broken up into several sections, each detai
 
 # Experiment 1: Finding Random Games
 
-The inspiration for this project, [Finite Atari Project](https://bbenchoff.github.io/pages/FiniteAtari.html), generated billions of random ROMs for the Atari 2600 to find ones that would run. I found a bunch and one was even a proto-game, a program with visual output that responded to user input. Why not do the same with CHIP-8.
+The inspiration for this project, [Finite Atari Project](https://bbenchoff.github.io/pages/FiniteAtari.html), generated billions of random ROMs for the Atari 2600 to find ones that would run. I found a bunch and one was even a proto-game, a program with visual output that responded to user input. Why not do the same with CHIP-8?
+
+![screencaps of emulators running after 100,000 steps](https://bbenchoff.github.io/images/Babelscope/rom_mosaic.png)
+
+
 
 # Experiment 2: Discovering A Sorting Algorithm
 
