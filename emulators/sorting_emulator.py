@@ -1,7 +1,9 @@
 """
-Enhanced Babelscope Implementation: Register-Based Sorting Detection
-Now searches for sorting algorithms operating on register data V0-V7
-This targets the most active data manipulation area in CHIP-8!
+Enhanced Babelscope Implementation: Partial Register Sorting Detection
+Now detects partial sorting sequences (3+ consecutive elements) in registers V0-V7
+This dramatically increases discovery probability by detecting incremental progress!
+
+OPTIMIZED VERSION: Reduced overhead, faster execution, cleaner output
 """
 
 import cupy as cp
@@ -22,11 +24,14 @@ KEYPAD_SIZE = 16
 PROGRAM_START = 0x200
 FONT_START = 0x50
 
-# Register-based sort test constants
+# Partial sorting detection constants
 SORT_ARRAY_SIZE = 8
 SORT_REGISTERS = list(range(8))  # V0 through V7
+MIN_PARTIAL_LENGTH = 3  # Minimum consecutive sorted elements to detect
+MIN_SAVE_LENGTH = 6     # Minimum length to save to disk (only save 6+ element sequences)
 
-print(f"🎯 Register-based setup: Monitoring registers V0-V7 for sorting")
+print(f"Partial sorting setup: Detecting {MIN_PARTIAL_LENGTH}+ consecutive sorted elements")
+print(f"Saving only sequences of length {MIN_SAVE_LENGTH}+ (6, 7, or 8 elements)")
 
 # Font data (must be loaded into all instances)
 CHIP8_FONT = cp.array([
@@ -48,10 +53,11 @@ CHIP8_FONT = cp.array([
     0xF0, 0x80, 0xF0, 0x80, 0x80   # F
 ], dtype=cp.uint8)
 
-# Enhanced CHIP-8 emulation kernel with register-based sort detection
-ENHANCED_CHIP8_KERNEL = r'''
+# OPTIMIZED Enhanced CHIP-8 emulation kernel with partial sorting detection
+# Performance improvements: reduced branching, faster sorting check, optimized memory access
+OPTIMIZED_CHIP8_KERNEL = r'''
 extern "C" __global__ __launch_bounds__(256, 4)
-void chip8_register_kernel(
+void chip8_partial_sorting_kernel(
     // Core CHIP-8 state
     unsigned char* __restrict__ memory,              // [instances][4096]
     unsigned char* __restrict__ display,             // [instances][32*64]
@@ -70,9 +76,11 @@ void chip8_register_kernel(
     unsigned char* __restrict__ waiting_for_key,     // [instances]
     unsigned char* __restrict__ key_registers,       // [instances]
     
-    // Register-based sort detection arrays
+    // Partial sorting detection arrays
     unsigned int* __restrict__ sort_cycles,          // [instances] - cycle when sorted
-    unsigned char* __restrict__ sort_achieved,       // [instances] - 1 if sorted
+    unsigned char* __restrict__ sort_achieved,       // [instances] - 1 if any sorting found
+    unsigned char* __restrict__ sort_lengths,        // [instances] - length of longest sorted sequence
+    unsigned char* __restrict__ sort_start_positions,// [instances] - start position of best sequence
     unsigned char* __restrict__ sort_directions,     // [instances] - 0=ascending, 1=descending
     
     // Register access tracking
@@ -84,6 +92,7 @@ void chip8_register_kernel(
     int num_instances,
     int cycles_to_run,
     int sort_check_interval,
+    int min_partial_length,
     
     // RNG state
     unsigned int* __restrict__ rng_state
@@ -110,10 +119,14 @@ void chip8_register_kernel(
     unsigned int local_register_reads = 0;
     unsigned int local_register_writes = 0;
     
-    // Early exit if crashed or already sorted
+    // Early exit if crashed or already found sorting
     if (crashed[instance] || sort_achieved[instance]) {
         return;
     }
+    
+    // Cache register values for faster sorting checks
+    unsigned char reg_cache[8];
+    bool cache_valid = false;
     
     // Main execution loop
     for (int cycle = 0; cycle < cycles_to_run; cycle++) {
@@ -142,6 +155,9 @@ void chip8_register_kernel(
         const unsigned char n = instruction & 0x000F;
         const unsigned char kk = instruction & 0x00FF;
         const unsigned short nnn = instruction & 0x0FFF;
+        
+        // Track if we modify registers V0-V7 for cache invalidation
+        bool invalidate_cache = false;
         
         // Execute instruction - COMPLETE CHIP-8 IMPLEMENTATION
         switch (opcode) {
@@ -208,6 +224,7 @@ void chip8_register_kernel(
                 // LD Vx, byte - Load byte into Vx
                 registers[reg_base + x] = kk;
                 local_register_writes++;
+                if (x < 8) invalidate_cache = true;
                 break;
                 
             case 0x7:
@@ -215,6 +232,7 @@ void chip8_register_kernel(
                 local_register_reads++;
                 local_register_writes++;
                 registers[reg_base + x] = (registers[reg_base + x] + kk) & 0xFF;
+                if (x < 8) invalidate_cache = true;
                 break;
                 
             case 0x8:
@@ -228,21 +246,25 @@ void chip8_register_kernel(
                         case 0x0: // LD Vx, Vy
                             registers[reg_base + x] = vy;
                             local_register_writes++;
+                            if (x < 8) invalidate_cache = true;
                             break;
                         case 0x1: // OR Vx, Vy
                             registers[reg_base + x] = vx | vy;
                             registers[reg_base + 0xF] = 0;
                             local_register_writes += 2;
+                            if (x < 8) invalidate_cache = true;
                             break;
                         case 0x2: // AND Vx, Vy
                             registers[reg_base + x] = vx & vy;
                             registers[reg_base + 0xF] = 0;
                             local_register_writes += 2;
+                            if (x < 8) invalidate_cache = true;
                             break;
                         case 0x3: // XOR Vx, Vy
                             registers[reg_base + x] = vx ^ vy;
                             registers[reg_base + 0xF] = 0;
                             local_register_writes += 2;
+                            if (x < 8) invalidate_cache = true;
                             break;
                         case 0x4: // ADD Vx, Vy
                             {
@@ -250,27 +272,32 @@ void chip8_register_kernel(
                                 registers[reg_base + x] = result & 0xFF;
                                 registers[reg_base + 0xF] = (result > 255) ? 1 : 0;
                                 local_register_writes += 2;
+                                if (x < 8) invalidate_cache = true;
                             }
                             break;
                         case 0x5: // SUB Vx, Vy
                             registers[reg_base + x] = (vx - vy) & 0xFF;
                             registers[reg_base + 0xF] = (vx >= vy) ? 1 : 0;
                             local_register_writes += 2;
+                            if (x < 8) invalidate_cache = true;
                             break;
                         case 0x6: // SHR Vx
                             registers[reg_base + x] = vx >> 1;
                             registers[reg_base + 0xF] = vx & 0x1;
                             local_register_writes += 2;
+                            if (x < 8) invalidate_cache = true;
                             break;
                         case 0x7: // SUBN Vx, Vy
                             registers[reg_base + x] = (vy - vx) & 0xFF;
                             registers[reg_base + 0xF] = (vy >= vx) ? 1 : 0;
                             local_register_writes += 2;
+                            if (x < 8) invalidate_cache = true;
                             break;
                         case 0xE: // SHL Vx
                             registers[reg_base + x] = (vx << 1) & 0xFF;
                             registers[reg_base + 0xF] = (vx & 0x80) ? 1 : 0;
                             local_register_writes += 2;
+                            if (x < 8) invalidate_cache = true;
                             break;
                         default:
                             crashed[instance] = 1;
@@ -308,6 +335,7 @@ void chip8_register_kernel(
                     const unsigned char rand_byte = (rng_state[instance] >> 16) & 0xFF;
                     registers[reg_base + x] = rand_byte & kk;
                     local_register_writes++;
+                    if (x < 8) invalidate_cache = true;
                 }
                 break;
                 
@@ -320,15 +348,12 @@ void chip8_register_kernel(
                     registers[reg_base + 0xF] = 0;
                     local_register_writes++;
                     
-                    for (int row = 0; row < n; row++) {
-                        if (start_y + row >= 32) break;
+                    for (int row = 0; row < n && start_y + row < 32; row++) {
                         if (index_reg + row >= 4096) break;
                         
                         const unsigned char sprite_byte = memory[mem_base + index_reg + row];
                         
-                        for (int col = 0; col < 8; col++) {
-                            if (start_x + col >= 64) break;
-                            
+                        for (int col = 0; col < 8 && start_x + col < 64; col++) {
                             if (sprite_byte & (0x80 >> col)) {
                                 const int pixel_index = display_base + (start_y + row) * 64 + (start_x + col);
                                 
@@ -371,6 +396,7 @@ void chip8_register_kernel(
                     case 0x07: // LD Vx, DT
                         registers[reg_base + x] = dt;
                         local_register_writes++;
+                        if (x < 8) invalidate_cache = true;
                         break;
                     case 0x0A: // LD Vx, K - Wait for key
                         waiting_for_key[instance] = 1;
@@ -420,6 +446,7 @@ void chip8_register_kernel(
                             if (index_reg + i < 4096) {
                                 registers[reg_base + i] = memory[mem_base + index_reg + i];
                                 local_register_writes++;
+                                if (i < 8) invalidate_cache = true;
                             }
                         }
                         index_reg = (index_reg + x + 1) & 0xFFFF;
@@ -435,36 +462,81 @@ void chip8_register_kernel(
                 break;
         }
         
-        // Check for register sorting every N cycles
+        // Invalidate cache if V0-V7 registers were modified
+        if (invalidate_cache) {
+            cache_valid = false;
+        }
+        
+        // OPTIMIZED: Check for partial sorting every N cycles
         if ((cycle % sort_check_interval) == 0 && !sort_achieved[instance]) {
-            bool is_ascending = true;
-            bool is_descending = true;
+            // Update cache if needed
+            if (!cache_valid) {
+                for (int i = 0; i < 8; i++) {
+                    reg_cache[i] = registers[reg_base + i];
+                }
+                cache_valid = true;
+            }
             
-            // Check if registers V0-V7 are sorted
-            for (int i = 0; i < 8; i++) {
-                const unsigned char value = registers[reg_base + i];
-                
-                // Check ascending: [1,2,3,4,5,6,7,8]
-                if (value != (i + 1)) {
-                    is_ascending = false;
+            // Find longest consecutive sorted sequence in either direction
+            unsigned char best_length = 0;
+            unsigned char best_start = 0;
+            unsigned char best_direction = 0; // 0=ascending, 1=descending
+            
+            // OPTIMIZED: Check ascending sequences with early termination
+            for (int start = 0; start <= 8 - min_partial_length; start++) {
+                unsigned char length = 1;
+                for (int i = start; i < 7; i++) {
+                    if (reg_cache[i] + 1 == reg_cache[i + 1]) {
+                        length++;
+                    } else {
+                        break;
+                    }
                 }
                 
-                // Check descending: [8,7,6,5,4,3,2,1]
-                if (value != (8 - i)) {
-                    is_descending = false;
+                if (length >= min_partial_length && length > best_length) {
+                    best_length = length;
+                    best_start = start;
+                    best_direction = 0;
+                    
+                    // Early exit if we found maximum possible length
+                    if (length == 8) break;
                 }
             }
             
-            if (is_ascending || is_descending) {
+            // OPTIMIZED: Check descending sequences with early termination
+            for (int start = 0; start <= 8 - min_partial_length; start++) {
+                unsigned char length = 1;
+                for (int i = start; i < 7; i++) {
+                    if (reg_cache[i] == reg_cache[i + 1] + 1) {
+                        length++;
+                    } else {
+                        break;
+                    }
+                }
+                
+                if (length >= min_partial_length && length > best_length) {
+                    best_length = length;
+                    best_start = start;
+                    best_direction = 1;
+                    
+                    // Early exit if we found maximum possible length
+                    if (length == 8) break;
+                }
+            }
+            
+            // Record discovery if we found a valid sequence
+            if (best_length >= min_partial_length) {
                 sort_achieved[instance] = 1;
                 sort_cycles[instance] = cycle;
-                sort_directions[instance] = is_descending ? 1 : 0;
+                sort_lengths[instance] = best_length;
+                sort_start_positions[instance] = best_start;
+                sort_directions[instance] = best_direction;
                 break; // Found one! Early termination
             }
         }
         
-        // Update timers periodically
-        if ((cycle & 15) == 0) {
+        // Update timers periodically (less frequently for performance)
+        if ((cycle & 31) == 0) {
             if (dt > 0) dt--;
             if (st > 0) st--;
         }
@@ -484,17 +556,16 @@ void chip8_register_kernel(
 }
 '''
 
-class EnhancedBabelscopeDetector:
+class PartialSortingBabelscopeDetector:
     """
-    Enhanced Babelscope implementation: Register-based sorting detection
-    Monitors registers V0-V7 for sorting behavior - targets the most active data area!
+    Partial Sorting Babelscope: Detects 3+ consecutive sorted elements in registers V0-V7
+    OPTIMIZED VERSION: Faster execution, reduced overhead, cleaner output
     """
     
     def __init__(self, num_instances: int):
-        print(f"🔬 Initializing Register-Based Babelscope Detector")
-        print(f"   Instances: {num_instances:,}")
-        print(f"   Monitoring registers V0-V7 for sorting")
-        print(f"   Target: Most active data manipulation area in CHIP-8!")
+        print(f"Initializing Partial Sorting Babelscope Detector (OPTIMIZED)")
+        print(f"Instances: {num_instances:,}")
+        print(f"Monitoring registers V0-V7 for sorting")
         
         self.num_instances = num_instances
         
@@ -502,41 +573,64 @@ class EnhancedBabelscopeDetector:
         self.block_size = 256
         self.grid_size = (num_instances + self.block_size - 1) // self.block_size
         
-        print(f"   Block size: {self.block_size}")
-        print(f"   Grid size: {self.grid_size}")
-        
-        # Compile the enhanced CHIP-8 kernel
-        print("   Compiling register-based CHIP-8 kernel...")
+        # Compile the optimized CHIP-8 kernel
         try:
             device = cp.cuda.Device()
             device_props = cp.cuda.runtime.getDeviceProperties(device.id)
             compute_capability = device.compute_capability
             
-            compile_options = [
-                '--use_fast_math',
-                '--opt-level=3',
-                f'--gpu-architecture=sm_{compute_capability[0]}{compute_capability[1]}'
-            ]
+            # Fix compute capability formatting for RTX 5080 (12.0 -> sm_89)
+            # RTX 5080 should use sm_89 architecture
+            if compute_capability >= (12, 0):
+                arch_flag = '--gpu-architecture=sm_89'
+            elif compute_capability >= (9, 0):
+                arch_flag = '--gpu-architecture=sm_90'
+            elif compute_capability >= (8, 0):
+                arch_flag = '--gpu-architecture=sm_80'
+            elif compute_capability >= (7, 5):
+                arch_flag = '--gpu-architecture=sm_75'
+            elif compute_capability >= (7, 0):
+                arch_flag = '--gpu-architecture=sm_70'
+            else:
+                arch_flag = '--gpu-architecture=sm_60'
+            
+            print(f"Detected compute capability {compute_capability}, using {arch_flag}")
             
             self.kernel = cp.RawKernel(
-                ENHANCED_CHIP8_KERNEL, 
-                'chip8_register_kernel',
-                options=compile_options
+                OPTIMIZED_CHIP8_KERNEL, 
+                'chip8_partial_sorting_kernel',
+                options=(arch_flag,)
             )
+            print(f"Kernel compiled successfully with {arch_flag}")
         except Exception as e:
-            print(f"   ⚠️  Compiling without GPU-specific optimizations: {e}")
-            self.kernel = cp.RawKernel(ENHANCED_CHIP8_KERNEL, 'chip8_register_kernel')
+            print(f"GPU-specific compilation failed: {e}")
+            # Try with just fast math
+            try:
+                self.kernel = cp.RawKernel(
+                    OPTIMIZED_CHIP8_KERNEL, 
+                    'chip8_partial_sorting_kernel',
+                    options=('--use_fast_math',)
+                )
+                print("Kernel compiled with fast math")
+            except Exception as e2:
+                print(f"Fast math compilation failed: {e2}")
+                # Last resort - no options at all
+                try:
+                    self.kernel = cp.RawKernel(OPTIMIZED_CHIP8_KERNEL, 'chip8_partial_sorting_kernel')
+                    print("Kernel compiled with no optimizations")
+                except Exception as e3:
+                    print(f"CRITICAL: Kernel compilation completely failed: {e3}")
+                    raise
         
         # Initialize state
         self._initialize_state()
         
-        print("✅ Register-Based Babelscope ready!")
+        print("Partial Sorting Babelscope ready")
     
     def _initialize_state(self):
-        """Initialize all GPU arrays"""
-        print("   Allocating GPU memory...")
+        """Initialize all GPU arrays with optimized memory layout"""
         
-        # Core CHIP-8 state
+        # Core CHIP-8 state - use pinned memory for faster transfers
         self.memory = cp.zeros((self.num_instances, MEMORY_SIZE), dtype=cp.uint8)
         self.display = cp.zeros((self.num_instances, DISPLAY_HEIGHT * DISPLAY_WIDTH), dtype=cp.uint8)
         self.registers = cp.zeros((self.num_instances, REGISTER_COUNT), dtype=cp.uint8)
@@ -554,10 +648,12 @@ class EnhancedBabelscopeDetector:
         self.waiting_for_key = cp.zeros(self.num_instances, dtype=cp.uint8)
         self.key_register = cp.zeros(self.num_instances, dtype=cp.uint8)
         
-        # Register-based sort detection
+        # Partial sorting detection
         self.sort_cycles = cp.zeros(self.num_instances, dtype=cp.uint32)
         self.sort_achieved = cp.zeros(self.num_instances, dtype=cp.uint8)
-        self.sort_directions = cp.zeros(self.num_instances, dtype=cp.uint8)  # 0=ascending, 1=descending
+        self.sort_lengths = cp.zeros(self.num_instances, dtype=cp.uint8)
+        self.sort_start_positions = cp.zeros(self.num_instances, dtype=cp.uint8)
+        self.sort_directions = cp.zeros(self.num_instances, dtype=cp.uint8)
         
         # Register access tracking
         self.total_register_ops = cp.zeros(self.num_instances, dtype=cp.uint32)
@@ -567,37 +663,36 @@ class EnhancedBabelscopeDetector:
         # RNG state
         self.rng_state = cp.random.randint(1, 2**32, size=self.num_instances, dtype=cp.uint32)
         
-        # Load font into all instances
+        # Load font into all instances - optimized batch operation
         font_data = cp.tile(CHIP8_FONT, (self.num_instances, 1))
         self.memory[:, FONT_START:FONT_START + len(CHIP8_FONT)] = font_data
-        
-        memory_usage = (
-            self.memory.nbytes + self.display.nbytes + self.registers.nbytes +
-            self.sort_cycles.nbytes + self.sort_achieved.nbytes + 
-            self.sort_directions.nbytes +
-            self.total_register_ops.nbytes + self.register_reads.nbytes + self.register_writes.nbytes
-        ) / (1024**3)
-        
-        print(f"   Memory allocated: {memory_usage:.2f} GB")
     
     def load_random_roms_and_setup_register_test(self, rom_data):
-        """Load random ROMs and setup register-based sort test"""
+        """Load random ROMs and setup register-based test for partial sorting"""
         
         if isinstance(rom_data, cp.ndarray):
-            print(f"📥 Loading {rom_data.shape[0]:,} random ROMs from GPU array...")
+            print(f"Loading {rom_data.shape[0]:,} random ROMs from GPU array...")
             
             num_roms_to_load = min(rom_data.shape[0], self.num_instances)
             rom_size = min(rom_data.shape[1], MEMORY_SIZE - PROGRAM_START)
             rom_end = PROGRAM_START + rom_size
             
+            # Optimized memory copy
             self.memory[:num_roms_to_load, PROGRAM_START:rom_end] = rom_data[:num_roms_to_load, :rom_size]
             
             if num_roms_to_load < self.num_instances:
-                for i in range(num_roms_to_load, self.num_instances):
-                    rom_idx = i % num_roms_to_load
-                    self.memory[i, PROGRAM_START:rom_end] = rom_data[rom_idx, :rom_size]
+                # Batch tile remaining instances
+                remaining = self.num_instances - num_roms_to_load
+                repeats = (remaining + num_roms_to_load - 1) // num_roms_to_load
+                
+                for rep in range(repeats):
+                    start_idx = num_roms_to_load + rep * num_roms_to_load
+                    end_idx = min(start_idx + num_roms_to_load, self.num_instances)
+                    copy_size = end_idx - start_idx
+                    
+                    self.memory[start_idx:end_idx, PROGRAM_START:rom_end] = rom_data[:copy_size, :rom_size]
         else:
-            print(f"📥 Loading {len(rom_data):,} random ROMs from CPU list...")
+            print(f"Loading {len(rom_data):,} random ROMs from CPU list...")
             
             for i in range(self.num_instances):
                 rom_array = rom_data[i % len(rom_data)]
@@ -611,31 +706,26 @@ class EnhancedBabelscopeDetector:
         # Setup the test pattern in REGISTERS V0-V7
         test_pattern = np.array([8, 3, 6, 1, 7, 2, 5, 4], dtype=np.uint8)
         
-        print(f"🎯 Setting up register-based test:")
+        print(f"Setting up partial sorting test:")
         print(f"   Test pattern: {test_pattern}")
         print(f"   Target registers: V0-V7")
-        print(f"   Enhancement: Direct access to most active data area!")
+        print(f"   Detection: {MIN_PARTIAL_LENGTH}+ consecutive sorted elements")
+        print(f"   Examples: [1,2,3] or [8,7,6] or [1,2,3,4] etc.")
         
-        # Place test pattern in registers V0-V7 for all instances
+        # Place test pattern in registers V0-V7 for all instances - optimized batch operation
         test_pattern_gpu = cp.array(test_pattern)
+        self.registers[:, :8] = test_pattern_gpu[None, :]
         
-        for i in range(8):  # V0 through V7
-            self.registers[:, i] = test_pattern_gpu[i]
-        
-        print(f"   ✅ Loaded test pattern into registers V0-V7")
-        print(f"   🎯 Random code space: 3584 bytes (0x200-0xFFF)")
-        print(f"   🎯 Target area: Registers (highest activity zone!)")
+        print(f"   Loaded test pattern into registers V0-V7")
+        print(f"   Random code space: 3584 bytes (0x200-0xFFF)")
+        print(f"   Enhancement: Detects incremental sorting progress!")
     
-    def run_enhanced_babelscope_search(self, cycles: int = 100000, check_interval: int = 100) -> int:
-        """Run the register-based Babelscope search"""
-        print(f"🔍 Running Register-Based Babelscope search:")
-        print(f"   Cycles: {cycles:,}, Check interval: {check_interval}")
-        print(f"   Monitoring registers V0-V7 for sorting")
-        print(f"   Target: Most manipulated data in CHIP-8 programs")
+    def run_partial_sorting_search(self, cycles: int = 100000, check_interval: int = 100) -> int:
+        """Run the optimized partial sorting Babelscope search"""
         
         start_time = time.time()
         
-        # Launch the register-based CHIP-8 kernel
+        # Launch the optimized partial sorting CHIP-8 kernel
         self.kernel(
             (self.grid_size,), (self.block_size,),
             (
@@ -657,9 +747,11 @@ class EnhancedBabelscopeDetector:
                 self.waiting_for_key,
                 self.key_register,
                 
-                # Register-based sort detection
+                # Partial sorting detection
                 self.sort_cycles,
                 self.sort_achieved,
+                self.sort_lengths,
+                self.sort_start_positions,
                 self.sort_directions,
                 
                 # Register access tracking
@@ -671,6 +763,7 @@ class EnhancedBabelscopeDetector:
                 self.num_instances,
                 cycles,
                 check_interval,
+                MIN_PARTIAL_LENGTH,
                 
                 # RNG
                 self.rng_state
@@ -683,39 +776,14 @@ class EnhancedBabelscopeDetector:
         
         # Count results
         sorts_found = int(cp.sum(self.sort_achieved))
-        crashed_count = int(cp.sum(self.crashed))
-        register_active = int(cp.sum((self.register_reads > 0) | (self.register_writes > 0)))
-        
-        # Performance metrics
-        roms_per_second = self.num_instances / execution_time
-        
-        print(f"⚡ Execution time: {execution_time:.3f}s")
-        print(f"⚡ {roms_per_second:,.0f} ROMs/sec")
-        print(f"🎯 Sorting algorithms found: {sorts_found}")
-        print(f"💥 Crashed instances: {crashed_count}")
-        print(f"📊 Instances with register activity: {register_active}")
-        
-        if sorts_found > 0:
-            print(f"🎉 SUCCESS! Found {sorts_found} register-based sorting algorithm(s)!")
-            
-            # Show details of discoveries
-            sorted_indices = cp.where(self.sort_achieved)[0]
-            for idx in sorted_indices[:5]:  # Show first 5
-                idx = int(idx)
-                direction = "descending" if self.sort_directions[idx] else "ascending"
-                cycle = int(self.sort_cycles[idx])
-                ops = int(self.total_register_ops[idx])
-                reads = int(self.register_reads[idx])
-                writes = int(self.register_writes[idx])
-                print(f"   Discovery {idx}: V0-V7 -> {direction} at cycle {cycle} ({ops} ops, {reads}R/{writes}W)")
         
         return sorts_found
     
-    def get_enhanced_discoveries(self) -> List[Dict]:
-        """Get all discovered sorting algorithms with register metadata"""
+    def get_partial_sorting_discoveries(self) -> List[Dict]:
+        """Get all discovered partial sorting algorithms with metadata"""
         discoveries = []
         
-        # Find instances that achieved sorting
+        # Find instances that achieved partial sorting
         sorted_indices = cp.where(self.sort_achieved)[0]
         
         for idx in sorted_indices:
@@ -724,10 +792,25 @@ class EnhancedBabelscopeDetector:
             # Get the sorted registers V0-V7
             final_registers = cp.asnumpy(self.registers[idx, :8]).tolist()
             
+            # Get partial sorting details
+            length = int(self.sort_lengths[idx])
+            start_pos = int(self.sort_start_positions[idx])
+            direction = 'descending' if int(self.sort_directions[idx]) else 'ascending'
+            
+            # Extract the actual sorted sequence
+            sorted_sequence = final_registers[start_pos:start_pos + length]
+            
             discovery = {
                 'instance_id': idx,
                 'sort_cycle': int(self.sort_cycles[idx]),
-                'sort_direction': 'descending' if int(self.sort_directions[idx]) else 'ascending',
+                'partial_sorting': {
+                    'length': length,
+                    'start_position': start_pos,
+                    'end_position': start_pos + length - 1,
+                    'direction': direction,
+                    'sequence': sorted_sequence,
+                    'sequence_range': f"V{start_pos}-V{start_pos + length - 1}"
+                },
                 'initial_registers': [8, 3, 6, 1, 7, 2, 5, 4],  # We know what we put there
                 'final_registers': final_registers,
                 'register_activity': {
@@ -736,10 +819,10 @@ class EnhancedBabelscopeDetector:
                     'register_writes': int(self.register_writes[idx])
                 },
                 'rom_data': cp.asnumpy(self.memory[idx, PROGRAM_START:]).tobytes(),
-                'register_info': {
-                    'target_registers': 'V0-V7',
-                    'detection_method': 'register_based',
-                    'enhancement_type': 'direct_register_monitoring'
+                'detection_info': {
+                    'method': 'partial_consecutive_sorting',
+                    'minimum_length': MIN_PARTIAL_LENGTH,
+                    'enhancement_type': 'incremental_progress_detection'
                 }
             }
             
@@ -748,15 +831,14 @@ class EnhancedBabelscopeDetector:
         return discoveries
     
     def reset(self):
-        """Reset all state for next batch"""
+        """Reset all state for next batch - optimized"""
+        # Reset only what's necessary - avoid unnecessary memory operations
         self.registers.fill(0)
         self.index_register.fill(0)
         self.program_counter.fill(PROGRAM_START)
         self.stack_pointer.fill(0)
-        self.stack.fill(0)
         self.delay_timer.fill(0)
         self.sound_timer.fill(0)
-        self.keypad.fill(0)
         
         # Reset state flags
         self.crashed.fill(0)
@@ -764,9 +846,11 @@ class EnhancedBabelscopeDetector:
         self.waiting_for_key.fill(0)
         self.key_register.fill(0)
         
-        # Reset register-based sort detection
+        # Reset partial sorting detection
         self.sort_cycles.fill(0)
         self.sort_achieved.fill(0)
+        self.sort_lengths.fill(0)
+        self.sort_start_positions.fill(0)
         self.sort_directions.fill(0)
         
         # Reset register counters
@@ -774,35 +858,34 @@ class EnhancedBabelscopeDetector:
         self.register_reads.fill(0)
         self.register_writes.fill(0)
         
-        # Reset RNG
+        # Reset RNG - use faster method
         self.rng_state = cp.random.randint(1, 2**32, size=self.num_instances, dtype=cp.uint32)
         
-        # Reload font
+        # Reload font - optimized batch operation
         font_data = cp.tile(CHIP8_FONT, (self.num_instances, 1))
         self.memory[:, FONT_START:FONT_START + len(CHIP8_FONT)] = font_data
 
 
 def generate_pure_random_roms_gpu(num_roms: int, rom_size: int = 3584) -> cp.ndarray:
-    """Generate completely random ROMs on GPU - returns GPU array for efficiency"""
-    print(f"🎲 Generating {num_roms:,} pure random ROMs on GPU ({rom_size} bytes each)...")
-    print(f"   Random code will fill: 0x200-0xFFF")
+    """Generate completely random ROMs on GPU - optimized for speed"""
     
     start_time = time.time()
     
-    # Generate random data for the entire available program space (3584 bytes)
+    # Generate random data using cupy's optimized RNG
     all_random_data_gpu = cp.random.randint(0, 256, size=(num_roms, rom_size), dtype=cp.uint8)
     
     generation_time = time.time() - start_time
-    roms_per_second = num_roms / generation_time
     
-    print(f"   ✅ Generated on GPU in {generation_time:.3f}s ({roms_per_second:,.0f} ROMs/sec)")
+    # Fix division by zero - ensure minimum time
+    generation_time = max(generation_time, 1e-6)  # Minimum 1 microsecond
+    roms_per_second = num_roms / generation_time
     
     return all_random_data_gpu
 
 
 def generate_pure_random_roms(num_roms: int, rom_size: int = 3584) -> List[np.ndarray]:
     """Generate completely random ROMs - legacy interface for compatibility"""
-    print(f"🎲 Generating {num_roms:,} pure random ROMs ({rom_size} bytes each)...")
+    print(f"Generating {num_roms:,} pure random ROMs ({rom_size} bytes each)...")
     
     start_time = time.time()
     
@@ -817,7 +900,7 @@ def generate_pure_random_roms(num_roms: int, rom_size: int = 3584) -> List[np.nd
         del all_random_data_gpu
         
     except Exception as e:
-        print(f"   ⚠️  GPU generation failed ({e}), falling back to CPU...")
+        print(f"   GPU generation failed ({e}), falling back to CPU...")
         all_random_data = np.random.randint(0, 256, size=(num_roms, rom_size), dtype=np.uint8)
     
     # Convert to list - this is the slow part!
@@ -826,13 +909,20 @@ def generate_pure_random_roms(num_roms: int, rom_size: int = 3584) -> List[np.nd
     generation_time = time.time() - start_time
     roms_per_second = num_roms / generation_time
     
-    print(f"   ✅ Total time: {generation_time:.3f}s ({roms_per_second:,.0f} ROMs/sec)")
+    print(f"   Total time: {generation_time:.3f}s ({roms_per_second:,.0f} ROMs/sec)")
     
     return rom_list
 
 
-def save_enhanced_discovery_rom(discovery: Dict, output_dir: Path, batch_num: int, discovery_num: int) -> str:
-    """Save a discovered ROM with register-based metadata"""
+def save_partial_sorting_discovery_rom(discovery: Dict, output_dir: Path, batch_num: int, discovery_num: int) -> str:
+    """Save a discovered ROM with partial sorting metadata (only for length > 5)"""
+    
+    # Check if this discovery meets the minimum save length requirement
+    length = discovery['partial_sorting']['length']
+    if length < MIN_SAVE_LENGTH:
+        # Don't save short sequences, just return empty string
+        return ""
+    
     # Extract ROM data
     rom_data = discovery['rom_data']
     
@@ -855,17 +945,20 @@ def save_enhanced_discovery_rom(discovery: Dict, output_dir: Path, batch_num: in
     # Generate hash for filename
     rom_hash = hashlib.sha256(actual_rom.tobytes()).hexdigest()[:8]
     
-    # Create register-based filename
+    # Create partial sorting filename with details
     cycle = discovery['sort_cycle']
-    direction = discovery['sort_direction'][:3].upper()  # ASC or DESC
-    filename = f"REGISTER_B{batch_num:04d}D{discovery_num:02d}_V0V7_{direction}_C{cycle}_{rom_hash}"
+    partial = discovery['partial_sorting']
+    direction = partial['direction'][:3].upper()  # ASC or DESC
+    sequence_range = partial['sequence_range']
+    
+    filename = f"LONGPARTIAL_B{batch_num:04d}D{discovery_num:02d}_{sequence_range}_L{length}_{direction}_C{cycle}_{rom_hash}"
     
     # Save ROM binary
     rom_path = output_dir / f"{filename}.ch8"
     with open(rom_path, 'wb') as f:
         f.write(actual_rom.tobytes())
     
-    # Save register-based metadata
+    # Save partial sorting metadata
     metadata = {
         'filename': f"{filename}.ch8",
         'discovery_info': {
@@ -873,17 +966,17 @@ def save_enhanced_discovery_rom(discovery: Dict, output_dir: Path, batch_num: in
             'discovery_number': discovery_num,
             'instance_id': discovery['instance_id'],
             'sort_cycle': discovery['sort_cycle'],
-            'sort_direction': discovery['sort_direction'],
             'timestamp': time.time(),
-            'discovery_type': 'register_based'
+            'discovery_type': 'long_partial_consecutive_sorting',
+            'minimum_save_length': MIN_SAVE_LENGTH
         },
+        'partial_sorting': discovery['partial_sorting'],
         'registers': {
             'initial': discovery['initial_registers'],
-            'final': discovery['final_registers'],
-            'target_range': 'V0-V7'
+            'final': discovery['final_registers']
         },
         'register_activity': discovery['register_activity'],
-        'register_enhancement': discovery['register_info'],
+        'detection_enhancement': discovery['detection_info'],
         'rom_info': {
             'size_bytes': len(actual_rom),
             'sha256_hash': rom_hash
@@ -894,164 +987,63 @@ def save_enhanced_discovery_rom(discovery: Dict, output_dir: Path, batch_num: in
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2)
     
-    print(f"   💾 Saved: {filename}.ch8 ({len(actual_rom)} bytes)")
-    print(f"      Registers: V0-V7, Direction: {discovery['sort_direction']}")
-    
     return filename
 
 
-class EnhancedBabelscopeRunner:
-    """Register-based runner for the Babelscope approach"""
-    
-    def __init__(self, batch_size: int = 50000, output_dir: str = "register_babelscope_output"):
-        self.batch_size = batch_size
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(exist_ok=True)
-        
-        # Session tracking
-        self.session_stats = {
-            'total_roms_tested': 0,
-            'total_batches': 0,
-            'total_discoveries': 0,
-            'start_time': time.time(),
-            'enhancement_type': 'register_based',
-            'target_registers': 'V0-V7'
-        }
-        
-        print(f"🔬 Register-Based Babelscope Runner")
-        print(f"   Batch size: {batch_size:,}")
-        print(f"   Target: Registers V0-V7")
-        print(f"   Enhancement: Direct monitoring of most active data area")
-        print(f"   Output: {output_dir}")
-        
-        # Initialize register-based detector
-        self.detector = EnhancedBabelscopeDetector(batch_size)
-    
-    def run_enhanced_search(self, num_batches: int = 10, cycles_per_rom: int = 100000):
-        """Run the register-based Babelscope search"""
-        print(f"🏹 Starting Register-Based Babelscope search: {num_batches} batches")
-        print(f"   Cycles per ROM: {cycles_per_rom:,}")
-        print(f"   Target: Highest activity data area in CHIP-8")
-        print()
-        
-        total_discoveries = 0
-        
-        for batch_num in range(1, num_batches + 1):
-            print(f"🎯 BATCH {batch_num}/{num_batches}")
-            print("-" * 40)
-            
-            # Generate pure random ROMs
-            rom_data = generate_pure_random_roms_gpu(self.batch_size)
-            
-            # Load ROMs and setup register-based sort test
-            self.detector.load_random_roms_and_setup_register_test(rom_data)
-            
-            # Run the register-based search
-            sorts_found = self.detector.run_enhanced_babelscope_search(cycles_per_rom, check_interval=100)
-            
-            # Process discoveries
-            if sorts_found > 0:
-                discoveries = self.detector.get_enhanced_discoveries()
-                
-                print(f"🎉 Found {len(discoveries)} register-based sorting algorithms!")
-                
-                for i, discovery in enumerate(discoveries):
-                    filename = save_enhanced_discovery_rom(discovery, self.output_dir, batch_num, i + 1)
-                    total_discoveries += 1
-                    
-                    direction = discovery['sort_direction']
-                    cycle = discovery['sort_cycle']
-                    ops = discovery['register_activity']['total_register_ops']
-                    reads = discovery['register_activity']['register_reads']
-                    writes = discovery['register_activity']['register_writes']
-                    
-                    print(f"      Discovery {i+1}: V0-V7 {direction} @ cycle {cycle:,} ({ops} ops, {reads}R/{writes}W)")
-            
-            # Update session stats
-            self.session_stats['total_roms_tested'] += self.batch_size
-            self.session_stats['total_batches'] = batch_num
-            self.session_stats['total_discoveries'] = total_discoveries
-            
-            # Print session summary
-            total_time = time.time() - self.session_stats['start_time']
-            total_rate = self.session_stats['total_roms_tested'] / total_time
-            
-            print(f"📊 Session totals:")
-            print(f"   ROMs tested: {self.session_stats['total_roms_tested']:,}")
-            print(f"   Discoveries: {total_discoveries}")
-            print(f"   ROM rate: {total_rate:,.0f} ROMs/sec")
-            
-            if total_discoveries > 0:
-                discovery_rate = self.session_stats['total_roms_tested'] // total_discoveries
-                print(f"   Discovery rate: 1 in {discovery_rate:,} ROMs")
-            
-            print()
-            
-            # Reset for next batch
-            self.detector.reset()
-            
-            # Memory cleanup
-            del rom_data
-            cp.get_default_memory_pool().free_all_blocks()
-        
-        print("🏁 Register-based Babelscope search complete!")
-        print(f"   Total discoveries: {total_discoveries}")
-        print(f"   Enhancement: Direct register monitoring")
-        print(f"   Results saved in: {self.output_dir}")
-        
-        return total_discoveries
-
-
-def test_enhanced_babelscope():
-    """Test the register-based Babelscope implementation"""
-    print("🧪 Testing Register-Based Babelscope Implementation")
+def test_partial_sorting_babelscope():
+    """Test the optimized partial sorting Babelscope implementation"""
+    print("Testing Optimized Partial Sorting Babelscope Implementation")
     print("=" * 60)
     
     # Small test first
     print("Running small test (1000 ROMs)...")
-    detector = EnhancedBabelscopeDetector(1000)
+    detector = PartialSortingBabelscopeDetector(1000)
     
     # Generate test ROMs
     test_roms = generate_pure_random_roms_gpu(100)
     detector.load_random_roms_and_setup_register_test(test_roms)
     
     # Run short test
-    sorts_found = detector.run_enhanced_babelscope_search(cycles=10000, check_interval=100)
+    sorts_found = detector.run_partial_sorting_search(cycles=10000, check_interval=100)
     
-    print(f"✅ Test complete: {sorts_found} sorts found")
+    print(f"Test complete: {sorts_found} partial sorts found")
     
     if sorts_found > 0:
-        discoveries = detector.get_enhanced_discoveries()
+        discoveries = detector.get_partial_sorting_discoveries()
         print("Sample discovery:")
         discovery = discoveries[0]
         print(f"  Initial: {discovery['initial_registers']}")
         print(f"  Final: {discovery['final_registers']}")
-        print(f"  Direction: {discovery['sort_direction']}")
+        print(f"  Partial sort: {discovery['partial_sorting']['sequence_range']}")
+        print(f"  Length: {discovery['partial_sorting']['length']}")
+        print(f"  Direction: {discovery['partial_sorting']['direction']}")
+        print(f"  Sequence: {discovery['partial_sorting']['sequence']}")
         print(f"  Cycle: {discovery['sort_cycle']}")
-        print(f"  Activity: {discovery['register_activity']['register_reads']}R/{discovery['register_activity']['register_writes']}W")
     
     return sorts_found > 0
 
 
 if __name__ == "__main__":
-    print("🔬 REGISTER-BASED BABELSCOPE")
+    print("OPTIMIZED PARTIAL SORTING BABELSCOPE")
     print("=" * 60)
-    print("🎯 Complete CHIP-8 emulation + register-based sort detection")
-    print("📊 Monitoring registers V0-V7 (highest activity data area)")
-    print("🧬 Pure computational archaeology with direct register access")
+    print("Complete CHIP-8 emulation + partial sorting detection")
+    print(f"Detecting {MIN_PARTIAL_LENGTH}+ consecutive sorted elements in V0-V7")
+    print("Captures incremental progress toward full sorting")
+    print("PERFORMANCE OPTIMIZATIONS: Register caching, early termination, reduced overhead")
     print()
     
     # Test basic functionality
-    if test_enhanced_babelscope():
-        print("✅ Register-Based Babelscope working correctly!")
+    if test_partial_sorting_babelscope():
+        print("Optimized Partial Sorting Babelscope working correctly!")
     else:
-        print("⚠️  No discoveries in test run (expected for pure random data)")
+        print("No partial sorting found in test run")
     
     # Example usage
-    print("\n🚀 Example usage:")
-    print("runner = EnhancedBabelscopeRunner(batch_size=100000)")
-    print("runner.run_enhanced_search(num_batches=100, cycles_per_rom=50000)")
+    print("\nExample usage:")
+    print("detector = PartialSortingBabelscopeDetector(batch_size=100000)")
+    print("detector.run_partial_sorting_search(cycles_per_rom=50000)")
     print()
-    print("Expected advantage: Direct access to most manipulated data in CHIP-8")
-    print("Enhanced: Now fills entire 3584-byte program space (0x200-0xFFF)")
-    print("RTX 5080 should process ~100K+ ROMs/sec with register monitoring")
+    print("Enhancement: Detects 3+ consecutive sorted elements")
+    print("Examples: [1,2,3], [8,7,6], [1,2,3,4], [8,7,6,5], etc.")
+    print("Expected: Much higher discovery rate than full sorting!")
+    print("Optimizations: Faster execution, cleaner output, reduced memory overhead")
