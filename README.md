@@ -58,6 +58,8 @@ This experiment used a specially instrumented emulator, [sorting_emulator.py](em
    - any sub-string sort, for example `[1 2 3 4 8 5 6 7]`, which is the first four elements sorted in ascending order
 5. **Save Discoveries**: When sorting is detected, saves the ROM binary and metadata. I'm only saving sorts with a substring length > 6, for ease of processing.
 
+### Description of the code
+
 ### Performance
 
 I bit the bullet and bought an RTX 5080 for this project:
