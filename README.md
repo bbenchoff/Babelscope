@@ -35,11 +35,13 @@ The inspiration for this project, [Finite Atari Project](https://bbenchoff.githu
 
 ![screencaps of emulators running after 100,000 steps](https://bbenchoff.github.io/images/Bablescope/rom_mosaic.png)
 
+These are about what you would expect. There's some interesting visual output, but it's _just random data_. There's nothing interesting going on here. I already proved this could happen with the Finite Atari Machine, and the 'protogames' from that looked cooler anyway.
 
+Consider this a verification of the technique, but an absolute failure of doing anything cool. An actual in-browser emulation of some of these programs is available [on my website](https://bbenchoff.github.io/pages/Babelscope.html).
 
 # Experiment 2: Discovering A Sorting Algorithm
 
-The idea of this is simple. I generate billions of programs filled with random data, except for `[8 3 6 1 7 2 5 4]` at memory locations `0x300 to 0x307` and every other 8-byte memory location until `0xEF8`. I am effectively populating the program with 384 different arrays. I inspect these programs while they're running. If I ever get `[1 2 3 4 5 6 7 8]` or `[8 7 6 5 4 3 2 1]` at any memory location, I may have found a sorting algorithm. I might rediscover quicksort. I may find something else entirely. Who knows.
+The idea of this is simple. I generate billions of programs filled with random data, except for `[8 3 6 1 7 2 5 4]` stored in the CHIP-8 registers. V0 (register zero) stores a value of 8, V1 (register 1) stores a value of 3... all the way up to V7 (register 7), which stores a value of 4. Now fill the program with random data, and emulate it. Every few cycles, check the values of the registers to see if the entire thing is sorted (either `[1 2 3 4 5 6 7 8]` or `[8 7 6 5 4 3 2 1]`), or any sub-strings are sorted `[8 7 6 5 1 4 3 2]` -- the first four items are sorted in reverse order.
 
 ## Method
 
@@ -48,12 +50,13 @@ This experiment used a specially instrumented emulator, [sorting_emulator.py](em
 ### How It Works
 
 1. **Generate Random ROMs**: Creates completely random CHIP-8 programs (3584 bytes each)
-2. **Setup Test Data**: Places the unsorted array `[8, 3, 6, 1, 7, 2, 5, 4]` at memory location 0x300-0x307, and every of 8-byte location until 0xEF8.
+2. **Setup Test Data**: Places the unsorted array `[8, 3, 6, 1, 7, 2, 5, 4]` in registers V0 to V7.
 3. **Execute Programs**: Runs complete CHIP-8 emulation for each random program for 100,000 cycles
-4. **Monitor for Sorting**: Checks periodically if the array becomes sorted to either:
+4. **Monitor for Sorting**: Checks periodically if the registers becomes sorted to either:
    - `[1, 2, 3, 4, 5, 6, 7, 8]` (ascending)
    - `[8, 7, 6, 5, 4, 3, 2, 1]` (descending)
-5. **Save Discoveries**: When sorting is detected, saves the ROM binary and metadata
+   - any sub-string sort, for example `[1 2 3 4 8 5 6 7]`, which is the first four elements sorted in ascending order
+5. **Save Discoveries**: When sorting is detected, saves the ROM binary and metadata. I'm only saving sorts with a substring length > 6, for ease of processing.
 
 ### Performance
 
