@@ -10,6 +10,8 @@ Uses multiple CUDA streams to pipeline:
 - File I/O (CPU background)
 
 Target: 80-90% GPU utilization instead of peaky 30-40%
+
+FIXED: Global discovery totals calculation - now correctly accumulates batch increments
 """
 
 import os
@@ -50,7 +52,7 @@ except ImportError as e:
     sys.exit(1)
 
 class AsyncSortingStatsManager:
-    """Thread-safe sorting statistics manager for async operations"""
+    """Thread-safe sorting statistics manager for async operations - FIXED global totals"""
     
     def __init__(self, base_dir: Path = Path(".")):
         self.stats_file = base_dir / "babelscope_sorting_stats.json"
@@ -106,13 +108,19 @@ class AsyncSortingStatsManager:
             self._save_stats()
     
     def update_session_progress(self, session_id: str, roms_tested: int, partial_checks: int, 
-                              batches: int, discoveries: int, discoveries_by_length: Dict[int, int],
-                              discoveries_by_direction: Dict[str, int], runtime_hours: float) -> None:
-        """Thread-safe progress update"""
+                              batches: int, discoveries: int, batch_discoveries_by_length: Dict[int, int],
+                              batch_discoveries_by_direction: Dict[str, int], runtime_hours: float) -> None:
+        """
+        Thread-safe progress update - FIXED to properly handle global totals
+        Now takes BATCH increments and properly accumulates them globally
+        """
         with self._lock:
-            session_stats = self.stats['sessions'][-1] if self.stats['sessions'] else {}
+            if not self.stats['sessions']:
+                return
+                
+            session_stats = self.stats['sessions'][-1]
             
-            # Calculate incremental changes
+            # Calculate incremental changes for basic stats
             prev_roms = session_stats.get('roms_tested', 0)
             prev_checks = session_stats.get('partial_checks', 0)
             prev_batches = session_stats.get('batches', 0)
@@ -126,26 +134,36 @@ class AsyncSortingStatsManager:
             self.stats['total_discoveries'] += (discoveries - prev_discoveries)
             self.stats['total_runtime_hours'] += (runtime_hours - prev_runtime)
             
-            # Update discovery breakdowns
-            for length, count in discoveries_by_length.items():
+            # FIXED: Add batch discovery increments directly to global totals
+            # batch_discoveries_by_length contains only THIS BATCH's discoveries
+            for length, batch_count in batch_discoveries_by_length.items():
                 if str(length) in self.stats['discoveries_by_length']:
-                    prev_count = session_stats.get('discoveries_by_length', {}).get(str(length), 0)
-                    self.stats['discoveries_by_length'][str(length)] += (count - prev_count)
+                    self.stats['discoveries_by_length'][str(length)] += batch_count
             
-            for direction, count in discoveries_by_direction.items():
+            for direction, batch_count in batch_discoveries_by_direction.items():
                 if direction in self.stats['discoveries_by_direction']:
-                    prev_count = session_stats.get('discoveries_by_direction', {}).get(direction, 0)
-                    self.stats['discoveries_by_direction'][direction] += (count - prev_count)
+                    self.stats['discoveries_by_direction'][direction] += batch_count
             
-            # Update current session
+            # Update current session with cumulative totals
             if self.stats['sessions']:
+                # For session stats, we need cumulative totals within the session
+                session_discoveries_by_length = session_stats.get('discoveries_by_length', {str(i): 0 for i in range(3, 9)})
+                session_discoveries_by_direction = session_stats.get('discoveries_by_direction', {'ascending': 0, 'descending': 0})
+                
+                # Add this batch's discoveries to session cumulative totals
+                for length, batch_count in batch_discoveries_by_length.items():
+                    session_discoveries_by_length[str(length)] += batch_count
+                
+                for direction, batch_count in batch_discoveries_by_direction.items():
+                    session_discoveries_by_direction[direction] += batch_count
+                
                 self.stats['sessions'][-1].update({
                     'roms_tested': roms_tested,
                     'partial_checks': partial_checks,
                     'batches': batches,
                     'discoveries': discoveries,
-                    'discoveries_by_length': discoveries_by_length,
-                    'discoveries_by_direction': discoveries_by_direction,
+                    'discoveries_by_length': session_discoveries_by_length,
+                    'discoveries_by_direction': session_discoveries_by_direction,
                     'runtime_hours': runtime_hours,
                     'last_update': datetime.now().isoformat()
                 })
@@ -303,7 +321,7 @@ class AsyncDiscoveryProcessor:
 
 
 class AsyncPartialSortingBabelscopeSession:
-    """Async streaming Partial Sorting Babelscope session with GPU pipeline optimization"""
+    """Async streaming Partial Sorting Babelscope session with GPU pipeline optimization - FIXED global totals"""
     
     def __init__(self, batch_size: int, output_dir: str = "output/async_partial_sorting"):
         self.batch_size = batch_size
@@ -332,6 +350,7 @@ class AsyncPartialSortingBabelscopeSession:
         print(f"Batch size: {batch_size:,}")
         print(f"GPU Pipeline: 3 CUDA streams + background processing")
         print(f"Enhancement: Detecting {MIN_PARTIAL_LENGTH}+ consecutive sorted elements")
+        print(f"FIXED: Global discovery totals now correctly accumulate batch increments")
         
         # Session state
         self.running = True
@@ -377,6 +396,7 @@ class AsyncPartialSortingBabelscopeSession:
                              save_frequency: int = 10):
         """
         Run async streaming Partial Sorting Babelscope exploration with GPU pipeline
+        FIXED: Now correctly passes batch increments to global stats
         """
         
         print("\nSTARTING ASYNC STREAMING PARTIAL SORTING BABELSCOPE EXPLORATION")
@@ -389,6 +409,7 @@ class AsyncPartialSortingBabelscopeSession:
         print(f"   Cycles per ROM: {cycles_per_rom:,}")
         print(f"   Check interval: every {check_interval} cycles")
         print(f"   Max batches: {max_batches or 'Infinite'}")
+        print(f"   ENHANCEMENT: Fixed global totals calculation")
         print()
         
         batch_count = 0
@@ -479,14 +500,14 @@ class AsyncPartialSortingBabelscopeSession:
                 self.stats['total_batches'] = batch_count
                 self.stats['total_discoveries'] += discoveries_saved
                 
-                # Update discovery breakdowns
+                # FIXED: Update session discovery breakdowns with THIS BATCH's discoveries only
                 for length, count in batch_discoveries_by_length.items():
                     self.stats['discoveries_by_length'][length] += count
                 
                 for direction, count in batch_discoveries_by_direction.items():
                     self.stats['discoveries_by_direction'][direction] += count
                 
-                # Update global stats
+                # FIXED: Update global stats with BATCH INCREMENTS (not cumulative totals)
                 session_time = time.time() - self.stats['start_time']
                 self.sorting_stats.update_session_progress(
                     self.session_id,
@@ -494,8 +515,8 @@ class AsyncPartialSortingBabelscopeSession:
                     self.stats['total_partial_checks'],
                     self.stats['total_batches'],
                     self.stats['total_discoveries'],
-                    self.stats['discoveries_by_length'],
-                    self.stats['discoveries_by_direction'],
+                    batch_discoveries_by_length,  # FIXED: Pass BATCH increments
+                    batch_discoveries_by_direction,  # FIXED: Pass BATCH increments
                     session_time / 3600
                 )
                 
@@ -620,7 +641,8 @@ class AsyncPartialSortingBabelscopeSession:
                 f.write(f"Detection method: {self.stats['detection_method']}\n")
                 f.write(f"GPU Pipeline: 3 CUDA streams + background processing\n")
                 f.write(f"Minimum sequence length: {self.stats['minimum_sequence_length']}\n")
-                f.write(f"Enhancement: Async streaming for maximum GPU utilization\n\n")
+                f.write(f"Enhancement: Async streaming for maximum GPU utilization\n")
+                f.write(f"FIXED: Global discovery totals now correctly accumulate\n\n")
                 f.write(f"ROMs tested: {self.stats['total_roms_tested']:,}\n")
                 f.write(f"Partial checks performed: {self.stats['total_partial_checks']:,}\n")
                 f.write(f"Batches completed: {self.stats['total_batches']}\n")
@@ -659,6 +681,7 @@ class AsyncPartialSortingBabelscopeSession:
         print("=" * 70)
         print(f"Session ID: {self.stats['session_id']}")
         print(f"Enhancement: Async streaming GPU pipeline optimization")
+        print(f"FIXED: Global discovery totals now correctly accumulate")
         print(f"Batches completed: {batches_completed}")
         print(f"Total ROMs tested: {self.stats['total_roms_tested']:,}")
         print(f"Total partial checks: {self.stats['total_partial_checks']:,}")
@@ -806,15 +829,15 @@ def estimate_async_performance():
 
 
 def main():
-    """Main entry point for async streaming Babelscope"""
+    """Main entry point for async streaming Babelscope - FIXED global totals"""
     parser = argparse.ArgumentParser(
-        description='Async Streaming Partial Sorting Babelscope: GPU pipeline optimization',
+        description='Async Streaming Partial Sorting Babelscope: GPU pipeline optimization (FIXED)',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python async_sorting_search.py --batch-size 100000 --batches 50
-  python async_sorting_search.py --batch-size 200000 --infinite
-  python async_sorting_search.py --batch-size 50000 --cycles 200000 --check-interval 50
+  python sorting_search.py --batch-size 100000 --batches 50
+  python sorting_search.py --batch-size 200000 --infinite
+  python sorting_search.py --batch-size 50000 --cycles 200000 --check-interval 50
 
 GPU Pipeline Enhancement: 3 CUDA streams + background processing
 - Stream 1: ROM generation
@@ -824,8 +847,10 @@ GPU Pipeline Enhancement: 3 CUDA streams + background processing
 
 Target: 80-90% GPU utilization (vs 30-40% peaky)
 
+FIXED: Global discovery totals now correctly accumulate batch increments
+
 Test mode:
-  python async_sorting_search.py --test-mode
+  python sorting_search.py --test-mode
         """
     )
     
@@ -850,12 +875,13 @@ Test mode:
     
     args = parser.parse_args()
     
-    print("ASYNC STREAMING PARTIAL SORTING BABELSCOPE: GPU PIPELINE OPTIMIZATION")
+    print("ASYNC STREAMING PARTIAL SORTING BABELSCOPE: GPU PIPELINE OPTIMIZATION (FIXED)")
     print("=" * 80)
     print("Searching for incremental sorting progress with maximum GPU utilization")
     print("ENHANCEMENT: Async streaming pipeline with CUDA streams")
     print("Method: Generate → Execute → Transfer → Process (all pipelined)")
     print("Target: 80-90% GPU utilization vs 30-40% peaky baseline")
+    print("FIXED: Global discovery totals now correctly accumulate batch increments")
     print()
     
     # Test mode - quick validation and exit
@@ -891,6 +917,7 @@ Test mode:
     print(f"   Stream 3: Memory transfer (overlapped)")
     print(f"   Background: File I/O (non-blocking)")
     print(f"   Expected gain: 2-3x throughput, 80-90% GPU utilization")
+    print(f"   FIXED: Global totals bug resolved - no more duplicate counting")
     print()
     
     estimate_async_performance()

@@ -6,7 +6,7 @@
 
 # Babelscope: Finding algorithms in random data with CUDA
 
-This repository contains *Babelscope*, a system where we use GPUs to fill a virtual machine with random code, then execute it. Sometimes, the programs actually run. This is great, because this tool can emulate 200,000 independent instances of this VM at a time, find interesting stuff, then save these random program files for later inspection.
+This repository contains *Babelscope*, a system where we use GPUs to fill a virtual machine with random code, then execute it. Sometimes, the programs actually run. This is great, because this tool can emulate 500,000 independent instances of this VM at a time, find interesting stuff, then save these random program files for later inspection.
 
 This is neither an evolutionary algorithm, nor is it any other type of machine learning or AI. This is the computer science equivalent of the [Miller-Urey experiment](https://en.wikipedia.org/wiki/Miller%E2%80%93Urey_experiment): Instead of finding amino acids in the primordial soup, I found tiny algorithms bubbling up in random data.
 
@@ -58,82 +58,15 @@ This experiment used a specially instrumented emulator, [sorting_emulator.py](em
    - any sub-string sort, for example `[1 2 3 4 8 5 6 7]`, which is the first four elements sorted in ascending order
 5. **Save Discoveries**: When sorting is detected, saves the ROM binary and metadata. I'm only saving sorts with a substring length > 6, for ease of processing.
 
-### Description of the code
-
-### Performance
-
-I bit the bullet and bought an RTX 5080 for this project:
-- **ROM Generation**: ~70M ROMs/second on GPU
-- **Emulation**: ~170K ROMs/second through complete CHIP-8 execution
-- **Memory Usage**: ~7GB GPU memory for 200K parallel instances
-- **GPU Utilization**: 90%+ sustained
-
-### Requirements
-
-- NVIDIA GPU with CUDA support (I'm using a 5080)
-- Python 3.7+
-- CuPy: `pip install cupy-cuda12x`
-- NumPy: `pip install numpy`
-
-### Quick Start
-
-```bash
-# Basic exploration
-python sorting_search.py --batch-size 200000 --batches 100
-
-# Continuous search (Ctrl+C to stop)
-python sorting_search.py --batch-size 200000 --infinite
-
-# High sensitivity detection (checks every 10 cycles instead of 100)
-python sorting_search.py --batch-size 200000 --check-interval 10
-```
-
-### Command Line Options
-
-```
---batch-size N          ROMs per batch (default: 50000)
---batches N              Number of batches (default: 10)
---infinite               Run infinite batches until interrupted
---cycles N               Execution cycles per ROM (default: 100000)
---check-interval N       Check for sorting every N cycles (default: 100)
---output-dir DIR         Output directory (default: babelscope_results)
---save-frequency N       Save session state every N batches (default: 10)
-```
-
-### Performance Tuning
-
-**Batch Size**: Larger batches improve GPU utilization but use more memory. Try 100K-500K depending on your GPU.
-
-**Check Interval**: Lower values catch more transient sorting but reduce performance:
-- `--check-interval 1`: Perfect detection, ~30% slower
-- `--check-interval 10`: Very good detection, ~10% slower  
-- `--check-interval 100`: Default performance
-- `--check-interval 1000`: Slightly faster, may miss brief sorting
-
-**Cycles**: More cycles allow longer programs to complete sorting:
-- `50000`: Fast, catches obvious sorting
-- `100000`: Default balance
-- `200000+`: Thorough, allows complex algorithms
-
-### Architecture
-
-The system uses a massively parallel CUDA kernel that implements complete CHIP-8 emulation across thousands of instances simultaneously. Each instance:
-
-- Maintains full CHIP-8 state (memory, registers, stack, timers)
-- Executes all 35 CHIP-8 instructions correctly
-- Tracks memory access patterns
-- Monitors for the specific sorting condition
-- Terminates early when sorting is detected
-
-This approach allows exploration of the random program space at unprecedented scale, making computational archaeology practical for the first time.
-
-## Results
-
 My first test in this experiment populated the entire program with random data, except for a single memory segment from `0x300` to `0x307`, which was filled with `[8, 3, 6, 1, 7, 2, 5, 4]`. Running this for ~11 hours generated **3,903,200,000 random programs** at a rate of **100,761 programs/second**. Nothing was found. It was a negative result, although that doesn't really mean anything because I barely scratched the surface of the space of possible programs.
 
-The next test fixed the obvious problem. Instead of testing one memory location, from `0x300` to `0x307`, I'm pre-seeding all 8-byte wide memory locations above `0x300`. This is 384 different arrays for each program that could be sorted. There is still random data; the CHIP-8 starts execution at memory location `0x200`, and from there to `0x300` is filled with random data. I am massively reducing the computational space of the programs, but not so much that it actually matters. In any case, now I am explicitly looking for an algorithm in memory locations `0x200` to `0x2FF` that will sort an array above that memory space.
+The next test fixed the obvious problem. Instead of testing one memory location, I put data where the CHIP-8 opcods could actually read it: in the registers. The CHIP-8 has 16 general purpose 8-bit register, named _Vx_ where _x_ is a digit from 0 to F. The _VF_ register is reserved, so I put `[8, 3, 6, 1, 7, 2, 5, 4]` in registers _V0_ through _V7_.
 
+A runner script creates hundreds of thousands of these programs, full of random data, and puts values in those registers. These programs are then loaded into the emulators in the GPU, run in parallel. The registers are checked every 2-4 instructions (it's a very computationally expensive process), and any time the registers, or a subset of the registers, are sorted either ascending or descending, that program is sent back to the runner script. Results are cataloged and saved.
 
+Do this for a few days, and you'll have a dozen or so perfectly sorted registers, and a couple of near-misses, with six or seven registers sorted.
+
+## Results
 
 ## Discussion
 
