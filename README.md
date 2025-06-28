@@ -99,6 +99,10 @@ as the name is changed.
 
 Benchoff, B. (2025). *Babelscope: Finding algorithms in random data with CUDA* (Version v0.1.0) [Computer software]. GitHub. https://github.com/bbenchoff/Babelscope
 
+**AP**
+
+You should not cite this in AP style. The AP style guide is designed for conciseness, a laudable goal when newspaper articles were written in inches -- literally the length of the article on a printed page. You are now writing for the Internet, which does not have this limitation. Fuck AP style, all my homies hate AP style.
+
 **BibTeX**
 
 @software{benchoff2025babelscope,
