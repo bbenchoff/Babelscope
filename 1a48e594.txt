@@ -1,0 +1,2201 @@
+
+
+=== FULL DISASSEMBLY: LONGPARTIAL_B1072D01_V2-V7_L6_DES_C264_1a48e594.ch8 ===
+
+Sorting Achievement: [9, 8, 7, 6, 5, 4] (descending)
+Registers V2-V7 sorted in 264 cycles
+
+ADDRESS  OPCODE  MNEMONIC OPERANDS     DESCRIPTION
+----------------------------------------------------------------------
+    $200    $6A8C   LD       VA, #8C      Load $8C into VA
+    $202    $9E6E   UNKNOWN  $9E6E        Unknown 9xxx instruction (crashes in CUDA)
+    $204    $90D8   UNKNOWN  $90D8        Unknown 9xxx instruction (crashes in CUDA)
+    $206    $C17E   RND      V1, #7E      V1 = random() AND $7E
+    $208    $50E5   UNKNOWN  $50E5        Unknown 5xxx instruction (crashes in CUDA)
+    $20A    $052D   NOP      $052D        No operation (ignored by CUDA kernel)
+    $20C    $4891   SNE      V8, #91      Skip next instruction if V8 != $91
+    $20E    $966F   UNKNOWN  $966F        Unknown 9xxx instruction (crashes in CUDA)
+>>> $210    $C25D   RND      V2, #5D      V2 = random() AND $5D
+          ^-- Modifies: [2]
+    $212    $CE9A   RND      VE, #9A      VE = random() AND $9A
+>>> $214    $34DB   SE       V4, #DB      Skip next instruction if V4 == $DB
+          ^-- Reads: [4]
+>>> $216    $C31E   RND      V3, #1E      V3 = random() AND $1E
+          ^-- Modifies: [3]
+    $218    $D055   DRW      V0, V5, #5   Draw 5-byte sprite at (V0, V5), VF = collision
+>>> $21A    $C556   RND      V5, #56      V5 = random() AND $56
+          ^-- Modifies: [5]
+    $21C    $2A86   CALL     $A86         Call subroutine at $A86
+    $21E    $55D6   UNKNOWN  $55D6        Unknown 5xxx instruction (crashes in CUDA)
+    $220    $2E4F   CALL     $E4F         Call subroutine at $E4F
+    $222    $B591   JP       V0, $591     Jump to $591 + V0
+>>> $224    $8C32   AND      VC, V3       VC = VC AND V3, VF = 0
+          ^-- Modifies: [12, 15]
+          ^-- Reads: [3, 12]
+    $226    $D525   DRW      V5, V2, #5   Draw 5-byte sprite at (V5, V2), VF = collision
+    $228    $A345   LD       I, $345      Load $345 into I register
+    $22A    $4EA9   SNE      VE, #A9      Skip next instruction if VE != $A9
+>>> $22C    $8362   AND      V3, V6       V3 = V3 AND V6, VF = 0
+          ^-- Modifies: [3, 15]
+          ^-- Reads: [3, 6]
+    $22E    $F4F8   UNKNOWN  $F4F8        Unknown Fxxx instruction (crashes in CUDA)
+    $230    $304D   SE       V0, #4D      Skip next instruction if V0 == $4D
+    $232    $1B64   JP       $B64         Jump to address $B64
+    $234    $D260   DRW      V2, V6, #0   Draw 0-byte sprite at (V2, V6), VF = collision
+    $236    $2FEB   CALL     $FEB         Call subroutine at $FEB
+    $238    $CB75   RND      VB, #75      VB = random() AND $75
+    $23A    $4D54   SNE      VD, #54      Skip next instruction if VD != $54
+    $23C    $0FAB   NOP      $0FAB        No operation (ignored by CUDA kernel)
+    $23E    $5E1C   UNKNOWN  $5E1C        Unknown 5xxx instruction (crashes in CUDA)
+    $240    $9CE1   UNKNOWN  $9CE1        Unknown 9xxx instruction (crashes in CUDA)
+    $242    $AA40   LD       I, $A40      Load $A40 into I register
+>>> $244    $36B2   SE       V6, #B2      Skip next instruction if V6 == $B2
+          ^-- Reads: [6]
+    $246    $7D1B   ADD      VD, #1B      Add $1B to VD (VD = (VD + $1B) & 0xFF)
+    $248    $17B5   JP       $7B5         Jump to address $7B5
+    $24A    $077D   NOP      $077D        No operation (ignored by CUDA kernel)
+    $24C    $048C   NOP      $048C        No operation (ignored by CUDA kernel)
+>>> $24E    $67C2   LD       V7, #C2      Load $C2 into V7
+          ^-- Modifies: [7]
+    $250    $7F3D   ADD      VF, #3D      Add $3D to VF (VF = (VF + $3D) & 0xFF)
+    $252    $6ADA   LD       VA, #DA      Load $DA into VA
+    $254    $9896   UNKNOWN  $9896        Unknown 9xxx instruction (crashes in CUDA)
+    $256    $000E   NOP      $000E        No operation (ignored by CUDA kernel)
+    $258    $C883   RND      V8, #83      V8 = random() AND $83
+>>> $25A    $F565   LD       V5, [I]      Load V0-V5 from [I], then I += 6
+          ^-- Modifies: [0, 1, 2, 3, 4, 5]
+    $25C    $E8AB   UNKNOWN  $E8AB        Unknown Exxx instruction (crashes in CUDA)
+    $25E    $15E9   JP       $5E9         Jump to address $5E9
+    $260    $EABF   UNKNOWN  $EABF        Unknown Exxx instruction (crashes in CUDA)
+    $262    $8B4D   UNKNOWN  $8B4D        Unknown 8xxx instruction (crashes in CUDA)
+    $264    $1856   JP       $856         Jump to address $856
+    $266    $ECD2   UNKNOWN  $ECD2        Unknown Exxx instruction (crashes in CUDA)
+    $268    $D6B9   DRW      V6, VB, #9   Draw 9-byte sprite at (V6, VB), VF = collision
+    $26A    $7E96   ADD      VE, #96      Add $96 to VE (VE = (VE + $96) & 0xFF)
+    $26C    $C146   RND      V1, #46      V1 = random() AND $46
+    $26E    $DAB1   DRW      VA, VB, #1   Draw 1-byte sprite at (VA, VB), VF = collision
+    $270    $411B   SNE      V1, #1B      Skip next instruction if V1 != $1B
+    $272    $4824   SNE      V8, #24      Skip next instruction if V8 != $24
+    $274    $F8B6   UNKNOWN  $F8B6        Unknown Fxxx instruction (crashes in CUDA)
+    $276    $952E   UNKNOWN  $952E        Unknown 9xxx instruction (crashes in CUDA)
+    $278    $D2E6   DRW      V2, VE, #6   Draw 6-byte sprite at (V2, VE), VF = collision
+    $27A    $EB65   UNKNOWN  $EB65        Unknown Exxx instruction (crashes in CUDA)
+    $27C    $8EE9   UNKNOWN  $8EE9        Unknown 8xxx instruction (crashes in CUDA)
+    $27E    $2CB2   CALL     $CB2         Call subroutine at $CB2
+>>> $280    $C757   RND      V7, #57      V7 = random() AND $57
+          ^-- Modifies: [7]
+    $282    $DEA2   DRW      VE, VA, #2   Draw 2-byte sprite at (VE, VA), VF = collision
+    $284    $F0AB   UNKNOWN  $F0AB        Unknown Fxxx instruction (crashes in CUDA)
+    $286    $571C   UNKNOWN  $571C        Unknown 5xxx instruction (crashes in CUDA)
+    $288    $411E   SNE      V1, #1E      Skip next instruction if V1 != $1E
+    $28A    $6C2A   LD       VC, #2A      Load $2A into VC
+    $28C    $F3EB   UNKNOWN  $F3EB        Unknown Fxxx instruction (crashes in CUDA)
+    $28E    $FEC2   UNKNOWN  $FEC2        Unknown Fxxx instruction (crashes in CUDA)
+    $290    $0A07   NOP      $0A07        No operation (ignored by CUDA kernel)
+    $292    $9DD5   UNKNOWN  $9DD5        Unknown 9xxx instruction (crashes in CUDA)
+    $294    $8DAA   UNKNOWN  $8DAA        Unknown 8xxx instruction (crashes in CUDA)
+    $296    $C0F8   RND      V0, #F8      V0 = random() AND $F8
+    $298    $6F14   LD       VF, #14      Load $14 into VF
+    $29A    $BCFA   JP       V0, $CFA     Jump to $CFA + V0
+    $29C    $2C34   CALL     $C34         Call subroutine at $C34
+    $29E    $E66C   UNKNOWN  $E66C        Unknown Exxx instruction (crashes in CUDA)
+    $2A0    $1993   JP       $993         Jump to address $993
+>>> $2A2    $629C   LD       V2, #9C      Load $9C into V2
+          ^-- Modifies: [2]
+    $2A4    $FFA1   UNKNOWN  $FFA1        Unknown Fxxx instruction (crashes in CUDA)
+    $2A6    $20EF   CALL     $0EF         Call subroutine at $0EF
+    $2A8    $D6C5   DRW      V6, VC, #5   Draw 5-byte sprite at (V6, VC), VF = collision
+    $2AA    $CB8E   RND      VB, #8E      VB = random() AND $8E
+    $2AC    $D8C3   DRW      V8, VC, #3   Draw 3-byte sprite at (V8, VC), VF = collision
+    $2AE    $0E59   NOP      $0E59        No operation (ignored by CUDA kernel)
+>>> $2B0    $33B0   SE       V3, #B0      Skip next instruction if V3 == $B0
+          ^-- Reads: [3]
+    $2B2    $13A8   JP       $3A8         Jump to address $3A8
+    $2B4    $BE64   JP       V0, $E64     Jump to $E64 + V0
+>>> $2B6    $3421   SE       V4, #21      Skip next instruction if V4 == $21
+          ^-- Reads: [4]
+    $2B8    $D898   DRW      V8, V9, #8   Draw 8-byte sprite at (V8, V9), VF = collision
+    $2BA    $4B6B   SNE      VB, #6B      Skip next instruction if VB != $6B
+    $2BC    $EFFA   UNKNOWN  $EFFA        Unknown Exxx instruction (crashes in CUDA)
+    $2BE    $E253   UNKNOWN  $E253        Unknown Exxx instruction (crashes in CUDA)
+>>> $2C0    $86EE   SHL      V6           V6 = (V6 << 1) & 0xFF, VF = MSB
+          ^-- Modifies: [6, 15]
+          ^-- Reads: [6]
+    $2C2    $7AF3   ADD      VA, #F3      Add $F3 to VA (VA = (VA + $F3) & 0xFF)
+    $2C4    $4F64   SNE      VF, #64      Skip next instruction if VF != $64
+    $2C6    $BA30   JP       V0, $A30     Jump to $A30 + V0
+    $2C8    $DF96   DRW      VF, V9, #6   Draw 6-byte sprite at (VF, V9), VF = collision
+    $2CA    $1D2F   JP       $D2F         Jump to address $D2F
+    $2CC    $5379   UNKNOWN  $5379        Unknown 5xxx instruction (crashes in CUDA)
+    $2CE    $CF67   RND      VF, #67      VF = random() AND $67
+    $2D0    $E91B   UNKNOWN  $E91B        Unknown Exxx instruction (crashes in CUDA)
+    $2D2    $ED9A   UNKNOWN  $ED9A        Unknown Exxx instruction (crashes in CUDA)
+    $2D4    $9A16   UNKNOWN  $9A16        Unknown 9xxx instruction (crashes in CUDA)
+    $2D6    $21C7   CALL     $1C7         Call subroutine at $1C7
+    $2D8    $DF70   DRW      VF, V7, #0   Draw 0-byte sprite at (VF, V7), VF = collision
+>>> $2DA    $33FA   SE       V3, #FA      Skip next instruction if V3 == $FA
+          ^-- Reads: [3]
+>>> $2DC    $4413   SNE      V4, #13      Skip next instruction if V4 != $13
+          ^-- Reads: [4]
+    $2DE    $98F8   UNKNOWN  $98F8        Unknown 9xxx instruction (crashes in CUDA)
+    $2E0    $FC59   UNKNOWN  $FC59        Unknown Fxxx instruction (crashes in CUDA)
+    $2E2    $FD5A   UNKNOWN  $FD5A        Unknown Fxxx instruction (crashes in CUDA)
+    $2E4    $8B95   SUB      VB, V9       VB = (VB - V9) & 0xFF, VF = NOT borrow
+    $2E6    $1817   JP       $817         Jump to address $817
+    $2E8    $A81F   LD       I, $81F      Load $81F into I register
+    $2EA    $2F2E   CALL     $F2E         Call subroutine at $F2E
+    $2EC    $4000   SNE      V0, #00      Skip next instruction if V0 != $00
+    $2EE    $CE62   RND      VE, #62      VE = random() AND $62
+    $2F0    $4DCB   SNE      VD, #CB      Skip next instruction if VD != $CB
+    $2F2    $1130   JP       $130         Jump to address $130
+    $2F4    $4FF3   SNE      VF, #F3      Skip next instruction if VF != $F3
+    $2F6    $28A3   CALL     $8A3         Call subroutine at $8A3
+    $2F8    $D600   DRW      V6, V0, #0   Draw 0-byte sprite at (V6, V0), VF = collision
+    $2FA    $B330   JP       V0, $330     Jump to $330 + V0
+    $2FC    $0000   NOP      $0000        No operation (ignored by CUDA kernel)
+>>> $2FE    $C38E   RND      V3, #8E      V3 = random() AND $8E
+          ^-- Modifies: [3]
+    $300    $069E   NOP      $069E        No operation (ignored by CUDA kernel)
+    $302    $4FC5   SNE      VF, #C5      Skip next instruction if VF != $C5
+    $304    $A1F2   LD       I, $1F2      Load $1F2 into I register
+    $306    $B695   JP       V0, $695     Jump to $695 + V0
+    $308    $BC4D   JP       V0, $C4D     Jump to $C4D + V0
+    $30A    $545A   UNKNOWN  $545A        Unknown 5xxx instruction (crashes in CUDA)
+    $30C    $B6EF   JP       V0, $6EF     Jump to $6EF + V0
+    $30E    $4B6C   SNE      VB, #6C      Skip next instruction if VB != $6C
+    $310    $B225   JP       V0, $225     Jump to $225 + V0
+    $312    $E834   UNKNOWN  $E834        Unknown Exxx instruction (crashes in CUDA)
+    $314    $799F   ADD      V9, #9F      Add $9F to V9 (V9 = (V9 + $9F) & 0xFF)
+    $316    $D0A7   DRW      V0, VA, #7   Draw 7-byte sprite at (V0, VA), VF = collision
+>>> $318    $C632   RND      V6, #32      V6 = random() AND $32
+          ^-- Modifies: [6]
+    $31A    $063B   NOP      $063B        No operation (ignored by CUDA kernel)
+    $31C    $1655   JP       $655         Jump to address $655
+    $31E    $9727   UNKNOWN  $9727        Unknown 9xxx instruction (crashes in CUDA)
+    $320    $FFC3   UNKNOWN  $FFC3        Unknown Fxxx instruction (crashes in CUDA)
+    $322    $BF9A   JP       V0, $F9A     Jump to $F9A + V0
+    $324    $C8C4   RND      V8, #C4      V8 = random() AND $C4
+    $326    $E4F6   UNKNOWN  $E4F6        Unknown Exxx instruction (crashes in CUDA)
+    $328    $975A   UNKNOWN  $975A        Unknown 9xxx instruction (crashes in CUDA)
+    $32A    $15AD   JP       $5AD         Jump to address $5AD
+    $32C    $DE6A   DRW      VE, V6, #A   Draw 10-byte sprite at (VE, V6), VF = collision
+>>> $32E    $8A33   XOR      VA, V3       VA = VA XOR V3, VF = 0
+          ^-- Modifies: [10, 15]
+          ^-- Reads: [3, 10]
+    $330    $B578   JP       V0, $578     Jump to $578 + V0
+>>> $332    $631A   LD       V3, #1A      Load $1A into V3
+          ^-- Modifies: [3]
+    $334    $3175   SE       V1, #75      Skip next instruction if V1 == $75
+    $336    $957E   UNKNOWN  $957E        Unknown 9xxx instruction (crashes in CUDA)
+    $338    $B759   JP       V0, $759     Jump to $759 + V0
+    $33A    $B840   JP       V0, $840     Jump to $840 + V0
+    $33C    $9778   UNKNOWN  $9778        Unknown 9xxx instruction (crashes in CUDA)
+    $33E    $D05F   DRW      V0, V5, #F   Draw 15-byte sprite at (V0, V5), VF = collision
+>>> $340    $8E51   OR       VE, V5       VE = VE OR V5, VF = 0
+          ^-- Modifies: [14, 15]
+          ^-- Reads: [5, 14]
+    $342    $FAB7   UNKNOWN  $FAB7        Unknown Fxxx instruction (crashes in CUDA)
+    $344    $248C   CALL     $48C         Call subroutine at $48C
+    $346    $94DC   UNKNOWN  $94DC        Unknown 9xxx instruction (crashes in CUDA)
+>>> $348    $C60F   RND      V6, #0F      V6 = random() AND $0F
+          ^-- Modifies: [6]
+    $34A    $5B8B   UNKNOWN  $5B8B        Unknown 5xxx instruction (crashes in CUDA)
+    $34C    $CCE8   RND      VC, #E8      VC = random() AND $E8
+    $34E    $EEB6   UNKNOWN  $EEB6        Unknown Exxx instruction (crashes in CUDA)
+    $350    $20AE   CALL     $0AE         Call subroutine at $0AE
+    $352    $CF4F   RND      VF, #4F      VF = random() AND $4F
+    $354    $A81B   LD       I, $81B      Load $81B into I register
+    $356    $A062   LD       I, $062      Load $062 into I register
+    $358    $3B6D   SE       VB, #6D      Skip next instruction if VB == $6D
+    $35A    $576E   UNKNOWN  $576E        Unknown 5xxx instruction (crashes in CUDA)
+    $35C    $9084   UNKNOWN  $9084        Unknown 9xxx instruction (crashes in CUDA)
+    $35E    $1121   JP       $121         Jump to address $121
+    $360    $0262   NOP      $0262        No operation (ignored by CUDA kernel)
+>>> $362    $62EC   LD       V2, #EC      Load $EC into V2
+          ^-- Modifies: [2]
+    $364    $0B9A   NOP      $0B9A        No operation (ignored by CUDA kernel)
+    $366    $5B8B   UNKNOWN  $5B8B        Unknown 5xxx instruction (crashes in CUDA)
+    $368    $D62B   DRW      V6, V2, #B   Draw 11-byte sprite at (V6, V2), VF = collision
+>>> $36A    $65CF   LD       V5, #CF      Load $CF into V5
+          ^-- Modifies: [5]
+    $36C    $2AE9   CALL     $AE9         Call subroutine at $AE9
+    $36E    $EFC2   UNKNOWN  $EFC2        Unknown Exxx instruction (crashes in CUDA)
+    $370    $96CD   UNKNOWN  $96CD        Unknown 9xxx instruction (crashes in CUDA)
+    $372    $1C93   JP       $C93         Jump to address $C93
+>>> $374    $332C   SE       V3, #2C      Skip next instruction if V3 == $2C
+          ^-- Reads: [3]
+    $376    $0613   NOP      $0613        No operation (ignored by CUDA kernel)
+    $378    $DE41   DRW      VE, V4, #1   Draw 1-byte sprite at (VE, V4), VF = collision
+    $37A    $2E36   CALL     $E36         Call subroutine at $E36
+    $37C    $A17C   LD       I, $17C      Load $17C into I register
+>>> $37E    $C4D7   RND      V4, #D7      V4 = random() AND $D7
+          ^-- Modifies: [4]
+>>> $380    $C774   RND      V7, #74      V7 = random() AND $74
+          ^-- Modifies: [7]
+>>> $382    $652A   LD       V5, #2A      Load $2A into V5
+          ^-- Modifies: [5]
+    $384    $1846   JP       $846         Jump to address $846
+    $386    $CA3E   RND      VA, #3E      VA = random() AND $3E
+    $388    $E5C2   UNKNOWN  $E5C2        Unknown Exxx instruction (crashes in CUDA)
+>>> $38A    $6418   LD       V4, #18      Load $18 into V4
+          ^-- Modifies: [4]
+    $38C    $EF0A   UNKNOWN  $EF0A        Unknown Exxx instruction (crashes in CUDA)
+    $38E    $5D71   UNKNOWN  $5D71        Unknown 5xxx instruction (crashes in CUDA)
+    $390    $0771   NOP      $0771        No operation (ignored by CUDA kernel)
+    $392    $6972   LD       V9, #72      Load $72 into V9
+    $394    $DDD1   DRW      VD, VD, #1   Draw 1-byte sprite at (VD, VD), VF = collision
+    $396    $9E68   UNKNOWN  $9E68        Unknown 9xxx instruction (crashes in CUDA)
+>>> $398    $721E   ADD      V2, #1E      Add $1E to V2 (V2 = (V2 + $1E) & 0xFF)
+          ^-- Modifies: [2]
+          ^-- Reads: [2]
+    $39A    $7E03   ADD      VE, #03      Add $03 to VE (VE = (VE + $03) & 0xFF)
+    $39C    $5234   UNKNOWN  $5234        Unknown 5xxx instruction (crashes in CUDA)
+    $39E    $E817   UNKNOWN  $E817        Unknown Exxx instruction (crashes in CUDA)
+    $3A0    $134B   JP       $34B         Jump to address $34B
+    $3A2    $CF42   RND      VF, #42      VF = random() AND $42
+    $3A4    $FECC   UNKNOWN  $FECC        Unknown Fxxx instruction (crashes in CUDA)
+    $3A6    $8AF2   AND      VA, VF       VA = VA AND VF, VF = 0
+    $3A8    $837C   UNKNOWN  $837C        Unknown 8xxx instruction (crashes in CUDA)
+    $3AA    $3ED9   SE       VE, #D9      Skip next instruction if VE == $D9
+    $3AC    $117C   JP       $17C         Jump to address $17C
+    $3AE    $94BD   UNKNOWN  $94BD        Unknown 9xxx instruction (crashes in CUDA)
+    $3B0    $4DBF   SNE      VD, #BF      Skip next instruction if VD != $BF
+    $3B2    $EB50   UNKNOWN  $EB50        Unknown Exxx instruction (crashes in CUDA)
+    $3B4    $8BB0   LD       VB, VB       Load VB into VB
+>>> $3B6    $325D   SE       V2, #5D      Skip next instruction if V2 == $5D
+          ^-- Reads: [2]
+    $3B8    $2557   CALL     $557         Call subroutine at $557
+    $3BA    $CC2B   RND      VC, #2B      VC = random() AND $2B
+    $3BC    $27F8   CALL     $7F8         Call subroutine at $7F8
+    $3BE    $B469   JP       V0, $469     Jump to $469 + V0
+    $3C0    $F974   UNKNOWN  $F974        Unknown Fxxx instruction (crashes in CUDA)
+    $3C2    $3045   SE       V0, #45      Skip next instruction if V0 == $45
+    $3C4    $3BE1   SE       VB, #E1      Skip next instruction if VB == $E1
+    $3C6    $FD79   UNKNOWN  $FD79        Unknown Fxxx instruction (crashes in CUDA)
+    $3C8    $405E   SNE      V0, #5E      Skip next instruction if V0 != $5E
+    $3CA    $6C6C   LD       VC, #6C      Load $6C into VC
+    $3CC    $2C3C   CALL     $C3C         Call subroutine at $C3C
+    $3CE    $E9EA   UNKNOWN  $E9EA        Unknown Exxx instruction (crashes in CUDA)
+    $3D0    $E646   UNKNOWN  $E646        Unknown Exxx instruction (crashes in CUDA)
+    $3D2    $7BE2   ADD      VB, #E2      Add $E2 to VB (VB = (VB + $E2) & 0xFF)
+    $3D4    $58E0   SE       V8, VE       Skip next instruction if V8 == VE
+    $3D6    $8FEE   SHL      VF           VF = (VF << 1) & 0xFF, VF = MSB
+>>> $3D8    $92F0   SNE      V2, VF       Skip next instruction if V2 != VF
+          ^-- Reads: [2, 15]
+    $3DA    $0107   NOP      $0107        No operation (ignored by CUDA kernel)
+>>> $3DC    $8555   SUB      V5, V5       V5 = (V5 - V5) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [5, 15]
+          ^-- Reads: [5]
+    $3DE    $B22D   JP       V0, $22D     Jump to $22D + V0
+    $3E0    $1C74   JP       $C74         Jump to address $C74
+    $3E2    $E178   UNKNOWN  $E178        Unknown Exxx instruction (crashes in CUDA)
+    $3E4    $FAE0   UNKNOWN  $FAE0        Unknown Fxxx instruction (crashes in CUDA)
+    $3E6    $3091   SE       V0, #91      Skip next instruction if V0 == $91
+>>> $3E8    $67F9   LD       V7, #F9      Load $F9 into V7
+          ^-- Modifies: [7]
+    $3EA    $29E8   CALL     $9E8         Call subroutine at $9E8
+    $3EC    $0024   NOP      $0024        No operation (ignored by CUDA kernel)
+    $3EE    $D351   DRW      V3, V5, #1   Draw 1-byte sprite at (V3, V5), VF = collision
+    $3F0    $6D94   LD       VD, #94      Load $94 into VD
+    $3F2    $8209   UNKNOWN  $8209        Unknown 8xxx instruction (crashes in CUDA)
+>>> $3F4    $C336   RND      V3, #36      V3 = random() AND $36
+          ^-- Modifies: [3]
+    $3F6    $3B7E   SE       VB, #7E      Skip next instruction if VB == $7E
+    $3F8    $09C0   NOP      $09C0        No operation (ignored by CUDA kernel)
+    $3FA    $0C9C   NOP      $0C9C        No operation (ignored by CUDA kernel)
+>>> $3FC    $7653   ADD      V6, #53      Add $53 to V6 (V6 = (V6 + $53) & 0xFF)
+          ^-- Modifies: [6]
+          ^-- Reads: [6]
+    $3FE    $2537   CALL     $537         Call subroutine at $537
+    $400    $2C5C   CALL     $C5C         Call subroutine at $C5C
+    $402    $B91C   JP       V0, $91C     Jump to $91C + V0
+    $404    $235A   CALL     $35A         Call subroutine at $35A
+    $406    $61CA   LD       V1, #CA      Load $CA into V1
+    $408    $2AFB   CALL     $AFB         Call subroutine at $AFB
+    $40A    $BEB1   JP       V0, $EB1     Jump to $EB1 + V0
+    $40C    $EB68   UNKNOWN  $EB68        Unknown Exxx instruction (crashes in CUDA)
+    $40E    $5779   UNKNOWN  $5779        Unknown 5xxx instruction (crashes in CUDA)
+>>> $410    $6681   LD       V6, #81      Load $81 into V6
+          ^-- Modifies: [6]
+>>> $412    $8864   ADD      V8, V6       V8 = (V8 + V6) & 0xFF, VF = carry
+          ^-- Modifies: [8, 15]
+          ^-- Reads: [6, 8]
+>>> $414    $C34F   RND      V3, #4F      V3 = random() AND $4F
+          ^-- Modifies: [3]
+>>> $416    $7400   ADD      V4, #00      Add $00 to V4 (V4 = (V4 + $00) & 0xFF)
+          ^-- Modifies: [4]
+          ^-- Reads: [4]
+    $418    $3948   SE       V9, #48      Skip next instruction if V9 == $48
+    $41A    $0840   NOP      $0840        No operation (ignored by CUDA kernel)
+    $41C    $7812   ADD      V8, #12      Add $12 to V8 (V8 = (V8 + $12) & 0xFF)
+>>> $41E    $C512   RND      V5, #12      V5 = random() AND $12
+          ^-- Modifies: [5]
+    $420    $959F   UNKNOWN  $959F        Unknown 9xxx instruction (crashes in CUDA)
+    $422    $3011   SE       V0, #11      Skip next instruction if V0 == $11
+    $424    $B803   JP       V0, $803     Jump to $803 + V0
+    $426    $1E16   JP       $E16         Jump to address $E16
+    $428    $B886   JP       V0, $886     Jump to $886 + V0
+    $42A    $90C4   UNKNOWN  $90C4        Unknown 9xxx instruction (crashes in CUDA)
+    $42C    $08C3   NOP      $08C3        No operation (ignored by CUDA kernel)
+    $42E    $0FD8   NOP      $0FD8        No operation (ignored by CUDA kernel)
+    $430    $1BD6   JP       $BD6         Jump to address $BD6
+    $432    $AEC8   LD       I, $EC8      Load $EC8 into I register
+    $434    $6907   LD       V9, #07      Load $07 into V9
+    $436    $FCED   UNKNOWN  $FCED        Unknown Fxxx instruction (crashes in CUDA)
+>>> $438    $C5A2   RND      V5, #A2      V5 = random() AND $A2
+          ^-- Modifies: [5]
+    $43A    $8014   ADD      V0, V1       V0 = (V0 + V1) & 0xFF, VF = carry
+>>> $43C    $639F   LD       V3, #9F      Load $9F into V3
+          ^-- Modifies: [3]
+    $43E    $067C   NOP      $067C        No operation (ignored by CUDA kernel)
+    $440    $1195   JP       $195         Jump to address $195
+    $442    $6C71   LD       VC, #71      Load $71 into VC
+    $444    $9AB0   SNE      VA, VB       Skip next instruction if VA != VB
+    $446    $26B1   CALL     $6B1         Call subroutine at $6B1
+    $448    $CCBD   RND      VC, #BD      VC = random() AND $BD
+>>> $44A    $C693   RND      V6, #93      V6 = random() AND $93
+          ^-- Modifies: [6]
+    $44C    $51FF   UNKNOWN  $51FF        Unknown 5xxx instruction (crashes in CUDA)
+    $44E    $1B04   JP       $B04         Jump to address $B04
+    $450    $CA57   RND      VA, #57      VA = random() AND $57
+    $452    $E0A5   UNKNOWN  $E0A5        Unknown Exxx instruction (crashes in CUDA)
+    $454    $3AE8   SE       VA, #E8      Skip next instruction if VA == $E8
+    $456    $2C33   CALL     $C33         Call subroutine at $C33
+>>> $458    $35A6   SE       V5, #A6      Skip next instruction if V5 == $A6
+          ^-- Reads: [5]
+>>> $45A    $6460   LD       V4, #60      Load $60 into V4
+          ^-- Modifies: [4]
+    $45C    $6F15   LD       VF, #15      Load $15 into VF
+    $45E    $B66A   JP       V0, $66A     Jump to $66A + V0
+    $460    $245F   CALL     $45F         Call subroutine at $45F
+    $462    $A37A   LD       I, $37A      Load $37A into I register
+    $464    $E72C   UNKNOWN  $E72C        Unknown Exxx instruction (crashes in CUDA)
+    $466    $C072   RND      V0, #72      V0 = random() AND $72
+    $468    $ED4B   UNKNOWN  $ED4B        Unknown Exxx instruction (crashes in CUDA)
+    $46A    $D0FC   DRW      V0, VF, #C   Draw 12-byte sprite at (V0, VF), VF = collision
+>>> $46C    $3328   SE       V3, #28      Skip next instruction if V3 == $28
+          ^-- Reads: [3]
+    $46E    $F000   UNKNOWN  $F000        Unknown Fxxx instruction (crashes in CUDA)
+    $470    $0A66   NOP      $0A66        No operation (ignored by CUDA kernel)
+>>> $472    $45FC   SNE      V5, #FC      Skip next instruction if V5 != $FC
+          ^-- Reads: [5]
+    $474    $2952   CALL     $952         Call subroutine at $952
+    $476    $4B80   SNE      VB, #80      Skip next instruction if VB != $80
+    $478    $55F8   UNKNOWN  $55F8        Unknown 5xxx instruction (crashes in CUDA)
+    $47A    $701D   ADD      V0, #1D      Add $1D to V0 (V0 = (V0 + $1D) & 0xFF)
+    $47C    $C959   RND      V9, #59      V9 = random() AND $59
+    $47E    $272F   CALL     $72F         Call subroutine at $72F
+    $480    $2A3B   CALL     $A3B         Call subroutine at $A3B
+    $482    $D2D9   DRW      V2, VD, #9   Draw 9-byte sprite at (V2, VD), VF = collision
+>>> $484    $C431   RND      V4, #31      V4 = random() AND $31
+          ^-- Modifies: [4]
+    $486    $2BBC   CALL     $BBC         Call subroutine at $BBC
+    $488    $1AF2   JP       $AF2         Jump to address $AF2
+    $48A    $4E2B   SNE      VE, #2B      Skip next instruction if VE != $2B
+    $48C    $7F8D   ADD      VF, #8D      Add $8D to VF (VF = (VF + $8D) & 0xFF)
+    $48E    $6EB3   LD       VE, #B3      Load $B3 into VE
+    $490    $9233   UNKNOWN  $9233        Unknown 9xxx instruction (crashes in CUDA)
+>>> $492    $33BC   SE       V3, #BC      Skip next instruction if V3 == $BC
+          ^-- Reads: [3]
+    $494    $7D5A   ADD      VD, #5A      Add $5A to VD (VD = (VD + $5A) & 0xFF)
+    $496    $1079   JP       $079         Jump to address $079
+    $498    $DEA4   DRW      VE, VA, #4   Draw 4-byte sprite at (VE, VA), VF = collision
+    $49A    $595C   UNKNOWN  $595C        Unknown 5xxx instruction (crashes in CUDA)
+    $49C    $7C62   ADD      VC, #62      Add $62 to VC (VC = (VC + $62) & 0xFF)
+    $49E    $7074   ADD      V0, #74      Add $74 to V0 (V0 = (V0 + $74) & 0xFF)
+    $4A0    $E6FD   UNKNOWN  $E6FD        Unknown Exxx instruction (crashes in CUDA)
+    $4A2    $151D   JP       $51D         Jump to address $51D
+    $4A4    $5852   UNKNOWN  $5852        Unknown 5xxx instruction (crashes in CUDA)
+    $4A6    $255C   CALL     $55C         Call subroutine at $55C
+>>> $4A8    $7514   ADD      V5, #14      Add $14 to V5 (V5 = (V5 + $14) & 0xFF)
+          ^-- Modifies: [5]
+          ^-- Reads: [5]
+    $4AA    $F492   UNKNOWN  $F492        Unknown Fxxx instruction (crashes in CUDA)
+    $4AC    $13ED   JP       $3ED         Jump to address $3ED
+    $4AE    $3FAC   SE       VF, #AC      Skip next instruction if VF == $AC
+    $4B0    $2B13   CALL     $B13         Call subroutine at $B13
+    $4B2    $DEE4   DRW      VE, VE, #4   Draw 4-byte sprite at (VE, VE), VF = collision
+    $4B4    $184D   JP       $84D         Jump to address $84D
+    $4B6    $AEEF   LD       I, $EEF      Load $EEF into I register
+    $4B8    $695D   LD       V9, #5D      Load $5D into V9
+    $4BA    $E2AA   UNKNOWN  $E2AA        Unknown Exxx instruction (crashes in CUDA)
+    $4BC    $5B24   UNKNOWN  $5B24        Unknown 5xxx instruction (crashes in CUDA)
+    $4BE    $CD69   RND      VD, #69      VD = random() AND $69
+    $4C0    $D520   DRW      V5, V2, #0   Draw 0-byte sprite at (V5, V2), VF = collision
+    $4C2    $B8AF   JP       V0, $8AF     Jump to $8AF + V0
+    $4C4    $225B   CALL     $25B         Call subroutine at $25B
+    $4C6    $E27C   UNKNOWN  $E27C        Unknown Exxx instruction (crashes in CUDA)
+    $4C8    $89FB   UNKNOWN  $89FB        Unknown 8xxx instruction (crashes in CUDA)
+>>> $4CA    $329B   SE       V2, #9B      Skip next instruction if V2 == $9B
+          ^-- Reads: [2]
+    $4CC    $93E5   UNKNOWN  $93E5        Unknown 9xxx instruction (crashes in CUDA)
+    $4CE    $BB5B   JP       V0, $B5B     Jump to $B5B + V0
+    $4D0    $9D10   SNE      VD, V1       Skip next instruction if VD != V1
+    $4D2    $E9B6   UNKNOWN  $E9B6        Unknown Exxx instruction (crashes in CUDA)
+    $4D4    $26C3   CALL     $6C3         Call subroutine at $6C3
+    $4D6    $7D63   ADD      VD, #63      Add $63 to VD (VD = (VD + $63) & 0xFF)
+    $4D8    $6870   LD       V8, #70      Load $70 into V8
+    $4DA    $F1FB   UNKNOWN  $F1FB        Unknown Fxxx instruction (crashes in CUDA)
+>>> $4DC    $C647   RND      V6, #47      V6 = random() AND $47
+          ^-- Modifies: [6]
+    $4DE    $80A1   OR       V0, VA       V0 = V0 OR VA, VF = 0
+    $4E0    $0B13   NOP      $0B13        No operation (ignored by CUDA kernel)
+    $4E2    $A6D3   LD       I, $6D3      Load $6D3 into I register
+    $4E4    $6D56   LD       VD, #56      Load $56 into VD
+    $4E6    $1FCE   JP       $FCE         Jump to address $FCE
+    $4E8    $051F   NOP      $051F        No operation (ignored by CUDA kernel)
+    $4EA    $0E09   NOP      $0E09        No operation (ignored by CUDA kernel)
+    $4EC    $EB1F   UNKNOWN  $EB1F        Unknown Exxx instruction (crashes in CUDA)
+    $4EE    $1298   JP       $298         Jump to address $298
+    $4F0    $50FD   UNKNOWN  $50FD        Unknown 5xxx instruction (crashes in CUDA)
+    $4F2    $C04B   RND      V0, #4B      V0 = random() AND $4B
+    $4F4    $F029   LD       F, V0        I = font_address(V0 & 0xF) = 0x50 + (V0 & 0xF) * 5
+    $4F6    $7BFD   ADD      VB, #FD      Add $FD to VB (VB = (VB + $FD) & 0xFF)
+    $4F8    $B768   JP       V0, $768     Jump to $768 + V0
+>>> $4FA    $34B0   SE       V4, #B0      Skip next instruction if V4 == $B0
+          ^-- Reads: [4]
+    $4FC    $3CCF   SE       VC, #CF      Skip next instruction if VC == $CF
+    $4FE    $7A64   ADD      VA, #64      Add $64 to VA (VA = (VA + $64) & 0xFF)
+    $500    $9AEE   UNKNOWN  $9AEE        Unknown 9xxx instruction (crashes in CUDA)
+    $502    $2F32   CALL     $F32         Call subroutine at $F32
+    $504    $3A0C   SE       VA, #0C      Skip next instruction if VA == $0C
+    $506    $A749   LD       I, $749      Load $749 into I register
+    $508    $5014   UNKNOWN  $5014        Unknown 5xxx instruction (crashes in CUDA)
+    $50A    $EA1B   UNKNOWN  $EA1B        Unknown Exxx instruction (crashes in CUDA)
+>>> $50C    $FE65   LD       VE, [I]      Load V0-VE from [I], then I += 15
+          ^-- Modifies: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    $50E    $F924   UNKNOWN  $F924        Unknown Fxxx instruction (crashes in CUDA)
+    $510    $29CF   CALL     $9CF         Call subroutine at $9CF
+    $512    $9054   UNKNOWN  $9054        Unknown 9xxx instruction (crashes in CUDA)
+    $514    $BCF4   JP       V0, $CF4     Jump to $CF4 + V0
+    $516    $6B47   LD       VB, #47      Load $47 into VB
+    $518    $5CC5   UNKNOWN  $5CC5        Unknown 5xxx instruction (crashes in CUDA)
+    $51A    $E95C   UNKNOWN  $E95C        Unknown Exxx instruction (crashes in CUDA)
+    $51C    $61A5   LD       V1, #A5      Load $A5 into V1
+    $51E    $1463   JP       $463         Jump to address $463
+    $520    $9AC9   UNKNOWN  $9AC9        Unknown 9xxx instruction (crashes in CUDA)
+>>> $522    $7552   ADD      V5, #52      Add $52 to V5 (V5 = (V5 + $52) & 0xFF)
+          ^-- Modifies: [5]
+          ^-- Reads: [5]
+    $524    $1FBA   JP       $FBA         Jump to address $FBA
+    $526    $2AA7   CALL     $AA7         Call subroutine at $AA7
+    $528    $D1D0   DRW      V1, VD, #0   Draw 0-byte sprite at (V1, VD), VF = collision
+    $52A    $E11F   UNKNOWN  $E11F        Unknown Exxx instruction (crashes in CUDA)
+    $52C    $68A4   LD       V8, #A4      Load $A4 into V8
+    $52E    $ABB5   LD       I, $BB5      Load $BB5 into I register
+    $530    $FEC2   UNKNOWN  $FEC2        Unknown Fxxx instruction (crashes in CUDA)
+    $532    $888D   UNKNOWN  $888D        Unknown 8xxx instruction (crashes in CUDA)
+    $534    $FD95   UNKNOWN  $FD95        Unknown Fxxx instruction (crashes in CUDA)
+    $536    $D30E   DRW      V3, V0, #E   Draw 14-byte sprite at (V3, V0), VF = collision
+>>> $538    $6599   LD       V5, #99      Load $99 into V5
+          ^-- Modifies: [5]
+    $53A    $7D37   ADD      VD, #37      Add $37 to VD (VD = (VD + $37) & 0xFF)
+    $53C    $4DC5   SNE      VD, #C5      Skip next instruction if VD != $C5
+    $53E    $BA3B   JP       V0, $A3B     Jump to $A3B + V0
+    $540    $1829   JP       $829         Jump to address $829
+    $542    $E6BF   UNKNOWN  $E6BF        Unknown Exxx instruction (crashes in CUDA)
+    $544    $99B7   UNKNOWN  $99B7        Unknown 9xxx instruction (crashes in CUDA)
+    $546    $A409   LD       I, $409      Load $409 into I register
+    $548    $06E1   NOP      $06E1        No operation (ignored by CUDA kernel)
+    $54A    $9BEC   UNKNOWN  $9BEC        Unknown 9xxx instruction (crashes in CUDA)
+    $54C    $A129   LD       I, $129      Load $129 into I register
+    $54E    $2784   CALL     $784         Call subroutine at $784
+    $550    $0A09   NOP      $0A09        No operation (ignored by CUDA kernel)
+    $552    $DD5C   DRW      VD, V5, #C   Draw 12-byte sprite at (VD, V5), VF = collision
+    $554    $EF7A   UNKNOWN  $EF7A        Unknown Exxx instruction (crashes in CUDA)
+    $556    $F486   UNKNOWN  $F486        Unknown Fxxx instruction (crashes in CUDA)
+    $558    $D912   DRW      V9, V1, #2   Draw 2-byte sprite at (V9, V1), VF = collision
+    $55A    $5DA5   UNKNOWN  $5DA5        Unknown 5xxx instruction (crashes in CUDA)
+    $55C    $6A68   LD       VA, #68      Load $68 into VA
+    $55E    $B54A   JP       V0, $54A     Jump to $54A + V0
+    $560    $2A27   CALL     $A27         Call subroutine at $A27
+    $562    $F07A   UNKNOWN  $F07A        Unknown Fxxx instruction (crashes in CUDA)
+    $564    $316A   SE       V1, #6A      Skip next instruction if V1 == $6A
+    $566    $BA57   JP       V0, $A57     Jump to $A57 + V0
+    $568    $D0E3   DRW      V0, VE, #3   Draw 3-byte sprite at (V0, VE), VF = collision
+>>> $56A    $34C6   SE       V4, #C6      Skip next instruction if V4 == $C6
+          ^-- Reads: [4]
+    $56C    $B725   JP       V0, $725     Jump to $725 + V0
+    $56E    $112A   JP       $12A         Jump to address $12A
+>>> $570    $4324   SNE      V3, #24      Skip next instruction if V3 != $24
+          ^-- Reads: [3]
+    $572    $07F6   NOP      $07F6        No operation (ignored by CUDA kernel)
+    $574    $E5B4   UNKNOWN  $E5B4        Unknown Exxx instruction (crashes in CUDA)
+    $576    $21C7   CALL     $1C7         Call subroutine at $1C7
+    $578    $7072   ADD      V0, #72      Add $72 to V0 (V0 = (V0 + $72) & 0xFF)
+    $57A    $032C   NOP      $032C        No operation (ignored by CUDA kernel)
+    $57C    $93AE   UNKNOWN  $93AE        Unknown 9xxx instruction (crashes in CUDA)
+    $57E    $FA0A   LD       VA, K        Wait for key press, store key in VA (HALTS until key)
+    $580    $CCD3   RND      VC, #D3      VC = random() AND $D3
+    $582    $EF1A   UNKNOWN  $EF1A        Unknown Exxx instruction (crashes in CUDA)
+    $584    $B9F4   JP       V0, $9F4     Jump to $9F4 + V0
+    $586    $1D94   JP       $D94         Jump to address $D94
+    $588    $9AD0   SNE      VA, VD       Skip next instruction if VA != VD
+    $58A    $0EA9   NOP      $0EA9        No operation (ignored by CUDA kernel)
+    $58C    $E9D9   UNKNOWN  $E9D9        Unknown Exxx instruction (crashes in CUDA)
+    $58E    $3E7F   SE       VE, #7F      Skip next instruction if VE == $7F
+    $590    $8096   SHR      V0           V0 = V0 >> 1, VF = LSB
+>>> $592    $345D   SE       V4, #5D      Skip next instruction if V4 == $5D
+          ^-- Reads: [4]
+    $594    $78FF   ADD      V8, #FF      Add $FF to V8 (V8 = (V8 + $FF) & 0xFF)
+>>> $596    $466F   SNE      V6, #6F      Skip next instruction if V6 != $6F
+          ^-- Reads: [6]
+    $598    $B61C   JP       V0, $61C     Jump to $61C + V0
+>>> $59A    $472D   SNE      V7, #2D      Skip next instruction if V7 != $2D
+          ^-- Reads: [7]
+    $59C    $3C72   SE       VC, #72      Skip next instruction if VC == $72
+    $59E    $6A5C   LD       VA, #5C      Load $5C into VA
+    $5A0    $6E3F   LD       VE, #3F      Load $3F into VE
+>>> $5A2    $7446   ADD      V4, #46      Add $46 to V4 (V4 = (V4 + $46) & 0xFF)
+          ^-- Modifies: [4]
+          ^-- Reads: [4]
+    $5A4    $E7AB   UNKNOWN  $E7AB        Unknown Exxx instruction (crashes in CUDA)
+    $5A6    $8F15   SUB      VF, V1       VF = (VF - V1) & 0xFF, VF = NOT borrow
+    $5A8    $714A   ADD      V1, #4A      Add $4A to V1 (V1 = (V1 + $4A) & 0xFF)
+    $5AA    $3B05   SE       VB, #05      Skip next instruction if VB == $05
+    $5AC    $EE2C   UNKNOWN  $EE2C        Unknown Exxx instruction (crashes in CUDA)
+    $5AE    $18B3   JP       $8B3         Jump to address $8B3
+    $5B0    $D9F9   DRW      V9, VF, #9   Draw 9-byte sprite at (V9, VF), VF = collision
+    $5B2    $D493   DRW      V4, V9, #3   Draw 3-byte sprite at (V4, V9), VF = collision
+>>> $5B4    $47E8   SNE      V7, #E8      Skip next instruction if V7 != $E8
+          ^-- Reads: [7]
+    $5B6    $9A0B   UNKNOWN  $9A0B        Unknown 9xxx instruction (crashes in CUDA)
+    $5B8    $2E3D   CALL     $E3D         Call subroutine at $E3D
+    $5BA    $F1FC   UNKNOWN  $F1FC        Unknown Fxxx instruction (crashes in CUDA)
+    $5BC    $30CF   SE       V0, #CF      Skip next instruction if V0 == $CF
+>>> $5BE    $83C4   ADD      V3, VC       V3 = (V3 + VC) & 0xFF, VF = carry
+          ^-- Modifies: [3, 15]
+          ^-- Reads: [3, 12]
+    $5C0    $8BBB   UNKNOWN  $8BBB        Unknown 8xxx instruction (crashes in CUDA)
+    $5C2    $F9E6   UNKNOWN  $F9E6        Unknown Fxxx instruction (crashes in CUDA)
+    $5C4    $07E6   NOP      $07E6        No operation (ignored by CUDA kernel)
+>>> $5C6    $76AD   ADD      V6, #AD      Add $AD to V6 (V6 = (V6 + $AD) & 0xFF)
+          ^-- Modifies: [6]
+          ^-- Reads: [6]
+    $5C8    $B2D6   JP       V0, $2D6     Jump to $2D6 + V0
+    $5CA    $93A3   UNKNOWN  $93A3        Unknown 9xxx instruction (crashes in CUDA)
+    $5CC    $05EC   NOP      $05EC        No operation (ignored by CUDA kernel)
+    $5CE    $26C2   CALL     $6C2         Call subroutine at $6C2
+    $5D0    $A78F   LD       I, $78F      Load $78F into I register
+>>> $5D2    $8704   ADD      V7, V0       V7 = (V7 + V0) & 0xFF, VF = carry
+          ^-- Modifies: [7, 15]
+          ^-- Reads: [0, 7]
+    $5D4    $2015   CALL     $015         Call subroutine at $015
+    $5D6    $E1EB   UNKNOWN  $E1EB        Unknown Exxx instruction (crashes in CUDA)
+    $5D8    $260C   CALL     $60C         Call subroutine at $60C
+>>> $5DA    $8765   SUB      V7, V6       V7 = (V7 - V6) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [7, 15]
+          ^-- Reads: [6, 7]
+    $5DC    $71BB   ADD      V1, #BB      Add $BB to V1 (V1 = (V1 + $BB) & 0xFF)
+>>> $5DE    $6770   LD       V7, #70      Load $70 into V7
+          ^-- Modifies: [7]
+    $5E0    $1E42   JP       $E42         Jump to address $E42
+    $5E2    $6852   LD       V8, #52      Load $52 into V8
+    $5E4    $6EA2   LD       VE, #A2      Load $A2 into VE
+>>> $5E6    $7497   ADD      V4, #97      Add $97 to V4 (V4 = (V4 + $97) & 0xFF)
+          ^-- Modifies: [4]
+          ^-- Reads: [4]
+    $5E8    $D041   DRW      V0, V4, #1   Draw 1-byte sprite at (V0, V4), VF = collision
+    $5EA    $5399   UNKNOWN  $5399        Unknown 5xxx instruction (crashes in CUDA)
+    $5EC    $5D8F   UNKNOWN  $5D8F        Unknown 5xxx instruction (crashes in CUDA)
+    $5EE    $B3B2   JP       V0, $3B2     Jump to $3B2 + V0
+>>> $5F0    $362D   SE       V6, #2D      Skip next instruction if V6 == $2D
+          ^-- Reads: [6]
+    $5F2    $F3A1   UNKNOWN  $F3A1        Unknown Fxxx instruction (crashes in CUDA)
+    $5F4    $2A5F   CALL     $A5F         Call subroutine at $A5F
+>>> $5F6    $75D6   ADD      V5, #D6      Add $D6 to V5 (V5 = (V5 + $D6) & 0xFF)
+          ^-- Modifies: [5]
+          ^-- Reads: [5]
+    $5F8    $DB7F   DRW      VB, V7, #F   Draw 15-byte sprite at (VB, V7), VF = collision
+    $5FA    $BD88   JP       V0, $D88     Jump to $D88 + V0
+    $5FC    $1E1B   JP       $E1B         Jump to address $E1B
+    $5FE    $A29E   LD       I, $29E      Load $29E into I register
+    $600    $F9FB   UNKNOWN  $F9FB        Unknown Fxxx instruction (crashes in CUDA)
+    $602    $16B0   JP       $6B0         Jump to address $6B0
+    $604    $49EB   SNE      V9, #EB      Skip next instruction if V9 != $EB
+    $606    $2740   CALL     $740         Call subroutine at $740
+    $608    $9763   UNKNOWN  $9763        Unknown 9xxx instruction (crashes in CUDA)
+    $60A    $5861   UNKNOWN  $5861        Unknown 5xxx instruction (crashes in CUDA)
+    $60C    $E3B1   UNKNOWN  $E3B1        Unknown Exxx instruction (crashes in CUDA)
+    $60E    $97C3   UNKNOWN  $97C3        Unknown 9xxx instruction (crashes in CUDA)
+    $610    $39FC   SE       V9, #FC      Skip next instruction if V9 == $FC
+    $612    $5E9C   UNKNOWN  $5E9C        Unknown 5xxx instruction (crashes in CUDA)
+    $614    $FFD2   UNKNOWN  $FFD2        Unknown Fxxx instruction (crashes in CUDA)
+    $616    $AE05   LD       I, $E05      Load $E05 into I register
+    $618    $490D   SNE      V9, #0D      Skip next instruction if V9 != $0D
+    $61A    $2DBA   CALL     $DBA         Call subroutine at $DBA
+>>> $61C    $C306   RND      V3, #06      V3 = random() AND $06
+          ^-- Modifies: [3]
+    $61E    $AB85   LD       I, $B85      Load $B85 into I register
+    $620    $70D7   ADD      V0, #D7      Add $D7 to V0 (V0 = (V0 + $D7) & 0xFF)
+    $622    $9F7B   UNKNOWN  $9F7B        Unknown 9xxx instruction (crashes in CUDA)
+    $624    $DE96   DRW      VE, V9, #6   Draw 6-byte sprite at (VE, V9), VF = collision
+    $626    $3B92   SE       VB, #92      Skip next instruction if VB == $92
+    $628    $CA79   RND      VA, #79      VA = random() AND $79
+    $62A    $C182   RND      V1, #82      V1 = random() AND $82
+    $62C    $F36B   UNKNOWN  $F36B        Unknown Fxxx instruction (crashes in CUDA)
+>>> $62E    $6449   LD       V4, #49      Load $49 into V4
+          ^-- Modifies: [4]
+>>> $630    $9750   SNE      V7, V5       Skip next instruction if V7 != V5
+          ^-- Reads: [5, 7]
+    $632    $5CB4   UNKNOWN  $5CB4        Unknown 5xxx instruction (crashes in CUDA)
+    $634    $2059   CALL     $059         Call subroutine at $059
+>>> $636    $63AE   LD       V3, #AE      Load $AE into V3
+          ^-- Modifies: [3]
+    $638    $B3CB   JP       V0, $3CB     Jump to $3CB + V0
+    $63A    $2B6A   CALL     $B6A         Call subroutine at $B6A
+    $63C    $1C68   JP       $C68         Jump to address $C68
+    $63E    $7A99   ADD      VA, #99      Add $99 to VA (VA = (VA + $99) & 0xFF)
+    $640    $09FA   NOP      $09FA        No operation (ignored by CUDA kernel)
+    $642    $D160   DRW      V1, V6, #0   Draw 0-byte sprite at (V1, V6), VF = collision
+    $644    $A1EC   LD       I, $1EC      Load $1EC into I register
+    $646    $E500   UNKNOWN  $E500        Unknown Exxx instruction (crashes in CUDA)
+    $648    $0358   NOP      $0358        No operation (ignored by CUDA kernel)
+    $64A    $13B0   JP       $3B0         Jump to address $3B0
+    $64C    $832F   UNKNOWN  $832F        Unknown 8xxx instruction (crashes in CUDA)
+>>> $64E    $6207   LD       V2, #07      Load $07 into V2
+          ^-- Modifies: [2]
+    $650    $960C   UNKNOWN  $960C        Unknown 9xxx instruction (crashes in CUDA)
+    $652    $DAFB   DRW      VA, VF, #B   Draw 11-byte sprite at (VA, VF), VF = collision
+    $654    $E4F6   UNKNOWN  $E4F6        Unknown Exxx instruction (crashes in CUDA)
+    $656    $6C06   LD       VC, #06      Load $06 into VC
+    $658    $0AB2   NOP      $0AB2        No operation (ignored by CUDA kernel)
+    $65A    $5BAA   UNKNOWN  $5BAA        Unknown 5xxx instruction (crashes in CUDA)
+>>> $65C    $7269   ADD      V2, #69      Add $69 to V2 (V2 = (V2 + $69) & 0xFF)
+          ^-- Modifies: [2]
+          ^-- Reads: [2]
+    $65E    $0699   NOP      $0699        No operation (ignored by CUDA kernel)
+    $660    $9B37   UNKNOWN  $9B37        Unknown 9xxx instruction (crashes in CUDA)
+    $662    $141B   JP       $41B         Jump to address $41B
+    $664    $0381   NOP      $0381        No operation (ignored by CUDA kernel)
+    $666    $A52F   LD       I, $52F      Load $52F into I register
+    $668    $9AA2   UNKNOWN  $9AA2        Unknown 9xxx instruction (crashes in CUDA)
+    $66A    $F7B4   UNKNOWN  $F7B4        Unknown Fxxx instruction (crashes in CUDA)
+    $66C    $29B1   CALL     $9B1         Call subroutine at $9B1
+    $66E    $9A8C   UNKNOWN  $9A8C        Unknown 9xxx instruction (crashes in CUDA)
+    $670    $A0D8   LD       I, $0D8      Load $0D8 into I register
+    $672    $912E   UNKNOWN  $912E        Unknown 9xxx instruction (crashes in CUDA)
+>>> $674    $C694   RND      V6, #94      V6 = random() AND $94
+          ^-- Modifies: [6]
+>>> $676    $8F72   AND      VF, V7       VF = VF AND V7, VF = 0
+          ^-- Modifies: [15]
+          ^-- Reads: [7, 15]
+    $678    $EF70   UNKNOWN  $EF70        Unknown Exxx instruction (crashes in CUDA)
+    $67A    $F349   UNKNOWN  $F349        Unknown Fxxx instruction (crashes in CUDA)
+    $67C    $0112   NOP      $0112        No operation (ignored by CUDA kernel)
+>>> $67E    $9D50   SNE      VD, V5       Skip next instruction if VD != V5
+          ^-- Reads: [5, 13]
+    $680    $0020   NOP      $0020        No operation (ignored by CUDA kernel)
+    $682    $DE8B   DRW      VE, V8, #B   Draw 11-byte sprite at (VE, V8), VF = collision
+>>> $684    $72B0   ADD      V2, #B0      Add $B0 to V2 (V2 = (V2 + $B0) & 0xFF)
+          ^-- Modifies: [2]
+          ^-- Reads: [2]
+    $686    $7065   ADD      V0, #65      Add $65 to V0 (V0 = (V0 + $65) & 0xFF)
+    $688    $3138   SE       V1, #38      Skip next instruction if V1 == $38
+    $68A    $1462   JP       $462         Jump to address $462
+    $68C    $30A3   SE       V0, #A3      Skip next instruction if V0 == $A3
+    $68E    $407D   SNE      V0, #7D      Skip next instruction if V0 != $7D
+    $690    $6F10   LD       VF, #10      Load $10 into VF
+    $692    $5424   UNKNOWN  $5424        Unknown 5xxx instruction (crashes in CUDA)
+    $694    $484D   SNE      V8, #4D      Skip next instruction if V8 != $4D
+>>> $696    $67ED   LD       V7, #ED      Load $ED into V7
+          ^-- Modifies: [7]
+>>> $698    $C254   RND      V2, #54      V2 = random() AND $54
+          ^-- Modifies: [2]
+    $69A    $ED35   UNKNOWN  $ED35        Unknown Exxx instruction (crashes in CUDA)
+>>> $69C    $4797   SNE      V7, #97      Skip next instruction if V7 != $97
+          ^-- Reads: [7]
+    $69E    $40F1   SNE      V0, #F1      Skip next instruction if V0 != $F1
+    $6A0    $9E02   UNKNOWN  $9E02        Unknown 9xxx instruction (crashes in CUDA)
+    $6A2    $8A93   XOR      VA, V9       VA = VA XOR V9, VF = 0
+    $6A4    $50A4   UNKNOWN  $50A4        Unknown 5xxx instruction (crashes in CUDA)
+    $6A6    $27FA   CALL     $7FA         Call subroutine at $7FA
+    $6A8    $9128   UNKNOWN  $9128        Unknown 9xxx instruction (crashes in CUDA)
+>>> $6AA    $447A   SNE      V4, #7A      Skip next instruction if V4 != $7A
+          ^-- Reads: [4]
+    $6AC    $220D   CALL     $20D         Call subroutine at $20D
+>>> $6AE    $C498   RND      V4, #98      V4 = random() AND $98
+          ^-- Modifies: [4]
+    $6B0    $0776   NOP      $0776        No operation (ignored by CUDA kernel)
+    $6B2    $965D   UNKNOWN  $965D        Unknown 9xxx instruction (crashes in CUDA)
+    $6B4    $286E   CALL     $86E         Call subroutine at $86E
+>>> $6B6    $8054   ADD      V0, V5       V0 = (V0 + V5) & 0xFF, VF = carry
+          ^-- Modifies: [0, 15]
+          ^-- Reads: [0, 5]
+    $6B8    $02F9   NOP      $02F9        No operation (ignored by CUDA kernel)
+    $6BA    $79EA   ADD      V9, #EA      Add $EA to V9 (V9 = (V9 + $EA) & 0xFF)
+    $6BC    $6FFB   LD       VF, #FB      Load $FB into VF
+    $6BE    $0BCD   NOP      $0BCD        No operation (ignored by CUDA kernel)
+    $6C0    $CE9E   RND      VE, #9E      VE = random() AND $9E
+    $6C2    $BB14   JP       V0, $B14     Jump to $B14 + V0
+    $6C4    $BE18   JP       V0, $E18     Jump to $E18 + V0
+    $6C6    $6EE0   LD       VE, #E0      Load $E0 into VE
+    $6C8    $6982   LD       V9, #82      Load $82 into V9
+    $6CA    $2DD3   CALL     $DD3         Call subroutine at $DD3
+    $6CC    $27A4   CALL     $7A4         Call subroutine at $7A4
+    $6CE    $C996   RND      V9, #96      V9 = random() AND $96
+    $6D0    $C1E6   RND      V1, #E6      V1 = random() AND $E6
+    $6D2    $8EA0   LD       VE, VA       Load VA into VE
+    $6D4    $2046   CALL     $046         Call subroutine at $046
+    $6D6    $31ED   SE       V1, #ED      Skip next instruction if V1 == $ED
+    $6D8    $A6E5   LD       I, $6E5      Load $6E5 into I register
+    $6DA    $FAAE   UNKNOWN  $FAAE        Unknown Fxxx instruction (crashes in CUDA)
+    $6DC    $04F6   NOP      $04F6        No operation (ignored by CUDA kernel)
+    $6DE    $3062   SE       V0, #62      Skip next instruction if V0 == $62
+    $6E0    $9AE7   UNKNOWN  $9AE7        Unknown 9xxx instruction (crashes in CUDA)
+    $6E2    $93C3   UNKNOWN  $93C3        Unknown 9xxx instruction (crashes in CUDA)
+    $6E4    $15C4   JP       $5C4         Jump to address $5C4
+    $6E6    $AB16   LD       I, $B16      Load $B16 into I register
+    $6E8    $F5F8   UNKNOWN  $F5F8        Unknown Fxxx instruction (crashes in CUDA)
+    $6EA    $07BD   NOP      $07BD        No operation (ignored by CUDA kernel)
+    $6EC    $57B5   UNKNOWN  $57B5        Unknown 5xxx instruction (crashes in CUDA)
+>>> $6EE    $4463   SNE      V4, #63      Skip next instruction if V4 != $63
+          ^-- Reads: [4]
+    $6F0    $AC1C   LD       I, $C1C      Load $C1C into I register
+    $6F2    $9DAD   UNKNOWN  $9DAD        Unknown 9xxx instruction (crashes in CUDA)
+    $6F4    $5C1E   UNKNOWN  $5C1E        Unknown 5xxx instruction (crashes in CUDA)
+    $6F6    $8C3D   UNKNOWN  $8C3D        Unknown 8xxx instruction (crashes in CUDA)
+    $6F8    $4CD6   SNE      VC, #D6      Skip next instruction if VC != $D6
+    $6FA    $2F58   CALL     $F58         Call subroutine at $F58
+    $6FC    $C8CF   RND      V8, #CF      V8 = random() AND $CF
+>>> $6FE    $6708   LD       V7, #08      Load $08 into V7
+          ^-- Modifies: [7]
+    $700    $D8C3   DRW      V8, VC, #3   Draw 3-byte sprite at (V8, VC), VF = collision
+    $702    $AB68   LD       I, $B68      Load $B68 into I register
+    $704    $A975   LD       I, $975      Load $975 into I register
+    $706    $545F   UNKNOWN  $545F        Unknown 5xxx instruction (crashes in CUDA)
+    $708    $7DC2   ADD      VD, #C2      Add $C2 to VD (VD = (VD + $C2) & 0xFF)
+    $70A    $847D   UNKNOWN  $847D        Unknown 8xxx instruction (crashes in CUDA)
+    $70C    $E8DD   UNKNOWN  $E8DD        Unknown Exxx instruction (crashes in CUDA)
+    $70E    $607B   LD       V0, #7B      Load $7B into V0
+    $710    $D513   DRW      V5, V1, #3   Draw 3-byte sprite at (V5, V1), VF = collision
+    $712    $D16E   DRW      V1, V6, #E   Draw 14-byte sprite at (V1, V6), VF = collision
+    $714    $98E5   UNKNOWN  $98E5        Unknown 9xxx instruction (crashes in CUDA)
+    $716    $0CC7   NOP      $0CC7        No operation (ignored by CUDA kernel)
+    $718    $E3D3   UNKNOWN  $E3D3        Unknown Exxx instruction (crashes in CUDA)
+>>> $71A    $7783   ADD      V7, #83      Add $83 to V7 (V7 = (V7 + $83) & 0xFF)
+          ^-- Modifies: [7]
+          ^-- Reads: [7]
+    $71C    $9002   UNKNOWN  $9002        Unknown 9xxx instruction (crashes in CUDA)
+    $71E    $5775   UNKNOWN  $5775        Unknown 5xxx instruction (crashes in CUDA)
+    $720    $AB09   LD       I, $B09      Load $B09 into I register
+    $722    $E61C   UNKNOWN  $E61C        Unknown Exxx instruction (crashes in CUDA)
+    $724    $1C0C   JP       $C0C         Jump to address $C0C
+    $726    $0FFA   NOP      $0FFA        No operation (ignored by CUDA kernel)
+>>> $728    $740A   ADD      V4, #0A      Add $0A to V4 (V4 = (V4 + $0A) & 0xFF)
+          ^-- Modifies: [4]
+          ^-- Reads: [4]
+    $72A    $FAD8   UNKNOWN  $FAD8        Unknown Fxxx instruction (crashes in CUDA)
+    $72C    $2446   CALL     $446         Call subroutine at $446
+    $72E    $812E   SHL      V1           V1 = (V1 << 1) & 0xFF, VF = MSB
+    $730    $A9F8   LD       I, $9F8      Load $9F8 into I register
+>>> $732    $8C47   SUBN     VC, V4       VC = (V4 - VC) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [12, 15]
+          ^-- Reads: [4, 12]
+    $734    $8A5F   UNKNOWN  $8A5F        Unknown 8xxx instruction (crashes in CUDA)
+    $736    $D54F   DRW      V5, V4, #F   Draw 15-byte sprite at (V5, V4), VF = collision
+>>> $738    $43EF   SNE      V3, #EF      Skip next instruction if V3 != $EF
+          ^-- Reads: [3]
+    $73A    $AD1B   LD       I, $D1B      Load $D1B into I register
+    $73C    $2BA3   CALL     $BA3         Call subroutine at $BA3
+    $73E    $4E20   SNE      VE, #20      Skip next instruction if VE != $20
+    $740    $8B4B   UNKNOWN  $8B4B        Unknown 8xxx instruction (crashes in CUDA)
+    $742    $2D50   CALL     $D50         Call subroutine at $D50
+    $744    $FBD1   UNKNOWN  $FBD1        Unknown Fxxx instruction (crashes in CUDA)
+    $746    $591E   UNKNOWN  $591E        Unknown 5xxx instruction (crashes in CUDA)
+    $748    $6851   LD       V8, #51      Load $51 into V8
+>>> $74A    $6736   LD       V7, #36      Load $36 into V7
+          ^-- Modifies: [7]
+>>> $74C    $C59C   RND      V5, #9C      V5 = random() AND $9C
+          ^-- Modifies: [5]
+    $74E    $B013   JP       V0, $013     Jump to $013 + V0
+    $750    $B97B   JP       V0, $97B     Jump to $97B + V0
+    $752    $CA99   RND      VA, #99      VA = random() AND $99
+>>> $754    $376E   SE       V7, #6E      Skip next instruction if V7 == $6E
+          ^-- Reads: [7]
+    $756    $A7C9   LD       I, $7C9      Load $7C9 into I register
+    $758    $4C60   SNE      VC, #60      Skip next instruction if VC != $60
+>>> $75A    $67FF   LD       V7, #FF      Load $FF into V7
+          ^-- Modifies: [7]
+>>> $75C    $C7B3   RND      V7, #B3      V7 = random() AND $B3
+          ^-- Modifies: [7]
+    $75E    $91EE   UNKNOWN  $91EE        Unknown 9xxx instruction (crashes in CUDA)
+    $760    $23C2   CALL     $3C2         Call subroutine at $3C2
+    $762    $5612   UNKNOWN  $5612        Unknown 5xxx instruction (crashes in CUDA)
+>>> $764    $C321   RND      V3, #21      V3 = random() AND $21
+          ^-- Modifies: [3]
+>>> $766    $8A40   LD       VA, V4       Load V4 into VA
+          ^-- Modifies: [10]
+          ^-- Reads: [4]
+    $768    $A082   LD       I, $082      Load $082 into I register
+    $76A    $D7EE   DRW      V7, VE, #E   Draw 14-byte sprite at (V7, VE), VF = collision
+    $76C    $2E59   CALL     $E59         Call subroutine at $E59
+    $76E    $1B6A   JP       $B6A         Jump to address $B6A
+>>> $770    $8447   SUBN     V4, V4       V4 = (V4 - V4) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [4, 15]
+          ^-- Reads: [4]
+    $772    $5691   UNKNOWN  $5691        Unknown 5xxx instruction (crashes in CUDA)
+    $774    $DEBB   DRW      VE, VB, #B   Draw 11-byte sprite at (VE, VB), VF = collision
+    $776    $F5D5   UNKNOWN  $F5D5        Unknown Fxxx instruction (crashes in CUDA)
+    $778    $CE3F   RND      VE, #3F      VE = random() AND $3F
+    $77A    $BD8E   JP       V0, $D8E     Jump to $D8E + V0
+    $77C    $E632   UNKNOWN  $E632        Unknown Exxx instruction (crashes in CUDA)
+    $77E    $4C69   SNE      VC, #69      Skip next instruction if VC != $69
+    $780    $ACFB   LD       I, $CFB      Load $CFB into I register
+    $782    $ED2F   UNKNOWN  $ED2F        Unknown Exxx instruction (crashes in CUDA)
+    $784    $9C57   UNKNOWN  $9C57        Unknown 9xxx instruction (crashes in CUDA)
+    $786    $80CE   SHL      V0           V0 = (V0 << 1) & 0xFF, VF = MSB
+    $788    $2FF8   CALL     $FF8         Call subroutine at $FF8
+    $78A    $838D   UNKNOWN  $838D        Unknown 8xxx instruction (crashes in CUDA)
+    $78C    $5674   UNKNOWN  $5674        Unknown 5xxx instruction (crashes in CUDA)
+    $78E    $58F1   UNKNOWN  $58F1        Unknown 5xxx instruction (crashes in CUDA)
+    $790    $1EFA   JP       $EFA         Jump to address $EFA
+    $792    $D047   DRW      V0, V4, #7   Draw 7-byte sprite at (V0, V4), VF = collision
+    $794    $A053   LD       I, $053      Load $053 into I register
+    $796    $D905   DRW      V9, V0, #5   Draw 5-byte sprite at (V9, V0), VF = collision
+    $798    $F6AC   UNKNOWN  $F6AC        Unknown Fxxx instruction (crashes in CUDA)
+    $79A    $E5B4   UNKNOWN  $E5B4        Unknown Exxx instruction (crashes in CUDA)
+    $79C    $AEC0   LD       I, $EC0      Load $EC0 into I register
+    $79E    $1D62   JP       $D62         Jump to address $D62
+    $7A0    $182A   JP       $82A         Jump to address $82A
+>>> $7A2    $65E6   LD       V5, #E6      Load $E6 into V5
+          ^-- Modifies: [5]
+    $7A4    $D04C   DRW      V0, V4, #C   Draw 12-byte sprite at (V0, V4), VF = collision
+    $7A6    $D242   DRW      V2, V4, #2   Draw 2-byte sprite at (V2, V4), VF = collision
+    $7A8    $1CE4   JP       $CE4         Jump to address $CE4
+    $7AA    $1947   JP       $947         Jump to address $947
+    $7AC    $15DE   JP       $5DE         Jump to address $5DE
+    $7AE    $C863   RND      V8, #63      V8 = random() AND $63
+    $7B0    $AD19   LD       I, $D19      Load $D19 into I register
+>>> $7B2    $7777   ADD      V7, #77      Add $77 to V7 (V7 = (V7 + $77) & 0xFF)
+          ^-- Modifies: [7]
+          ^-- Reads: [7]
+    $7B4    $ECD7   UNKNOWN  $ECD7        Unknown Exxx instruction (crashes in CUDA)
+    $7B6    $DA12   DRW      VA, V1, #2   Draw 2-byte sprite at (VA, V1), VF = collision
+    $7B8    $C820   RND      V8, #20      V8 = random() AND $20
+    $7BA    $3F2E   SE       VF, #2E      Skip next instruction if VF == $2E
+    $7BC    $EAF6   UNKNOWN  $EAF6        Unknown Exxx instruction (crashes in CUDA)
+    $7BE    $A782   LD       I, $782      Load $782 into I register
+    $7C0    $1015   JP       $015         Jump to address $015
+    $7C2    $7E01   ADD      VE, #01      Add $01 to VE (VE = (VE + $01) & 0xFF)
+    $7C4    $7D75   ADD      VD, #75      Add $75 to VD (VD = (VD + $75) & 0xFF)
+>>> $7C6    $FA55   LD       [I], VA      Store V0-VA at [I], then I += 11
+          ^-- Reads: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    $7C8    $AB7F   LD       I, $B7F      Load $B7F into I register
+    $7CA    $8B11   OR       VB, V1       VB = VB OR V1, VF = 0
+    $7CC    $F14B   UNKNOWN  $F14B        Unknown Fxxx instruction (crashes in CUDA)
+    $7CE    $7AF1   ADD      VA, #F1      Add $F1 to VA (VA = (VA + $F1) & 0xFF)
+    $7D0    $13AC   JP       $3AC         Jump to address $3AC
+>>> $7D2    $74D8   ADD      V4, #D8      Add $D8 to V4 (V4 = (V4 + $D8) & 0xFF)
+          ^-- Modifies: [4]
+          ^-- Reads: [4]
+    $7D4    $5661   UNKNOWN  $5661        Unknown 5xxx instruction (crashes in CUDA)
+    $7D6    $C08E   RND      V0, #8E      V0 = random() AND $8E
+    $7D8    $ABE5   LD       I, $BE5      Load $BE5 into I register
+    $7DA    $0F75   NOP      $0F75        No operation (ignored by CUDA kernel)
+    $7DC    $FA4A   UNKNOWN  $FA4A        Unknown Fxxx instruction (crashes in CUDA)
+    $7DE    $563D   UNKNOWN  $563D        Unknown 5xxx instruction (crashes in CUDA)
+    $7E0    $9B4D   UNKNOWN  $9B4D        Unknown 9xxx instruction (crashes in CUDA)
+    $7E2    $30EA   SE       V0, #EA      Skip next instruction if V0 == $EA
+    $7E4    $BD92   JP       V0, $D92     Jump to $D92 + V0
+    $7E6    $FCD4   UNKNOWN  $FCD4        Unknown Fxxx instruction (crashes in CUDA)
+    $7E8    $DD37   DRW      VD, V3, #7   Draw 7-byte sprite at (VD, V3), VF = collision
+    $7EA    $EFCB   UNKNOWN  $EFCB        Unknown Exxx instruction (crashes in CUDA)
+    $7EC    $02E5   NOP      $02E5        No operation (ignored by CUDA kernel)
+    $7EE    $9D2E   UNKNOWN  $9D2E        Unknown 9xxx instruction (crashes in CUDA)
+    $7F0    $CC1A   RND      VC, #1A      VC = random() AND $1A
+    $7F2    $EC5D   UNKNOWN  $EC5D        Unknown Exxx instruction (crashes in CUDA)
+    $7F4    $E7CC   UNKNOWN  $E7CC        Unknown Exxx instruction (crashes in CUDA)
+    $7F6    $2B5E   CALL     $B5E         Call subroutine at $B5E
+    $7F8    $5F89   UNKNOWN  $5F89        Unknown 5xxx instruction (crashes in CUDA)
+>>> $7FA    $370B   SE       V7, #0B      Skip next instruction if V7 == $0B
+          ^-- Reads: [7]
+>>> $7FC    $44DE   SNE      V4, #DE      Skip next instruction if V4 != $DE
+          ^-- Reads: [4]
+    $7FE    $0EBF   NOP      $0EBF        No operation (ignored by CUDA kernel)
+    $800    $E3CB   UNKNOWN  $E3CB        Unknown Exxx instruction (crashes in CUDA)
+    $802    $5138   UNKNOWN  $5138        Unknown 5xxx instruction (crashes in CUDA)
+    $804    $58E8   UNKNOWN  $58E8        Unknown 5xxx instruction (crashes in CUDA)
+    $806    $2573   CALL     $573         Call subroutine at $573
+    $808    $3896   SE       V8, #96      Skip next instruction if V8 == $96
+    $80A    $B5C6   JP       V0, $5C6     Jump to $5C6 + V0
+    $80C    $02A8   NOP      $02A8        No operation (ignored by CUDA kernel)
+    $80E    $A580   LD       I, $580      Load $580 into I register
+    $810    $9F8B   UNKNOWN  $9F8B        Unknown 9xxx instruction (crashes in CUDA)
+>>> $812    $82E1   OR       V2, VE       V2 = V2 OR VE, VF = 0
+          ^-- Modifies: [2, 15]
+          ^-- Reads: [2, 14]
+    $814    $FF46   UNKNOWN  $FF46        Unknown Fxxx instruction (crashes in CUDA)
+    $816    $5969   UNKNOWN  $5969        Unknown 5xxx instruction (crashes in CUDA)
+    $818    $F72C   UNKNOWN  $F72C        Unknown Fxxx instruction (crashes in CUDA)
+    $81A    $254C   CALL     $54C         Call subroutine at $54C
+    $81C    $B769   JP       V0, $769     Jump to $769 + V0
+    $81E    $2207   CALL     $207         Call subroutine at $207
+    $820    $605E   LD       V0, #5E      Load $5E into V0
+    $822    $4863   SNE      V8, #63      Skip next instruction if V8 != $63
+    $824    $0984   NOP      $0984        No operation (ignored by CUDA kernel)
+    $826    $22E9   CALL     $2E9         Call subroutine at $2E9
+>>> $828    $8741   OR       V7, V4       V7 = V7 OR V4, VF = 0
+          ^-- Modifies: [7, 15]
+          ^-- Reads: [4, 7]
+    $82A    $3D14   SE       VD, #14      Skip next instruction if VD == $14
+    $82C    $C101   RND      V1, #01      V1 = random() AND $01
+>>> $82E    $73DB   ADD      V3, #DB      Add $DB to V3 (V3 = (V3 + $DB) & 0xFF)
+          ^-- Modifies: [3]
+          ^-- Reads: [3]
+>>> $830    $753C   ADD      V5, #3C      Add $3C to V5 (V5 = (V5 + $3C) & 0xFF)
+          ^-- Modifies: [5]
+          ^-- Reads: [5]
+    $832    $A639   LD       I, $639      Load $639 into I register
+    $834    $268B   CALL     $68B         Call subroutine at $68B
+>>> $836    $77B0   ADD      V7, #B0      Add $B0 to V7 (V7 = (V7 + $B0) & 0xFF)
+          ^-- Modifies: [7]
+          ^-- Reads: [7]
+>>> $838    $C36B   RND      V3, #6B      V3 = random() AND $6B
+          ^-- Modifies: [3]
+    $83A    $F485   UNKNOWN  $F485        Unknown Fxxx instruction (crashes in CUDA)
+    $83C    $DD43   DRW      VD, V4, #3   Draw 3-byte sprite at (VD, V4), VF = collision
+>>> $83E    $4221   SNE      V2, #21      Skip next instruction if V2 != $21
+          ^-- Reads: [2]
+    $840    $1453   JP       $453         Jump to address $453
+    $842    $5998   UNKNOWN  $5998        Unknown 5xxx instruction (crashes in CUDA)
+    $844    $6B38   LD       VB, #38      Load $38 into VB
+    $846    $ED82   UNKNOWN  $ED82        Unknown Exxx instruction (crashes in CUDA)
+>>> $848    $7336   ADD      V3, #36      Add $36 to V3 (V3 = (V3 + $36) & 0xFF)
+          ^-- Modifies: [3]
+          ^-- Reads: [3]
+    $84A    $BA4A   JP       V0, $A4A     Jump to $A4A + V0
+    $84C    $09E5   NOP      $09E5        No operation (ignored by CUDA kernel)
+>>> $84E    $3204   SE       V2, #04      Skip next instruction if V2 == $04
+          ^-- Reads: [2]
+    $850    $C143   RND      V1, #43      V1 = random() AND $43
+    $852    $C8DA   RND      V8, #DA      V8 = random() AND $DA
+    $854    $7968   ADD      V9, #68      Add $68 to V9 (V9 = (V9 + $68) & 0xFF)
+    $856    $2357   CALL     $357         Call subroutine at $357
+    $858    $6009   LD       V0, #09      Load $09 into V0
+    $85A    $ADBB   LD       I, $DBB      Load $DBB into I register
+    $85C    $8D66   SHR      VD           VD = VD >> 1, VF = LSB
+    $85E    $CD59   RND      VD, #59      VD = random() AND $59
+    $860    $16E2   JP       $6E2         Jump to address $6E2
+    $862    $40FD   SNE      V0, #FD      Skip next instruction if V0 != $FD
+    $864    $10EA   JP       $0EA         Jump to address $0EA
+    $866    $55E4   UNKNOWN  $55E4        Unknown 5xxx instruction (crashes in CUDA)
+>>> $868    $C631   RND      V6, #31      V6 = random() AND $31
+          ^-- Modifies: [6]
+    $86A    $5529   UNKNOWN  $5529        Unknown 5xxx instruction (crashes in CUDA)
+>>> $86C    $8037   SUBN     V0, V3       V0 = (V3 - V0) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [0, 15]
+          ^-- Reads: [0, 3]
+    $86E    $2F2F   CALL     $F2F         Call subroutine at $F2F
+    $870    $C9EA   RND      V9, #EA      V9 = random() AND $EA
+    $872    $7CD6   ADD      VC, #D6      Add $D6 to VC (VC = (VC + $D6) & 0xFF)
+    $874    $C10B   RND      V1, #0B      V1 = random() AND $0B
+    $876    $8D17   SUBN     VD, V1       VD = (V1 - VD) & 0xFF, VF = NOT borrow
+    $878    $3A3B   SE       VA, #3B      Skip next instruction if VA == $3B
+    $87A    $1B52   JP       $B52         Jump to address $B52
+    $87C    $D178   DRW      V1, V7, #8   Draw 8-byte sprite at (V1, V7), VF = collision
+    $87E    $F81A   UNKNOWN  $F81A        Unknown Fxxx instruction (crashes in CUDA)
+    $880    $4D5A   SNE      VD, #5A      Skip next instruction if VD != $5A
+>>> $882    $6256   LD       V2, #56      Load $56 into V2
+          ^-- Modifies: [2]
+    $884    $0B58   NOP      $0B58        No operation (ignored by CUDA kernel)
+>>> $886    $86A4   ADD      V6, VA       V6 = (V6 + VA) & 0xFF, VF = carry
+          ^-- Modifies: [6, 15]
+          ^-- Reads: [6, 10]
+>>> $888    $76F8   ADD      V6, #F8      Add $F8 to V6 (V6 = (V6 + $F8) & 0xFF)
+          ^-- Modifies: [6]
+          ^-- Reads: [6]
+    $88A    $9204   UNKNOWN  $9204        Unknown 9xxx instruction (crashes in CUDA)
+    $88C    $A829   LD       I, $829      Load $829 into I register
+>>> $88E    $355D   SE       V5, #5D      Skip next instruction if V5 == $5D
+          ^-- Reads: [5]
+>>> $890    $37A4   SE       V7, #A4      Skip next instruction if V7 == $A4
+          ^-- Reads: [7]
+    $892    $100A   JP       $00A         Jump to address $00A
+    $894    $2B47   CALL     $B47         Call subroutine at $B47
+    $896    $9F44   UNKNOWN  $9F44        Unknown 9xxx instruction (crashes in CUDA)
+>>> $898    $8927   SUBN     V9, V2       V9 = (V2 - V9) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [9, 15]
+          ^-- Reads: [2, 9]
+    $89A    $1EA7   JP       $EA7         Jump to address $EA7
+    $89C    $D691   DRW      V6, V9, #1   Draw 1-byte sprite at (V6, V9), VF = collision
+    $89E    $4ABD   SNE      VA, #BD      Skip next instruction if VA != $BD
+    $8A0    $5A11   UNKNOWN  $5A11        Unknown 5xxx instruction (crashes in CUDA)
+    $8A2    $EDB7   UNKNOWN  $EDB7        Unknown Exxx instruction (crashes in CUDA)
+    $8A4    $4E91   SNE      VE, #91      Skip next instruction if VE != $91
+>>> $8A6    $4715   SNE      V7, #15      Skip next instruction if V7 != $15
+          ^-- Reads: [7]
+    $8A8    $BAE3   JP       V0, $AE3     Jump to $AE3 + V0
+    $8AA    $6890   LD       V8, #90      Load $90 into V8
+    $8AC    $4857   SNE      V8, #57      Skip next instruction if V8 != $57
+    $8AE    $AFA0   LD       I, $FA0      Load $FA0 into I register
+    $8B0    $F9FC   UNKNOWN  $F9FC        Unknown Fxxx instruction (crashes in CUDA)
+    $8B2    $1FB2   JP       $FB2         Jump to address $FB2
+    $8B4    $14C7   JP       $4C7         Jump to address $4C7
+    $8B6    $784B   ADD      V8, #4B      Add $4B to V8 (V8 = (V8 + $4B) & 0xFF)
+    $8B8    $AE96   LD       I, $E96      Load $E96 into I register
+    $8BA    $7DB9   ADD      VD, #B9      Add $B9 to VD (VD = (VD + $B9) & 0xFF)
+    $8BC    $DA42   DRW      VA, V4, #2   Draw 2-byte sprite at (VA, V4), VF = collision
+    $8BE    $B557   JP       V0, $557     Jump to $557 + V0
+    $8C0    $EE0B   UNKNOWN  $EE0B        Unknown Exxx instruction (crashes in CUDA)
+>>> $8C2    $4741   SNE      V7, #41      Skip next instruction if V7 != $41
+          ^-- Reads: [7]
+    $8C4    $CE04   RND      VE, #04      VE = random() AND $04
+    $8C6    $CF6F   RND      VF, #6F      VF = random() AND $6F
+>>> $8C8    $622A   LD       V2, #2A      Load $2A into V2
+          ^-- Modifies: [2]
+    $8CA    $DD27   DRW      VD, V2, #7   Draw 7-byte sprite at (VD, V2), VF = collision
+    $8CC    $1461   JP       $461         Jump to address $461
+    $8CE    $9AF9   UNKNOWN  $9AF9        Unknown 9xxx instruction (crashes in CUDA)
+    $8D0    $26F4   CALL     $6F4         Call subroutine at $6F4
+    $8D2    $3EBC   SE       VE, #BC      Skip next instruction if VE == $BC
+    $8D4    $6B49   LD       VB, #49      Load $49 into VB
+    $8D6    $0FCC   NOP      $0FCC        No operation (ignored by CUDA kernel)
+    $8D8    $8DB8   UNKNOWN  $8DB8        Unknown 8xxx instruction (crashes in CUDA)
+    $8DA    $A64D   LD       I, $64D      Load $64D into I register
+    $8DC    $E600   UNKNOWN  $E600        Unknown Exxx instruction (crashes in CUDA)
+    $8DE    $B682   JP       V0, $682     Jump to $682 + V0
+    $8E0    $792B   ADD      V9, #2B      Add $2B to V9 (V9 = (V9 + $2B) & 0xFF)
+    $8E2    $095B   NOP      $095B        No operation (ignored by CUDA kernel)
+>>> $8E4    $42C4   SNE      V2, #C4      Skip next instruction if V2 != $C4
+          ^-- Reads: [2]
+    $8E6    $9813   UNKNOWN  $9813        Unknown 9xxx instruction (crashes in CUDA)
+    $8E8    $8AD0   LD       VA, VD       Load VD into VA
+>>> $8EA    $730B   ADD      V3, #0B      Add $0B to V3 (V3 = (V3 + $0B) & 0xFF)
+          ^-- Modifies: [3]
+          ^-- Reads: [3]
+    $8EC    $A90D   LD       I, $90D      Load $90D into I register
+    $8EE    $5511   UNKNOWN  $5511        Unknown 5xxx instruction (crashes in CUDA)
+    $8F0    $A30B   LD       I, $30B      Load $30B into I register
+    $8F2    $8C0D   UNKNOWN  $8C0D        Unknown 8xxx instruction (crashes in CUDA)
+>>> $8F4    $365F   SE       V6, #5F      Skip next instruction if V6 == $5F
+          ^-- Reads: [6]
+    $8F6    $9099   UNKNOWN  $9099        Unknown 9xxx instruction (crashes in CUDA)
+    $8F8    $9864   UNKNOWN  $9864        Unknown 9xxx instruction (crashes in CUDA)
+    $8FA    $DCE4   DRW      VC, VE, #4   Draw 4-byte sprite at (VC, VE), VF = collision
+    $8FC    $A18F   LD       I, $18F      Load $18F into I register
+    $8FE    $87B9   UNKNOWN  $87B9        Unknown 8xxx instruction (crashes in CUDA)
+    $900    $52A6   UNKNOWN  $52A6        Unknown 5xxx instruction (crashes in CUDA)
+    $902    $69F0   LD       V9, #F0      Load $F0 into V9
+    $904    $C96B   RND      V9, #6B      V9 = random() AND $6B
+    $906    $9E12   UNKNOWN  $9E12        Unknown 9xxx instruction (crashes in CUDA)
+    $908    $9639   UNKNOWN  $9639        Unknown 9xxx instruction (crashes in CUDA)
+    $90A    $281A   CALL     $81A         Call subroutine at $81A
+    $90C    $61FD   LD       V1, #FD      Load $FD into V1
+>>> $90E    $362F   SE       V6, #2F      Skip next instruction if V6 == $2F
+          ^-- Reads: [6]
+>>> $910    $472E   SNE      V7, #2E      Skip next instruction if V7 != $2E
+          ^-- Reads: [7]
+    $912    $C91D   RND      V9, #1D      V9 = random() AND $1D
+    $914    $C8BC   RND      V8, #BC      V8 = random() AND $BC
+    $916    $3F98   SE       VF, #98      Skip next instruction if VF == $98
+>>> $918    $652B   LD       V5, #2B      Load $2B into V5
+          ^-- Modifies: [5]
+    $91A    $E8D7   UNKNOWN  $E8D7        Unknown Exxx instruction (crashes in CUDA)
+    $91C    $EB2B   UNKNOWN  $EB2B        Unknown Exxx instruction (crashes in CUDA)
+    $91E    $B911   JP       V0, $911     Jump to $911 + V0
+    $920    $E8C8   UNKNOWN  $E8C8        Unknown Exxx instruction (crashes in CUDA)
+>>> $922    $3211   SE       V2, #11      Skip next instruction if V2 == $11
+          ^-- Reads: [2]
+>>> $924    $651D   LD       V5, #1D      Load $1D into V5
+          ^-- Modifies: [5]
+>>> $926    $77C0   ADD      V7, #C0      Add $C0 to V7 (V7 = (V7 + $C0) & 0xFF)
+          ^-- Modifies: [7]
+          ^-- Reads: [7]
+    $928    $4858   SNE      V8, #58      Skip next instruction if V8 != $58
+    $92A    $407A   SNE      V0, #7A      Skip next instruction if V0 != $7A
+>>> $92C    $67EB   LD       V7, #EB      Load $EB into V7
+          ^-- Modifies: [7]
+    $92E    $2C7C   CALL     $C7C         Call subroutine at $C7C
+    $930    $E30F   UNKNOWN  $E30F        Unknown Exxx instruction (crashes in CUDA)
+    $932    $59ED   UNKNOWN  $59ED        Unknown 5xxx instruction (crashes in CUDA)
+    $934    $CAD0   RND      VA, #D0      VA = random() AND $D0
+>>> $936    $63A8   LD       V3, #A8      Load $A8 into V3
+          ^-- Modifies: [3]
+    $938    $C8ED   RND      V8, #ED      V8 = random() AND $ED
+    $93A    $137A   JP       $37A         Jump to address $37A
+    $93C    $49DE   SNE      V9, #DE      Skip next instruction if V9 != $DE
+    $93E    $B0DA   JP       V0, $0DA     Jump to $0DA + V0
+    $940    $48AA   SNE      V8, #AA      Skip next instruction if V8 != $AA
+>>> $942    $62C6   LD       V2, #C6      Load $C6 into V2
+          ^-- Modifies: [2]
+    $944    $DC91   DRW      VC, V9, #1   Draw 1-byte sprite at (VC, V9), VF = collision
+    $946    $403B   SNE      V0, #3B      Skip next instruction if V0 != $3B
+    $948    $B962   JP       V0, $962     Jump to $962 + V0
+    $94A    $529F   UNKNOWN  $529F        Unknown 5xxx instruction (crashes in CUDA)
+>>> $94C    $3325   SE       V3, #25      Skip next instruction if V3 == $25
+          ^-- Reads: [3]
+    $94E    $41C5   SNE      V1, #C5      Skip next instruction if V1 != $C5
+    $950    $2BD6   CALL     $BD6         Call subroutine at $BD6
+    $952    $03EE   NOP      $03EE        No operation (ignored by CUDA kernel)
+    $954    $1445   JP       $445         Jump to address $445
+    $956    $9C59   UNKNOWN  $9C59        Unknown 9xxx instruction (crashes in CUDA)
+    $958    $B494   JP       V0, $494     Jump to $494 + V0
+    $95A    $AEFF   LD       I, $EFF      Load $EFF into I register
+>>> $95C    $479A   SNE      V7, #9A      Skip next instruction if V7 != $9A
+          ^-- Reads: [7]
+    $95E    $6F90   LD       VF, #90      Load $90 into VF
+    $960    $2579   CALL     $579         Call subroutine at $579
+    $962    $7DD6   ADD      VD, #D6      Add $D6 to VD (VD = (VD + $D6) & 0xFF)
+    $964    $9244   UNKNOWN  $9244        Unknown 9xxx instruction (crashes in CUDA)
+    $966    $1506   JP       $506         Jump to address $506
+    $968    $6AE2   LD       VA, #E2      Load $E2 into VA
+    $96A    $5897   UNKNOWN  $5897        Unknown 5xxx instruction (crashes in CUDA)
+    $96C    $3EA3   SE       VE, #A3      Skip next instruction if VE == $A3
+    $96E    $CF50   RND      VF, #50      VF = random() AND $50
+    $970    $08B5   NOP      $08B5        No operation (ignored by CUDA kernel)
+    $972    $BE59   JP       V0, $E59     Jump to $E59 + V0
+    $974    $20F3   CALL     $0F3         Call subroutine at $0F3
+    $976    $3017   SE       V0, #17      Skip next instruction if V0 == $17
+    $978    $4C8D   SNE      VC, #8D      Skip next instruction if VC != $8D
+    $97A    $B3BE   JP       V0, $3BE     Jump to $3BE + V0
+    $97C    $2175   CALL     $175         Call subroutine at $175
+>>> $97E    $6310   LD       V3, #10      Load $10 into V3
+          ^-- Modifies: [3]
+    $980    $0296   NOP      $0296        No operation (ignored by CUDA kernel)
+    $982    $5DDE   UNKNOWN  $5DDE        Unknown 5xxx instruction (crashes in CUDA)
+    $984    $C9F1   RND      V9, #F1      V9 = random() AND $F1
+    $986    $D445   DRW      V4, V4, #5   Draw 5-byte sprite at (V4, V4), VF = collision
+    $988    $ADA9   LD       I, $DA9      Load $DA9 into I register
+    $98A    $538D   UNKNOWN  $538D        Unknown 5xxx instruction (crashes in CUDA)
+>>> $98C    $8393   XOR      V3, V9       V3 = V3 XOR V9, VF = 0
+          ^-- Modifies: [3, 15]
+          ^-- Reads: [3, 9]
+    $98E    $F7EF   UNKNOWN  $F7EF        Unknown Fxxx instruction (crashes in CUDA)
+>>> $990    $C2EF   RND      V2, #EF      V2 = random() AND $EF
+          ^-- Modifies: [2]
+    $992    $BD0B   JP       V0, $D0B     Jump to $D0B + V0
+    $994    $F1D9   UNKNOWN  $F1D9        Unknown Fxxx instruction (crashes in CUDA)
+    $996    $0407   NOP      $0407        No operation (ignored by CUDA kernel)
+    $998    $16C7   JP       $6C7         Jump to address $6C7
+    $99A    $977E   UNKNOWN  $977E        Unknown 9xxx instruction (crashes in CUDA)
+    $99C    $9543   UNKNOWN  $9543        Unknown 9xxx instruction (crashes in CUDA)
+    $99E    $1B31   JP       $B31         Jump to address $B31
+    $9A0    $5478   UNKNOWN  $5478        Unknown 5xxx instruction (crashes in CUDA)
+    $9A2    $D3C5   DRW      V3, VC, #5   Draw 5-byte sprite at (V3, VC), VF = collision
+    $9A4    $D2EB   DRW      V2, VE, #B   Draw 11-byte sprite at (V2, VE), VF = collision
+    $9A6    $131A   JP       $31A         Jump to address $31A
+    $9A8    $3E61   SE       VE, #61      Skip next instruction if VE == $61
+    $9AA    $4D46   SNE      VD, #46      Skip next instruction if VD != $46
+    $9AC    $559A   UNKNOWN  $559A        Unknown 5xxx instruction (crashes in CUDA)
+    $9AE    $BA67   JP       V0, $A67     Jump to $A67 + V0
+    $9B0    $B2F9   JP       V0, $2F9     Jump to $2F9 + V0
+    $9B2    $7BFC   ADD      VB, #FC      Add $FC to VB (VB = (VB + $FC) & 0xFF)
+    $9B4    $B92E   JP       V0, $92E     Jump to $92E + V0
+    $9B6    $FEDD   UNKNOWN  $FEDD        Unknown Fxxx instruction (crashes in CUDA)
+    $9B8    $5C38   UNKNOWN  $5C38        Unknown 5xxx instruction (crashes in CUDA)
+    $9BA    $D053   DRW      V0, V5, #3   Draw 3-byte sprite at (V0, V5), VF = collision
+    $9BC    $78E6   ADD      V8, #E6      Add $E6 to V8 (V8 = (V8 + $E6) & 0xFF)
+    $9BE    $8CEF   UNKNOWN  $8CEF        Unknown 8xxx instruction (crashes in CUDA)
+>>> $9C0    $84A7   SUBN     V4, VA       V4 = (VA - V4) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [4, 15]
+          ^-- Reads: [4, 10]
+    $9C2    $BB7B   JP       V0, $B7B     Jump to $B7B + V0
+    $9C4    $0E1B   NOP      $0E1B        No operation (ignored by CUDA kernel)
+    $9C6    $70B9   ADD      V0, #B9      Add $B9 to V0 (V0 = (V0 + $B9) & 0xFF)
+>>> $9C8    $84E5   SUB      V4, VE       V4 = (V4 - VE) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [4, 15]
+          ^-- Reads: [4, 14]
+>>> $9CA    $5650   SE       V6, V5       Skip next instruction if V6 == V5
+          ^-- Reads: [5, 6]
+>>> $9CC    $47E1   SNE      V7, #E1      Skip next instruction if V7 != $E1
+          ^-- Reads: [7]
+    $9CE    $EEC5   UNKNOWN  $EEC5        Unknown Exxx instruction (crashes in CUDA)
+    $9D0    $97E8   UNKNOWN  $97E8        Unknown 9xxx instruction (crashes in CUDA)
+    $9D2    $DE03   DRW      VE, V0, #3   Draw 3-byte sprite at (VE, V0), VF = collision
+>>> $9D4    $469C   SNE      V6, #9C      Skip next instruction if V6 != $9C
+          ^-- Reads: [6]
+    $9D6    $C84F   RND      V8, #4F      V8 = random() AND $4F
+    $9D8    $6F47   LD       VF, #47      Load $47 into VF
+    $9DA    $FE8A   UNKNOWN  $FE8A        Unknown Fxxx instruction (crashes in CUDA)
+    $9DC    $6B70   LD       VB, #70      Load $70 into VB
+>>> $9DE    $8375   SUB      V3, V7       V3 = (V3 - V7) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [3, 15]
+          ^-- Reads: [3, 7]
+>>> $9E0    $62F4   LD       V2, #F4      Load $F4 into V2
+          ^-- Modifies: [2]
+    $9E2    $E879   UNKNOWN  $E879        Unknown Exxx instruction (crashes in CUDA)
+    $9E4    $9B12   UNKNOWN  $9B12        Unknown 9xxx instruction (crashes in CUDA)
+    $9E6    $68D0   LD       V8, #D0      Load $D0 into V8
+>>> $9E8    $661B   LD       V6, #1B      Load $1B into V6
+          ^-- Modifies: [6]
+    $9EA    $4E5D   SNE      VE, #5D      Skip next instruction if VE != $5D
+    $9EC    $9364   UNKNOWN  $9364        Unknown 9xxx instruction (crashes in CUDA)
+    $9EE    $56F5   UNKNOWN  $56F5        Unknown 5xxx instruction (crashes in CUDA)
+    $9F0    $ACCD   LD       I, $CCD      Load $CCD into I register
+    $9F2    $0C7F   NOP      $0C7F        No operation (ignored by CUDA kernel)
+    $9F4    $911C   UNKNOWN  $911C        Unknown 9xxx instruction (crashes in CUDA)
+    $9F6    $5F61   UNKNOWN  $5F61        Unknown 5xxx instruction (crashes in CUDA)
+    $9F8    $E808   UNKNOWN  $E808        Unknown Exxx instruction (crashes in CUDA)
+>>> $9FA    $7502   ADD      V5, #02      Add $02 to V5 (V5 = (V5 + $02) & 0xFF)
+          ^-- Modifies: [5]
+          ^-- Reads: [5]
+    $9FC    $2451   CALL     $451         Call subroutine at $451
+    $9FE    $59AD   UNKNOWN  $59AD        Unknown 5xxx instruction (crashes in CUDA)
+    $A00    $EE10   UNKNOWN  $EE10        Unknown Exxx instruction (crashes in CUDA)
+    $A02    $FC00   UNKNOWN  $FC00        Unknown Fxxx instruction (crashes in CUDA)
+    $A04    $DB92   DRW      VB, V9, #2   Draw 2-byte sprite at (VB, V9), VF = collision
+    $A06    $6E1F   LD       VE, #1F      Load $1F into VE
+>>> $A08    $8390   LD       V3, V9       Load V9 into V3
+          ^-- Modifies: [3]
+          ^-- Reads: [9]
+    $A0A    $38E4   SE       V8, #E4      Skip next instruction if V8 == $E4
+>>> $A0C    $87D7   SUBN     V7, VD       V7 = (VD - V7) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [7, 15]
+          ^-- Reads: [7, 13]
+    $A0E    $50D5   UNKNOWN  $50D5        Unknown 5xxx instruction (crashes in CUDA)
+    $A10    $2563   CALL     $563         Call subroutine at $563
+    $A12    $93D3   UNKNOWN  $93D3        Unknown 9xxx instruction (crashes in CUDA)
+    $A14    $FEEF   UNKNOWN  $FEEF        Unknown Fxxx instruction (crashes in CUDA)
+    $A16    $3159   SE       V1, #59      Skip next instruction if V1 == $59
+    $A18    $E718   UNKNOWN  $E718        Unknown Exxx instruction (crashes in CUDA)
+    $A1A    $82BC   UNKNOWN  $82BC        Unknown 8xxx instruction (crashes in CUDA)
+    $A1C    $A047   LD       I, $047      Load $047 into I register
+    $A1E    $A546   LD       I, $546      Load $546 into I register
+    $A20    $A7FC   LD       I, $7FC      Load $7FC into I register
+    $A22    $F35C   UNKNOWN  $F35C        Unknown Fxxx instruction (crashes in CUDA)
+    $A24    $38C5   SE       V8, #C5      Skip next instruction if V8 == $C5
+>>> $A26    $C462   RND      V4, #62      V4 = random() AND $62
+          ^-- Modifies: [4]
+>>> $A28    $8793   XOR      V7, V9       V7 = V7 XOR V9, VF = 0
+          ^-- Modifies: [7, 15]
+          ^-- Reads: [7, 9]
+    $A2A    $133B   JP       $33B         Jump to address $33B
+    $A2C    $271F   CALL     $71F         Call subroutine at $71F
+>>> $A2E    $667D   LD       V6, #7D      Load $7D into V6
+          ^-- Modifies: [6]
+    $A30    $BED2   JP       V0, $ED2     Jump to $ED2 + V0
+    $A32    $E0A0   UNKNOWN  $E0A0        Unknown Exxx instruction (crashes in CUDA)
+    $A34    $71BD   ADD      V1, #BD      Add $BD to V1 (V1 = (V1 + $BD) & 0xFF)
+    $A36    $92D8   UNKNOWN  $92D8        Unknown 9xxx instruction (crashes in CUDA)
+    $A38    $0C21   NOP      $0C21        No operation (ignored by CUDA kernel)
+    $A3A    $D89C   DRW      V8, V9, #C   Draw 12-byte sprite at (V8, V9), VF = collision
+    $A3C    $79D4   ADD      V9, #D4      Add $D4 to V9 (V9 = (V9 + $D4) & 0xFF)
+    $A3E    $A3B2   LD       I, $3B2      Load $3B2 into I register
+    $A40    $DFF2   DRW      VF, VF, #2   Draw 2-byte sprite at (VF, VF), VF = collision
+    $A42    $A1CA   LD       I, $1CA      Load $1CA into I register
+    $A44    $9328   UNKNOWN  $9328        Unknown 9xxx instruction (crashes in CUDA)
+>>> $A46    $775A   ADD      V7, #5A      Add $5A to V7 (V7 = (V7 + $5A) & 0xFF)
+          ^-- Modifies: [7]
+          ^-- Reads: [7]
+    $A48    $09DF   NOP      $09DF        No operation (ignored by CUDA kernel)
+    $A4A    $27DA   CALL     $7DA         Call subroutine at $7DA
+    $A4C    $2AC9   CALL     $AC9         Call subroutine at $AC9
+    $A4E    $6E02   LD       VE, #02      Load $02 into VE
+    $A50    $B485   JP       V0, $485     Jump to $485 + V0
+    $A52    $1CF4   JP       $CF4         Jump to address $CF4
+    $A54    $E023   UNKNOWN  $E023        Unknown Exxx instruction (crashes in CUDA)
+    $A56    $3C37   SE       VC, #37      Skip next instruction if VC == $37
+    $A58    $ADA2   LD       I, $DA2      Load $DA2 into I register
+    $A5A    $1FA2   JP       $FA2         Jump to address $FA2
+    $A5C    $EC00   UNKNOWN  $EC00        Unknown Exxx instruction (crashes in CUDA)
+    $A5E    $EC2A   UNKNOWN  $EC2A        Unknown Exxx instruction (crashes in CUDA)
+>>> $A60    $C2E0   RND      V2, #E0      V2 = random() AND $E0
+          ^-- Modifies: [2]
+    $A62    $FE6E   UNKNOWN  $FE6E        Unknown Fxxx instruction (crashes in CUDA)
+    $A64    $4C6D   SNE      VC, #6D      Skip next instruction if VC != $6D
+    $A66    $7830   ADD      V8, #30      Add $30 to V8 (V8 = (V8 + $30) & 0xFF)
+    $A68    $0C09   NOP      $0C09        No operation (ignored by CUDA kernel)
+    $A6A    $283D   CALL     $83D         Call subroutine at $83D
+    $A6C    $12DF   JP       $2DF         Jump to address $2DF
+    $A6E    $97E7   UNKNOWN  $97E7        Unknown 9xxx instruction (crashes in CUDA)
+    $A70    $09F6   NOP      $09F6        No operation (ignored by CUDA kernel)
+    $A72    $A02F   LD       I, $02F      Load $02F into I register
+>>> $A74    $8313   XOR      V3, V1       V3 = V3 XOR V1, VF = 0
+          ^-- Modifies: [3, 15]
+          ^-- Reads: [1, 3]
+    $A76    $BC74   JP       V0, $C74     Jump to $C74 + V0
+    $A78    $53E5   UNKNOWN  $53E5        Unknown 5xxx instruction (crashes in CUDA)
+>>> $A7A    $43EF   SNE      V3, #EF      Skip next instruction if V3 != $EF
+          ^-- Reads: [3]
+    $A7C    $6066   LD       V0, #66      Load $66 into V0
+    $A7E    $138E   JP       $38E         Jump to address $38E
+    $A80    $2322   CALL     $322         Call subroutine at $322
+    $A82    $C8E9   RND      V8, #E9      V8 = random() AND $E9
+    $A84    $EE48   UNKNOWN  $EE48        Unknown Exxx instruction (crashes in CUDA)
+    $A86    $2CB5   CALL     $CB5         Call subroutine at $CB5
+    $A88    $B8DA   JP       V0, $8DA     Jump to $8DA + V0
+    $A8A    $A78A   LD       I, $78A      Load $78A into I register
+>>> $A8C    $C742   RND      V7, #42      V7 = random() AND $42
+          ^-- Modifies: [7]
+    $A8E    $5B10   SE       VB, V1       Skip next instruction if VB == V1
+    $A90    $07EB   NOP      $07EB        No operation (ignored by CUDA kernel)
+    $A92    $CCBD   RND      VC, #BD      VC = random() AND $BD
+    $A94    $7A4A   ADD      VA, #4A      Add $4A to VA (VA = (VA + $4A) & 0xFF)
+    $A96    $24E7   CALL     $4E7         Call subroutine at $4E7
+    $A98    $0B57   NOP      $0B57        No operation (ignored by CUDA kernel)
+    $A9A    $522E   UNKNOWN  $522E        Unknown 5xxx instruction (crashes in CUDA)
+    $A9C    $9E67   UNKNOWN  $9E67        Unknown 9xxx instruction (crashes in CUDA)
+>>> $A9E    $641E   LD       V4, #1E      Load $1E into V4
+          ^-- Modifies: [4]
+    $AA0    $0E40   NOP      $0E40        No operation (ignored by CUDA kernel)
+    $AA2    $E88D   UNKNOWN  $E88D        Unknown Exxx instruction (crashes in CUDA)
+    $AA4    $0EDD   NOP      $0EDD        No operation (ignored by CUDA kernel)
+    $AA6    $DD6A   DRW      VD, V6, #A   Draw 10-byte sprite at (VD, V6), VF = collision
+    $AA8    $295A   CALL     $95A         Call subroutine at $95A
+    $AAA    $C09F   RND      V0, #9F      V0 = random() AND $9F
+    $AAC    $2133   CALL     $133         Call subroutine at $133
+    $AAE    $0371   NOP      $0371        No operation (ignored by CUDA kernel)
+    $AB0    $4148   SNE      V1, #48      Skip next instruction if V1 != $48
+    $AB2    $6CB3   LD       VC, #B3      Load $B3 into VC
+>>> $AB4    $FC55   LD       [I], VC      Store V0-VC at [I], then I += 13
+          ^-- Reads: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    $AB6    $FCC7   UNKNOWN  $FCC7        Unknown Fxxx instruction (crashes in CUDA)
+>>> $AB8    $4287   SNE      V2, #87      Skip next instruction if V2 != $87
+          ^-- Reads: [2]
+    $ABA    $E37E   UNKNOWN  $E37E        Unknown Exxx instruction (crashes in CUDA)
+    $ABC    $6C1D   LD       VC, #1D      Load $1D into VC
+    $ABE    $6949   LD       V9, #49      Load $49 into V9
+    $AC0    $4A5E   SNE      VA, #5E      Skip next instruction if VA != $5E
+>>> $AC2    $74ED   ADD      V4, #ED      Add $ED to V4 (V4 = (V4 + $ED) & 0xFF)
+          ^-- Modifies: [4]
+          ^-- Reads: [4]
+    $AC4    $FCEF   UNKNOWN  $FCEF        Unknown Fxxx instruction (crashes in CUDA)
+    $AC6    $B0C0   JP       V0, $0C0     Jump to $0C0 + V0
+    $AC8    $D09E   DRW      V0, V9, #E   Draw 14-byte sprite at (V0, V9), VF = collision
+    $ACA    $932C   UNKNOWN  $932C        Unknown 9xxx instruction (crashes in CUDA)
+    $ACC    $6D02   LD       VD, #02      Load $02 into VD
+    $ACE    $94D6   UNKNOWN  $94D6        Unknown 9xxx instruction (crashes in CUDA)
+    $AD0    $9D99   UNKNOWN  $9D99        Unknown 9xxx instruction (crashes in CUDA)
+    $AD2    $296C   CALL     $96C         Call subroutine at $96C
+    $AD4    $7896   ADD      V8, #96      Add $96 to V8 (V8 = (V8 + $96) & 0xFF)
+    $AD6    $41EE   SNE      V1, #EE      Skip next instruction if V1 != $EE
+    $AD8    $F620   UNKNOWN  $F620        Unknown Fxxx instruction (crashes in CUDA)
+    $ADA    $B1E2   JP       V0, $1E2     Jump to $1E2 + V0
+    $ADC    $A2F9   LD       I, $2F9      Load $2F9 into I register
+>>> $ADE    $661B   LD       V6, #1B      Load $1B into V6
+          ^-- Modifies: [6]
+>>> $AE0    $C7E1   RND      V7, #E1      V7 = random() AND $E1
+          ^-- Modifies: [7]
+    $AE2    $6A4C   LD       VA, #4C      Load $4C into VA
+    $AE4    $83B8   UNKNOWN  $83B8        Unknown 8xxx instruction (crashes in CUDA)
+    $AE6    $B061   JP       V0, $061     Jump to $061 + V0
+    $AE8    $F43A   UNKNOWN  $F43A        Unknown Fxxx instruction (crashes in CUDA)
+    $AEA    $39B7   SE       V9, #B7      Skip next instruction if V9 == $B7
+    $AEC    $2B18   CALL     $B18         Call subroutine at $B18
+    $AEE    $EC68   UNKNOWN  $EC68        Unknown Exxx instruction (crashes in CUDA)
+>>> $AF0    $32B9   SE       V2, #B9      Skip next instruction if V2 == $B9
+          ^-- Reads: [2]
+>>> $AF2    $7546   ADD      V5, #46      Add $46 to V5 (V5 = (V5 + $46) & 0xFF)
+          ^-- Modifies: [5]
+          ^-- Reads: [5]
+    $AF4    $F051   UNKNOWN  $F051        Unknown Fxxx instruction (crashes in CUDA)
+    $AF6    $7BC4   ADD      VB, #C4      Add $C4 to VB (VB = (VB + $C4) & 0xFF)
+    $AF8    $9B71   UNKNOWN  $9B71        Unknown 9xxx instruction (crashes in CUDA)
+    $AFA    $10F0   JP       $0F0         Jump to address $0F0
+>>> $AFC    $42C5   SNE      V2, #C5      Skip next instruction if V2 != $C5
+          ^-- Reads: [2]
+    $AFE    $2959   CALL     $959         Call subroutine at $959
+>>> $B00    $96A0   SNE      V6, VA       Skip next instruction if V6 != VA
+          ^-- Reads: [6, 10]
+    $B02    $093E   NOP      $093E        No operation (ignored by CUDA kernel)
+>>> $B04    $6580   LD       V5, #80      Load $80 into V5
+          ^-- Modifies: [5]
+    $B06    $AA14   LD       I, $A14      Load $A14 into I register
+    $B08    $E22D   UNKNOWN  $E22D        Unknown Exxx instruction (crashes in CUDA)
+    $B0A    $E877   UNKNOWN  $E877        Unknown Exxx instruction (crashes in CUDA)
+>>> $B0C    $C588   RND      V5, #88      V5 = random() AND $88
+          ^-- Modifies: [5]
+    $B0E    $905D   UNKNOWN  $905D        Unknown 9xxx instruction (crashes in CUDA)
+    $B10    $A684   LD       I, $684      Load $684 into I register
+>>> $B12    $47A7   SNE      V7, #A7      Skip next instruction if V7 != $A7
+          ^-- Reads: [7]
+    $B14    $BCCF   JP       V0, $CCF     Jump to $CCF + V0
+    $B16    $A9BB   LD       I, $9BB      Load $9BB into I register
+    $B18    $1905   JP       $905         Jump to address $905
+    $B1A    $B286   JP       V0, $286     Jump to $286 + V0
+    $B1C    $F4FE   UNKNOWN  $F4FE        Unknown Fxxx instruction (crashes in CUDA)
+    $B1E    $A7E9   LD       I, $7E9      Load $7E9 into I register
+    $B20    $4D48   SNE      VD, #48      Skip next instruction if VD != $48
+    $B22    $0BEA   NOP      $0BEA        No operation (ignored by CUDA kernel)
+    $B24    $3859   SE       V8, #59      Skip next instruction if V8 == $59
+    $B26    $03C7   NOP      $03C7        No operation (ignored by CUDA kernel)
+>>> $B28    $C621   RND      V6, #21      V6 = random() AND $21
+          ^-- Modifies: [6]
+    $B2A    $6014   LD       V0, #14      Load $14 into V0
+    $B2C    $2FCA   CALL     $FCA         Call subroutine at $FCA
+>>> $B2E    $3378   SE       V3, #78      Skip next instruction if V3 == $78
+          ^-- Reads: [3]
+    $B30    $BA3C   JP       V0, $A3C     Jump to $A3C + V0
+>>> $B32    $33B5   SE       V3, #B5      Skip next instruction if V3 == $B5
+          ^-- Reads: [3]
+    $B34    $A8B9   LD       I, $8B9      Load $8B9 into I register
+    $B36    $5711   UNKNOWN  $5711        Unknown 5xxx instruction (crashes in CUDA)
+    $B38    $0235   NOP      $0235        No operation (ignored by CUDA kernel)
+    $B3A    $A013   LD       I, $013      Load $013 into I register
+    $B3C    $534B   UNKNOWN  $534B        Unknown 5xxx instruction (crashes in CUDA)
+>>> $B3E    $633D   LD       V3, #3D      Load $3D into V3
+          ^-- Modifies: [3]
+>>> $B40    $37D5   SE       V7, #D5      Skip next instruction if V7 == $D5
+          ^-- Reads: [7]
+    $B42    $7E81   ADD      VE, #81      Add $81 to VE (VE = (VE + $81) & 0xFF)
+    $B44    $69A0   LD       V9, #A0      Load $A0 into V9
+    $B46    $0EB8   NOP      $0EB8        No operation (ignored by CUDA kernel)
+>>> $B48    $3398   SE       V3, #98      Skip next instruction if V3 == $98
+          ^-- Reads: [3]
+    $B4A    $B7F8   JP       V0, $7F8     Jump to $7F8 + V0
+    $B4C    $93C8   UNKNOWN  $93C8        Unknown 9xxx instruction (crashes in CUDA)
+>>> $B4E    $C4D2   RND      V4, #D2      V4 = random() AND $D2
+          ^-- Modifies: [4]
+    $B50    $2C16   CALL     $C16         Call subroutine at $C16
+    $B52    $9E3F   UNKNOWN  $9E3F        Unknown 9xxx instruction (crashes in CUDA)
+>>> $B54    $C38F   RND      V3, #8F      V3 = random() AND $8F
+          ^-- Modifies: [3]
+    $B56    $226C   CALL     $26C         Call subroutine at $26C
+    $B58    $3E1F   SE       VE, #1F      Skip next instruction if VE == $1F
+    $B5A    $E5EE   UNKNOWN  $E5EE        Unknown Exxx instruction (crashes in CUDA)
+    $B5C    $E137   UNKNOWN  $E137        Unknown Exxx instruction (crashes in CUDA)
+    $B5E    $9481   UNKNOWN  $9481        Unknown 9xxx instruction (crashes in CUDA)
+    $B60    $3EBE   SE       VE, #BE      Skip next instruction if VE == $BE
+    $B62    $60F0   LD       V0, #F0      Load $F0 into V0
+    $B64    $7007   ADD      V0, #07      Add $07 to V0 (V0 = (V0 + $07) & 0xFF)
+    $B66    $5B2D   UNKNOWN  $5B2D        Unknown 5xxx instruction (crashes in CUDA)
+    $B68    $F4C4   UNKNOWN  $F4C4        Unknown Fxxx instruction (crashes in CUDA)
+    $B6A    $B3A0   JP       V0, $3A0     Jump to $3A0 + V0
+    $B6C    $B099   JP       V0, $099     Jump to $099 + V0
+    $B6E    $B2E9   JP       V0, $2E9     Jump to $2E9 + V0
+>>> $B70    $C448   RND      V4, #48      V4 = random() AND $48
+          ^-- Modifies: [4]
+    $B72    $1910   JP       $910         Jump to address $910
+    $B74    $E8D6   UNKNOWN  $E8D6        Unknown Exxx instruction (crashes in CUDA)
+    $B76    $FFBC   UNKNOWN  $FFBC        Unknown Fxxx instruction (crashes in CUDA)
+>>> $B78    $66F8   LD       V6, #F8      Load $F8 into V6
+          ^-- Modifies: [6]
+    $B7A    $3D7D   SE       VD, #7D      Skip next instruction if VD == $7D
+    $B7C    $5C42   UNKNOWN  $5C42        Unknown 5xxx instruction (crashes in CUDA)
+    $B7E    $BFF8   JP       V0, $FF8     Jump to $FF8 + V0
+>>> $B80    $670E   LD       V7, #0E      Load $0E into V7
+          ^-- Modifies: [7]
+    $B82    $A9E0   LD       I, $9E0      Load $9E0 into I register
+    $B84    $21F7   CALL     $1F7         Call subroutine at $1F7
+    $B86    $B47E   JP       V0, $47E     Jump to $47E + V0
+    $B88    $822D   UNKNOWN  $822D        Unknown 8xxx instruction (crashes in CUDA)
+>>> $B8A    $8154   ADD      V1, V5       V1 = (V1 + V5) & 0xFF, VF = carry
+          ^-- Modifies: [1, 15]
+          ^-- Reads: [1, 5]
+    $B8C    $BFA4   JP       V0, $FA4     Jump to $FA4 + V0
+>>> $B8E    $C23D   RND      V2, #3D      V2 = random() AND $3D
+          ^-- Modifies: [2]
+    $B90    $50C3   UNKNOWN  $50C3        Unknown 5xxx instruction (crashes in CUDA)
+    $B92    $7863   ADD      V8, #63      Add $63 to V8 (V8 = (V8 + $63) & 0xFF)
+    $B94    $5586   UNKNOWN  $5586        Unknown 5xxx instruction (crashes in CUDA)
+    $B96    $2C24   CALL     $C24         Call subroutine at $C24
+    $B98    $184D   JP       $84D         Jump to address $84D
+    $B9A    $4A3C   SNE      VA, #3C      Skip next instruction if VA != $3C
+    $B9C    $B312   JP       V0, $312     Jump to $312 + V0
+    $B9E    $A87E   LD       I, $87E      Load $87E into I register
+    $BA0    $03B5   NOP      $03B5        No operation (ignored by CUDA kernel)
+    $BA2    $9BEE   UNKNOWN  $9BEE        Unknown 9xxx instruction (crashes in CUDA)
+    $BA4    $7F4C   ADD      VF, #4C      Add $4C to VF (VF = (VF + $4C) & 0xFF)
+>>> $BA6    $75E1   ADD      V5, #E1      Add $E1 to V5 (V5 = (V5 + $E1) & 0xFF)
+          ^-- Modifies: [5]
+          ^-- Reads: [5]
+    $BA8    $3D63   SE       VD, #63      Skip next instruction if VD == $63
+    $BAA    $9342   UNKNOWN  $9342        Unknown 9xxx instruction (crashes in CUDA)
+    $BAC    $87FA   UNKNOWN  $87FA        Unknown 8xxx instruction (crashes in CUDA)
+>>> $BAE    $5630   SE       V6, V3       Skip next instruction if V6 == V3
+          ^-- Reads: [3, 6]
+    $BB0    $A82E   LD       I, $82E      Load $82E into I register
+    $BB2    $4002   SNE      V0, #02      Skip next instruction if V0 != $02
+    $BB4    $8229   UNKNOWN  $8229        Unknown 8xxx instruction (crashes in CUDA)
+    $BB6    $9A5F   UNKNOWN  $9A5F        Unknown 9xxx instruction (crashes in CUDA)
+>>> $BB8    $743F   ADD      V4, #3F      Add $3F to V4 (V4 = (V4 + $3F) & 0xFF)
+          ^-- Modifies: [4]
+          ^-- Reads: [4]
+    $BBA    $5E2B   UNKNOWN  $5E2B        Unknown 5xxx instruction (crashes in CUDA)
+    $BBC    $0926   NOP      $0926        No operation (ignored by CUDA kernel)
+>>> $BBE    $C36C   RND      V3, #6C      V3 = random() AND $6C
+          ^-- Modifies: [3]
+    $BC0    $E6B3   UNKNOWN  $E6B3        Unknown Exxx instruction (crashes in CUDA)
+    $BC2    $8EF3   XOR      VE, VF       VE = VE XOR VF, VF = 0
+    $BC4    $FBCA   UNKNOWN  $FBCA        Unknown Fxxx instruction (crashes in CUDA)
+    $BC6    $285F   CALL     $85F         Call subroutine at $85F
+    $BC8    $E67B   UNKNOWN  $E67B        Unknown Exxx instruction (crashes in CUDA)
+    $BCA    $F5F8   UNKNOWN  $F5F8        Unknown Fxxx instruction (crashes in CUDA)
+    $BCC    $DAA6   DRW      VA, VA, #6   Draw 6-byte sprite at (VA, VA), VF = collision
+    $BCE    $5854   UNKNOWN  $5854        Unknown 5xxx instruction (crashes in CUDA)
+    $BD0    $CD46   RND      VD, #46      VD = random() AND $46
+    $BD2    $FFC6   UNKNOWN  $FFC6        Unknown Fxxx instruction (crashes in CUDA)
+    $BD4    $8A5F   UNKNOWN  $8A5F        Unknown 8xxx instruction (crashes in CUDA)
+    $BD6    $B303   JP       V0, $303     Jump to $303 + V0
+    $BD8    $DFC9   DRW      VF, VC, #9   Draw 9-byte sprite at (VF, VC), VF = collision
+    $BDA    $9E92   UNKNOWN  $9E92        Unknown 9xxx instruction (crashes in CUDA)
+>>> $BDC    $C565   RND      V5, #65      V5 = random() AND $65
+          ^-- Modifies: [5]
+    $BDE    $2209   CALL     $209         Call subroutine at $209
+    $BE0    $BC18   JP       V0, $C18     Jump to $C18 + V0
+    $BE2    $2DB2   CALL     $DB2         Call subroutine at $DB2
+    $BE4    $E993   UNKNOWN  $E993        Unknown Exxx instruction (crashes in CUDA)
+>>> $BE6    $C694   RND      V6, #94      V6 = random() AND $94
+          ^-- Modifies: [6]
+    $BE8    $E790   UNKNOWN  $E790        Unknown Exxx instruction (crashes in CUDA)
+    $BEA    $5CF5   UNKNOWN  $5CF5        Unknown 5xxx instruction (crashes in CUDA)
+    $BEC    $F1B5   UNKNOWN  $F1B5        Unknown Fxxx instruction (crashes in CUDA)
+    $BEE    $94DD   UNKNOWN  $94DD        Unknown 9xxx instruction (crashes in CUDA)
+    $BF0    $B62E   JP       V0, $62E     Jump to $62E + V0
+    $BF2    $832C   UNKNOWN  $832C        Unknown 8xxx instruction (crashes in CUDA)
+    $BF4    $20A0   CALL     $0A0         Call subroutine at $0A0
+    $BF6    $A623   LD       I, $623      Load $623 into I register
+>>> $BF8    $75C4   ADD      V5, #C4      Add $C4 to V5 (V5 = (V5 + $C4) & 0xFF)
+          ^-- Modifies: [5]
+          ^-- Reads: [5]
+    $BFA    $E414   UNKNOWN  $E414        Unknown Exxx instruction (crashes in CUDA)
+    $BFC    $0CDE   NOP      $0CDE        No operation (ignored by CUDA kernel)
+    $BFE    $7844   ADD      V8, #44      Add $44 to V8 (V8 = (V8 + $44) & 0xFF)
+    $C00    $6DB2   LD       VD, #B2      Load $B2 into VD
+    $C02    $E2EF   UNKNOWN  $E2EF        Unknown Exxx instruction (crashes in CUDA)
+    $C04    $488B   SNE      V8, #8B      Skip next instruction if V8 != $8B
+    $C06    $CC61   RND      VC, #61      VC = random() AND $61
+    $C08    $9D28   UNKNOWN  $9D28        Unknown 9xxx instruction (crashes in CUDA)
+>>> $C0A    $64CC   LD       V4, #CC      Load $CC into V4
+          ^-- Modifies: [4]
+>>> $C0C    $3324   SE       V3, #24      Skip next instruction if V3 == $24
+          ^-- Reads: [3]
+>>> $C0E    $4230   SNE      V2, #30      Skip next instruction if V2 != $30
+          ^-- Reads: [2]
+    $C10    $1683   JP       $683         Jump to address $683
+    $C12    $F8EB   UNKNOWN  $F8EB        Unknown Fxxx instruction (crashes in CUDA)
+>>> $C14    $460F   SNE      V6, #0F      Skip next instruction if V6 != $0F
+          ^-- Reads: [6]
+    $C16    $3C63   SE       VC, #63      Skip next instruction if VC == $63
+>>> $C18    $64CD   LD       V4, #CD      Load $CD into V4
+          ^-- Modifies: [4]
+    $C1A    $DE10   DRW      VE, V1, #0   Draw 0-byte sprite at (VE, V1), VF = collision
+>>> $C1C    $36AD   SE       V6, #AD      Skip next instruction if V6 == $AD
+          ^-- Reads: [6]
+    $C1E    $6846   LD       V8, #46      Load $46 into V8
+    $C20    $A0AA   LD       I, $0AA      Load $0AA into I register
+>>> $C22    $35D2   SE       V5, #D2      Skip next instruction if V5 == $D2
+          ^-- Reads: [5]
+    $C24    $4956   SNE      V9, #56      Skip next instruction if V9 != $56
+    $C26    $CFED   RND      VF, #ED      VF = random() AND $ED
+    $C28    $39F8   SE       V9, #F8      Skip next instruction if V9 == $F8
+>>> $C2A    $9210   SNE      V2, V1       Skip next instruction if V2 != V1
+          ^-- Reads: [1, 2]
+    $C2C    $6C21   LD       VC, #21      Load $21 into VC
+>>> $C2E    $C794   RND      V7, #94      V7 = random() AND $94
+          ^-- Modifies: [7]
+    $C30    $4EBA   SNE      VE, #BA      Skip next instruction if VE != $BA
+    $C32    $2279   CALL     $279         Call subroutine at $279
+    $C34    $F55A   UNKNOWN  $F55A        Unknown Fxxx instruction (crashes in CUDA)
+    $C36    $FFB5   UNKNOWN  $FFB5        Unknown Fxxx instruction (crashes in CUDA)
+    $C38    $97AE   UNKNOWN  $97AE        Unknown 9xxx instruction (crashes in CUDA)
+    $C3A    $3A07   SE       VA, #07      Skip next instruction if VA == $07
+    $C3C    $8094   ADD      V0, V9       V0 = (V0 + V9) & 0xFF, VF = carry
+    $C3E    $ECF3   UNKNOWN  $ECF3        Unknown Exxx instruction (crashes in CUDA)
+    $C40    $D76D   DRW      V7, V6, #D   Draw 13-byte sprite at (V7, V6), VF = collision
+>>> $C42    $8B72   AND      VB, V7       VB = VB AND V7, VF = 0
+          ^-- Modifies: [11, 15]
+          ^-- Reads: [7, 11]
+    $C44    $E241   UNKNOWN  $E241        Unknown Exxx instruction (crashes in CUDA)
+    $C46    $C007   RND      V0, #07      V0 = random() AND $07
+    $C48    $962F   UNKNOWN  $962F        Unknown 9xxx instruction (crashes in CUDA)
+    $C4A    $8E1B   UNKNOWN  $8E1B        Unknown 8xxx instruction (crashes in CUDA)
+    $C4C    $6D99   LD       VD, #99      Load $99 into VD
+    $C4E    $1234   JP       $234         Jump to address $234
+>>> $C50    $9750   SNE      V7, V5       Skip next instruction if V7 != V5
+          ^-- Reads: [5, 7]
+    $C52    $6BBD   LD       VB, #BD      Load $BD into VB
+>>> $C54    $4547   SNE      V5, #47      Skip next instruction if V5 != $47
+          ^-- Reads: [5]
+    $C56    $5A42   UNKNOWN  $5A42        Unknown 5xxx instruction (crashes in CUDA)
+    $C58    $1770   JP       $770         Jump to address $770
+    $C5A    $0ACD   NOP      $0ACD        No operation (ignored by CUDA kernel)
+    $C5C    $26FB   CALL     $6FB         Call subroutine at $6FB
+    $C5E    $2BFD   CALL     $BFD         Call subroutine at $BFD
+    $C60    $7053   ADD      V0, #53      Add $53 to V0 (V0 = (V0 + $53) & 0xFF)
+    $C62    $DC18   DRW      VC, V1, #8   Draw 8-byte sprite at (VC, V1), VF = collision
+    $C64    $9312   UNKNOWN  $9312        Unknown 9xxx instruction (crashes in CUDA)
+    $C66    $F69F   UNKNOWN  $F69F        Unknown Fxxx instruction (crashes in CUDA)
+    $C68    $BAF6   JP       V0, $AF6     Jump to $AF6 + V0
+    $C6A    $B0AC   JP       V0, $0AC     Jump to $0AC + V0
+    $C6C    $4A70   SNE      VA, #70      Skip next instruction if VA != $70
+    $C6E    $4EF2   SNE      VE, #F2      Skip next instruction if VE != $F2
+    $C70    $BD7B   JP       V0, $D7B     Jump to $D7B + V0
+    $C72    $0DFE   NOP      $0DFE        No operation (ignored by CUDA kernel)
+    $C74    $D8D9   DRW      V8, VD, #9   Draw 9-byte sprite at (V8, VD), VF = collision
+    $C76    $D52A   DRW      V5, V2, #A   Draw 10-byte sprite at (V5, V2), VF = collision
+    $C78    $D271   DRW      V2, V7, #1   Draw 1-byte sprite at (V2, V7), VF = collision
+    $C7A    $8218   UNKNOWN  $8218        Unknown 8xxx instruction (crashes in CUDA)
+    $C7C    $7CDD   ADD      VC, #DD      Add $DD to VC (VC = (VC + $DD) & 0xFF)
+    $C7E    $0D92   NOP      $0D92        No operation (ignored by CUDA kernel)
+    $C80    $7AED   ADD      VA, #ED      Add $ED to VA (VA = (VA + $ED) & 0xFF)
+    $C82    $6E3B   LD       VE, #3B      Load $3B into VE
+    $C84    $7A72   ADD      VA, #72      Add $72 to VA (VA = (VA + $72) & 0xFF)
+    $C86    $ABAD   LD       I, $BAD      Load $BAD into I register
+    $C88    $4A7E   SNE      VA, #7E      Skip next instruction if VA != $7E
+    $C8A    $DA12   DRW      VA, V1, #2   Draw 2-byte sprite at (VA, V1), VF = collision
+    $C8C    $A3D2   LD       I, $3D2      Load $3D2 into I register
+    $C8E    $89B2   AND      V9, VB       V9 = V9 AND VB, VF = 0
+    $C90    $1296   JP       $296         Jump to address $296
+    $C92    $9EB8   UNKNOWN  $9EB8        Unknown 9xxx instruction (crashes in CUDA)
+    $C94    $CA8B   RND      VA, #8B      VA = random() AND $8B
+    $C96    $900E   UNKNOWN  $900E        Unknown 9xxx instruction (crashes in CUDA)
+    $C98    $E1B3   UNKNOWN  $E1B3        Unknown Exxx instruction (crashes in CUDA)
+    $C9A    $0125   NOP      $0125        No operation (ignored by CUDA kernel)
+    $C9C    $7F4C   ADD      VF, #4C      Add $4C to VF (VF = (VF + $4C) & 0xFF)
+    $C9E    $4844   SNE      V8, #44      Skip next instruction if V8 != $44
+    $CA0    $AA2D   LD       I, $A2D      Load $A2D into I register
+    $CA2    $4995   SNE      V9, #95      Skip next instruction if V9 != $95
+>>> $CA4    $8B67   SUBN     VB, V6       VB = (V6 - VB) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [11, 15]
+          ^-- Reads: [6, 11]
+    $CA6    $B59C   JP       V0, $59C     Jump to $59C + V0
+    $CA8    $1D03   JP       $D03         Jump to address $D03
+    $CAA    $E0DA   UNKNOWN  $E0DA        Unknown Exxx instruction (crashes in CUDA)
+>>> $CAC    $327F   SE       V2, #7F      Skip next instruction if V2 == $7F
+          ^-- Reads: [2]
+    $CAE    $B8C0   JP       V0, $8C0     Jump to $8C0 + V0
+    $CB0    $79A8   ADD      V9, #A8      Add $A8 to V9 (V9 = (V9 + $A8) & 0xFF)
+    $CB2    $6F8A   LD       VF, #8A      Load $8A into VF
+    $CB4    $4AD7   SNE      VA, #D7      Skip next instruction if VA != $D7
+    $CB6    $3C93   SE       VC, #93      Skip next instruction if VC == $93
+    $CB8    $AB82   LD       I, $B82      Load $B82 into I register
+    $CBA    $9011   UNKNOWN  $9011        Unknown 9xxx instruction (crashes in CUDA)
+    $CBC    $281F   CALL     $81F         Call subroutine at $81F
+    $CBE    $78D1   ADD      V8, #D1      Add $D1 to V8 (V8 = (V8 + $D1) & 0xFF)
+    $CC0    $E929   UNKNOWN  $E929        Unknown Exxx instruction (crashes in CUDA)
+    $CC2    $0B62   NOP      $0B62        No operation (ignored by CUDA kernel)
+    $CC4    $FD0C   UNKNOWN  $FD0C        Unknown Fxxx instruction (crashes in CUDA)
+    $CC6    $D09A   DRW      V0, V9, #A   Draw 10-byte sprite at (V0, V9), VF = collision
+>>> $CC8    $64B4   LD       V4, #B4      Load $B4 into V4
+          ^-- Modifies: [4]
+    $CCA    $E6F8   UNKNOWN  $E6F8        Unknown Exxx instruction (crashes in CUDA)
+    $CCC    $BF2D   JP       V0, $F2D     Jump to $F2D + V0
+>>> $CCE    $430C   SNE      V3, #0C      Skip next instruction if V3 != $0C
+          ^-- Reads: [3]
+    $CD0    $ED48   UNKNOWN  $ED48        Unknown Exxx instruction (crashes in CUDA)
+    $CD2    $7F73   ADD      VF, #73      Add $73 to VF (VF = (VF + $73) & 0xFF)
+    $CD4    $CE75   RND      VE, #75      VE = random() AND $75
+    $CD6    $1203   JP       $203         Jump to address $203
+>>> $CD8    $3376   SE       V3, #76      Skip next instruction if V3 == $76
+          ^-- Reads: [3]
+    $CDA    $004A   NOP      $004A        No operation (ignored by CUDA kernel)
+    $CDC    $2D88   CALL     $D88         Call subroutine at $D88
+    $CDE    $D9B6   DRW      V9, VB, #6   Draw 6-byte sprite at (V9, VB), VF = collision
+    $CE0    $2AD4   CALL     $AD4         Call subroutine at $AD4
+    $CE2    $5CC4   UNKNOWN  $5CC4        Unknown 5xxx instruction (crashes in CUDA)
+    $CE4    $38CF   SE       V8, #CF      Skip next instruction if V8 == $CF
+    $CE6    $3A2E   SE       VA, #2E      Skip next instruction if VA == $2E
+    $CE8    $B72A   JP       V0, $72A     Jump to $72A + V0
+    $CEA    $2177   CALL     $177         Call subroutine at $177
+    $CEC    $D353   DRW      V3, V5, #3   Draw 3-byte sprite at (V3, V5), VF = collision
+    $CEE    $71E9   ADD      V1, #E9      Add $E9 to V1 (V1 = (V1 + $E9) & 0xFF)
+    $CF0    $7D42   ADD      VD, #42      Add $42 to VD (VD = (VD + $42) & 0xFF)
+>>> $CF2    $C246   RND      V2, #46      V2 = random() AND $46
+          ^-- Modifies: [2]
+    $CF4    $5E82   UNKNOWN  $5E82        Unknown 5xxx instruction (crashes in CUDA)
+    $CF6    $2A39   CALL     $A39         Call subroutine at $A39
+    $CF8    $E225   UNKNOWN  $E225        Unknown Exxx instruction (crashes in CUDA)
+    $CFA    $2AEA   CALL     $AEA         Call subroutine at $AEA
+    $CFC    $C840   RND      V8, #40      V8 = random() AND $40
+    $CFE    $B1A4   JP       V0, $1A4     Jump to $1A4 + V0
+    $D00    $41C0   SNE      V1, #C0      Skip next instruction if V1 != $C0
+    $D02    $8BF7   SUBN     VB, VF       VB = (VF - VB) & 0xFF, VF = NOT borrow
+    $D04    $ADF9   LD       I, $DF9      Load $DF9 into I register
+    $D06    $1F6F   JP       $F6F         Jump to address $F6F
+    $D08    $FB67   UNKNOWN  $FB67        Unknown Fxxx instruction (crashes in CUDA)
+    $D0A    $11E9   JP       $1E9         Jump to address $1E9
+    $D0C    $509B   UNKNOWN  $509B        Unknown 5xxx instruction (crashes in CUDA)
+    $D0E    $7EAB   ADD      VE, #AB      Add $AB to VE (VE = (VE + $AB) & 0xFF)
+    $D10    $82EA   UNKNOWN  $82EA        Unknown 8xxx instruction (crashes in CUDA)
+>>> $D12    $3790   SE       V7, #90      Skip next instruction if V7 == $90
+          ^-- Reads: [7]
+    $D14    $1156   JP       $156         Jump to address $156
+    $D16    $F034   UNKNOWN  $F034        Unknown Fxxx instruction (crashes in CUDA)
+    $D18    $7E48   ADD      VE, #48      Add $48 to VE (VE = (VE + $48) & 0xFF)
+    $D1A    $A5BE   LD       I, $5BE      Load $5BE into I register
+    $D1C    $FCBA   UNKNOWN  $FCBA        Unknown Fxxx instruction (crashes in CUDA)
+    $D1E    $0E84   NOP      $0E84        No operation (ignored by CUDA kernel)
+    $D20    $53CD   UNKNOWN  $53CD        Unknown 5xxx instruction (crashes in CUDA)
+>>> $D22    $8332   AND      V3, V3       V3 = V3 AND V3, VF = 0
+          ^-- Modifies: [3, 15]
+          ^-- Reads: [3]
+    $D24    $0D8B   NOP      $0D8B        No operation (ignored by CUDA kernel)
+    $D26    $17BB   JP       $7BB         Jump to address $7BB
+    $D28    $7822   ADD      V8, #22      Add $22 to V8 (V8 = (V8 + $22) & 0xFF)
+    $D2A    $FFD0   UNKNOWN  $FFD0        Unknown Fxxx instruction (crashes in CUDA)
+    $D2C    $2FD5   CALL     $FD5         Call subroutine at $FD5
+    $D2E    $06FE   NOP      $06FE        No operation (ignored by CUDA kernel)
+>>> $D30    $35E5   SE       V5, #E5      Skip next instruction if V5 == $E5
+          ^-- Reads: [5]
+    $D32    $B879   JP       V0, $879     Jump to $879 + V0
+>>> $D34    $761E   ADD      V6, #1E      Add $1E to V6 (V6 = (V6 + $1E) & 0xFF)
+          ^-- Modifies: [6]
+          ^-- Reads: [6]
+    $D36    $1B53   JP       $B53         Jump to address $B53
+    $D38    $02E7   NOP      $02E7        No operation (ignored by CUDA kernel)
+    $D3A    $1F08   JP       $F08         Jump to address $F08
+    $D3C    $9DC4   UNKNOWN  $9DC4        Unknown 9xxx instruction (crashes in CUDA)
+    $D3E    $FA38   UNKNOWN  $FA38        Unknown Fxxx instruction (crashes in CUDA)
+    $D40    $4C69   SNE      VC, #69      Skip next instruction if VC != $69
+    $D42    $803E   SHL      V0           V0 = (V0 << 1) & 0xFF, VF = MSB
+>>> $D44    $7734   ADD      V7, #34      Add $34 to V7 (V7 = (V7 + $34) & 0xFF)
+          ^-- Modifies: [7]
+          ^-- Reads: [7]
+    $D46    $7816   ADD      V8, #16      Add $16 to V8 (V8 = (V8 + $16) & 0xFF)
+    $D48    $9B1B   UNKNOWN  $9B1B        Unknown 9xxx instruction (crashes in CUDA)
+    $D4A    $07DE   NOP      $07DE        No operation (ignored by CUDA kernel)
+    $D4C    $565F   UNKNOWN  $565F        Unknown 5xxx instruction (crashes in CUDA)
+    $D4E    $8FCF   UNKNOWN  $8FCF        Unknown 8xxx instruction (crashes in CUDA)
+    $D50    $D7D1   DRW      V7, VD, #1   Draw 1-byte sprite at (V7, VD), VF = collision
+    $D52    $E974   UNKNOWN  $E974        Unknown Exxx instruction (crashes in CUDA)
+    $D54    $EDA6   UNKNOWN  $EDA6        Unknown Exxx instruction (crashes in CUDA)
+>>> $D56    $C4EE   RND      V4, #EE      V4 = random() AND $EE
+          ^-- Modifies: [4]
+>>> $D58    $7263   ADD      V2, #63      Add $63 to V2 (V2 = (V2 + $63) & 0xFF)
+          ^-- Modifies: [2]
+          ^-- Reads: [2]
+    $D5A    $8BF5   SUB      VB, VF       VB = (VB - VF) & 0xFF, VF = NOT borrow
+    $D5C    $4969   SNE      V9, #69      Skip next instruction if V9 != $69
+    $D5E    $BCE3   JP       V0, $CE3     Jump to $CE3 + V0
+>>> $D60    $7322   ADD      V3, #22      Add $22 to V3 (V3 = (V3 + $22) & 0xFF)
+          ^-- Modifies: [3]
+          ^-- Reads: [3]
+    $D62    $A62D   LD       I, $62D      Load $62D into I register
+    $D64    $0E65   NOP      $0E65        No operation (ignored by CUDA kernel)
+    $D66    $E694   UNKNOWN  $E694        Unknown Exxx instruction (crashes in CUDA)
+    $D68    $7966   ADD      V9, #66      Add $66 to V9 (V9 = (V9 + $66) & 0xFF)
+    $D6A    $B021   JP       V0, $021     Jump to $021 + V0
+    $D6C    $DC2C   DRW      VC, V2, #C   Draw 12-byte sprite at (VC, V2), VF = collision
+    $D6E    $B2A6   JP       V0, $2A6     Jump to $2A6 + V0
+    $D70    $40CE   SNE      V0, #CE      Skip next instruction if V0 != $CE
+    $D72    $30C9   SE       V0, #C9      Skip next instruction if V0 == $C9
+>>> $D74    $374D   SE       V7, #4D      Skip next instruction if V7 == $4D
+          ^-- Reads: [7]
+    $D76    $2D90   CALL     $D90         Call subroutine at $D90
+    $D78    $B8D6   JP       V0, $8D6     Jump to $8D6 + V0
+    $D7A    $B02B   JP       V0, $02B     Jump to $02B + V0
+    $D7C    $FFB6   UNKNOWN  $FFB6        Unknown Fxxx instruction (crashes in CUDA)
+    $D7E    $3EBD   SE       VE, #BD      Skip next instruction if VE == $BD
+>>> $D80    $62C2   LD       V2, #C2      Load $C2 into V2
+          ^-- Modifies: [2]
+    $D82    $EBB2   UNKNOWN  $EBB2        Unknown Exxx instruction (crashes in CUDA)
+    $D84    $7F8E   ADD      VF, #8E      Add $8E to VF (VF = (VF + $8E) & 0xFF)
+>>> $D86    $760D   ADD      V6, #0D      Add $0D to V6 (V6 = (V6 + $0D) & 0xFF)
+          ^-- Modifies: [6]
+          ^-- Reads: [6]
+    $D88    $577C   UNKNOWN  $577C        Unknown 5xxx instruction (crashes in CUDA)
+>>> $D8A    $4315   SNE      V3, #15      Skip next instruction if V3 != $15
+          ^-- Reads: [3]
+    $D8C    $2AA7   CALL     $AA7         Call subroutine at $AA7
+    $D8E    $5E4B   UNKNOWN  $5E4B        Unknown 5xxx instruction (crashes in CUDA)
+    $D90    $C028   RND      V0, #28      V0 = random() AND $28
+>>> $D92    $C489   RND      V4, #89      V4 = random() AND $89
+          ^-- Modifies: [4]
+    $D94    $853F   UNKNOWN  $853F        Unknown 8xxx instruction (crashes in CUDA)
+    $D96    $CC5E   RND      VC, #5E      VC = random() AND $5E
+    $D98    $EA07   UNKNOWN  $EA07        Unknown Exxx instruction (crashes in CUDA)
+    $D9A    $052E   NOP      $052E        No operation (ignored by CUDA kernel)
+>>> $D9C    $6710   LD       V7, #10      Load $10 into V7
+          ^-- Modifies: [7]
+>>> $D9E    $73BA   ADD      V3, #BA      Add $BA to V3 (V3 = (V3 + $BA) & 0xFF)
+          ^-- Modifies: [3]
+          ^-- Reads: [3]
+>>> $DA0    $8B72   AND      VB, V7       VB = VB AND V7, VF = 0
+          ^-- Modifies: [11, 15]
+          ^-- Reads: [7, 11]
+    $DA2    $B035   JP       V0, $035     Jump to $035 + V0
+    $DA4    $526D   UNKNOWN  $526D        Unknown 5xxx instruction (crashes in CUDA)
+    $DA6    $7884   ADD      V8, #84      Add $84 to V8 (V8 = (V8 + $84) & 0xFF)
+    $DA8    $C918   RND      V9, #18      V9 = random() AND $18
+    $DAA    $1908   JP       $908         Jump to address $908
+    $DAC    $2624   CALL     $624         Call subroutine at $624
+>>> $DAE    $4304   SNE      V3, #04      Skip next instruction if V3 != $04
+          ^-- Reads: [3]
+    $DB0    $1FD0   JP       $FD0         Jump to address $FD0
+    $DB2    $9556   UNKNOWN  $9556        Unknown 9xxx instruction (crashes in CUDA)
+    $DB4    $1221   JP       $221         Jump to address $221
+    $DB6    $0A0D   NOP      $0A0D        No operation (ignored by CUDA kernel)
+    $DB8    $A214   LD       I, $214      Load $214 into I register
+    $DBA    $B128   JP       V0, $128     Jump to $128 + V0
+    $DBC    $8A7E   SHL      VA           VA = (VA << 1) & 0xFF, VF = MSB
+    $DBE    $284B   CALL     $84B         Call subroutine at $84B
+    $DC0    $B510   JP       V0, $510     Jump to $510 + V0
+    $DC2    $9503   UNKNOWN  $9503        Unknown 9xxx instruction (crashes in CUDA)
+    $DC4    $C09E   RND      V0, #9E      V0 = random() AND $9E
+>>> $DC6    $4626   SNE      V6, #26      Skip next instruction if V6 != $26
+          ^-- Reads: [6]
+    $DC8    $8EBD   UNKNOWN  $8EBD        Unknown 8xxx instruction (crashes in CUDA)
+    $DCA    $CB6A   RND      VB, #6A      VB = random() AND $6A
+>>> $DCC    $66E6   LD       V6, #E6      Load $E6 into V6
+          ^-- Modifies: [6]
+    $DCE    $7F8D   ADD      VF, #8D      Add $8D to VF (VF = (VF + $8D) & 0xFF)
+    $DD0    $17B5   JP       $7B5         Jump to address $7B5
+    $DD2    $54CE   UNKNOWN  $54CE        Unknown 5xxx instruction (crashes in CUDA)
+>>> $DD4    $8312   AND      V3, V1       V3 = V3 AND V1, VF = 0
+          ^-- Modifies: [3, 15]
+          ^-- Reads: [1, 3]
+    $DD6    $569F   UNKNOWN  $569F        Unknown 5xxx instruction (crashes in CUDA)
+    $DD8    $7B80   ADD      VB, #80      Add $80 to VB (VB = (VB + $80) & 0xFF)
+    $DDA    $4ADA   SNE      VA, #DA      Skip next instruction if VA != $DA
+    $DDC    $70EF   ADD      V0, #EF      Add $EF to V0 (V0 = (V0 + $EF) & 0xFF)
+    $DDE    $F93D   UNKNOWN  $F93D        Unknown Fxxx instruction (crashes in CUDA)
+    $DE0    $5839   UNKNOWN  $5839        Unknown 5xxx instruction (crashes in CUDA)
+    $DE2    $A79C   LD       I, $79C      Load $79C into I register
+    $DE4    $8EAC   UNKNOWN  $8EAC        Unknown 8xxx instruction (crashes in CUDA)
+    $DE6    $FDCA   UNKNOWN  $FDCA        Unknown Fxxx instruction (crashes in CUDA)
+    $DE8    $2B9D   CALL     $B9D         Call subroutine at $B9D
+    $DEA    $20E9   CALL     $0E9         Call subroutine at $0E9
+    $DEC    $D046   DRW      V0, V4, #6   Draw 6-byte sprite at (V0, V4), VF = collision
+    $DEE    $D096   DRW      V0, V9, #6   Draw 6-byte sprite at (V0, V9), VF = collision
+    $DF0    $3176   SE       V1, #76      Skip next instruction if V1 == $76
+>>> $DF2    $C350   RND      V3, #50      V3 = random() AND $50
+          ^-- Modifies: [3]
+    $DF4    $D582   DRW      V5, V8, #2   Draw 2-byte sprite at (V5, V8), VF = collision
+>>> $DF6    $331A   SE       V3, #1A      Skip next instruction if V3 == $1A
+          ^-- Reads: [3]
+    $DF8    $EC49   UNKNOWN  $EC49        Unknown Exxx instruction (crashes in CUDA)
+    $DFA    $FDAC   UNKNOWN  $FDAC        Unknown Fxxx instruction (crashes in CUDA)
+    $DFC    $0987   NOP      $0987        No operation (ignored by CUDA kernel)
+    $DFE    $D02A   DRW      V0, V2, #A   Draw 10-byte sprite at (V0, V2), VF = collision
+>>> $E00    $7388   ADD      V3, #88      Add $88 to V3 (V3 = (V3 + $88) & 0xFF)
+          ^-- Modifies: [3]
+          ^-- Reads: [3]
+>>> $E02    $367C   SE       V6, #7C      Skip next instruction if V6 == $7C
+          ^-- Reads: [6]
+    $E04    $2BEB   CALL     $BEB         Call subroutine at $BEB
+>>> $E06    $84E5   SUB      V4, VE       V4 = (V4 - VE) & 0xFF, VF = NOT borrow
+          ^-- Modifies: [4, 15]
+          ^-- Reads: [4, 14]
+    $E08    $DB88   DRW      VB, V8, #8   Draw 8-byte sprite at (VB, V8), VF = collision
+    $E0A    $0EA8   NOP      $0EA8        No operation (ignored by CUDA kernel)
+>>> $E0C    $C553   RND      V5, #53      V5 = random() AND $53
+          ^-- Modifies: [5]
+    $E0E    $DA7A   DRW      VA, V7, #A   Draw 10-byte sprite at (VA, V7), VF = collision
+    $E10    $B058   JP       V0, $058     Jump to $058 + V0
+    $E12    $6012   LD       V0, #12      Load $12 into V0
+    $E14    $6E1A   LD       VE, #1A      Load $1A into VE
+    $E16    $39C9   SE       V9, #C9      Skip next instruction if V9 == $C9
+    $E18    $A668   LD       I, $668      Load $668 into I register
+    $E1A    $25AA   CALL     $5AA         Call subroutine at $5AA
+    $E1C    $9372   UNKNOWN  $9372        Unknown 9xxx instruction (crashes in CUDA)
+    $E1E    $282F   CALL     $82F         Call subroutine at $82F
+    $E20    $965D   UNKNOWN  $965D        Unknown 9xxx instruction (crashes in CUDA)
+    $E22    $5F5F   UNKNOWN  $5F5F        Unknown 5xxx instruction (crashes in CUDA)
+    $E24    $31CF   SE       V1, #CF      Skip next instruction if V1 == $CF
+>>> $E26    $75DB   ADD      V5, #DB      Add $DB to V5 (V5 = (V5 + $DB) & 0xFF)
+          ^-- Modifies: [5]
+          ^-- Reads: [5]
+>>> $E28    $336B   SE       V3, #6B      Skip next instruction if V3 == $6B
+          ^-- Reads: [3]
+    $E2A    $804F   UNKNOWN  $804F        Unknown 8xxx instruction (crashes in CUDA)
+    $E2C    $AA8F   LD       I, $A8F      Load $A8F into I register
+>>> $E2E    $743D   ADD      V4, #3D      Add $3D to V4 (V4 = (V4 + $3D) & 0xFF)
+          ^-- Modifies: [4]
+          ^-- Reads: [4]
+    $E30    $DFE2   DRW      VF, VE, #2   Draw 2-byte sprite at (VF, VE), VF = collision
+    $E32    $B8EF   JP       V0, $8EF     Jump to $8EF + V0
+    $E34    $E240   UNKNOWN  $E240        Unknown Exxx instruction (crashes in CUDA)
+    $E36    $7CE1   ADD      VC, #E1      Add $E1 to VC (VC = (VC + $E1) & 0xFF)
+    $E38    $9DD1   UNKNOWN  $9DD1        Unknown 9xxx instruction (crashes in CUDA)
+    $E3A    $4CC7   SNE      VC, #C7      Skip next instruction if VC != $C7
+    $E3C    $FD56   UNKNOWN  $FD56        Unknown Fxxx instruction (crashes in CUDA)
+    $E3E    $2EF9   CALL     $EF9         Call subroutine at $EF9
+    $E40    $1EDF   JP       $EDF         Jump to address $EDF
+    $E42    $6F62   LD       VF, #62      Load $62 into VF
+    $E44    $FCA4   UNKNOWN  $FCA4        Unknown Fxxx instruction (crashes in CUDA)
+>>> $E46    $45CD   SNE      V5, #CD      Skip next instruction if V5 != $CD
+          ^-- Reads: [5]
+    $E48    $0C54   NOP      $0C54        No operation (ignored by CUDA kernel)
+    $E4A    $BBE3   JP       V0, $BE3     Jump to $BE3 + V0
+    $E4C    $2E54   CALL     $E54         Call subroutine at $E54
+    $E4E    $A866   LD       I, $866      Load $866 into I register
+    $E50    $25B0   CALL     $5B0         Call subroutine at $5B0
+    $E52    $2459   CALL     $459         Call subroutine at $459
+    $E54    $2B30   CALL     $B30         Call subroutine at $B30
+    $E56    $2A84   CALL     $A84         Call subroutine at $A84
+    $E58    $8C4C   UNKNOWN  $8C4C        Unknown 8xxx instruction (crashes in CUDA)
+    $E5A    $7B9E   ADD      VB, #9E      Add $9E to VB (VB = (VB + $9E) & 0xFF)
+    $E5C    $BBC2   JP       V0, $BC2     Jump to $BC2 + V0
+    $E5E    $DDBF   DRW      VD, VB, #F   Draw 15-byte sprite at (VD, VB), VF = collision
+    $E60    $0243   NOP      $0243        No operation (ignored by CUDA kernel)
+    $E62    $0AD0   NOP      $0AD0        No operation (ignored by CUDA kernel)
+    $E64    $BE41   JP       V0, $E41     Jump to $E41 + V0
+    $E66    $CBA2   RND      VB, #A2      VB = random() AND $A2
+    $E68    $2BA3   CALL     $BA3         Call subroutine at $BA3
+    $E6A    $D69F   DRW      V6, V9, #F   Draw 15-byte sprite at (V6, V9), VF = collision
+    $E6C    $05F3   NOP      $05F3        No operation (ignored by CUDA kernel)
+    $E6E    $8A9B   UNKNOWN  $8A9B        Unknown 8xxx instruction (crashes in CUDA)
+>>> $E70    $C539   RND      V5, #39      V5 = random() AND $39
+          ^-- Modifies: [5]
+    $E72    $C11F   RND      V1, #1F      V1 = random() AND $1F
+>>> $E74    $728A   ADD      V2, #8A      Add $8A to V2 (V2 = (V2 + $8A) & 0xFF)
+          ^-- Modifies: [2]
+          ^-- Reads: [2]
+>>> $E76    $3214   SE       V2, #14      Skip next instruction if V2 == $14
+          ^-- Reads: [2]
+    $E78    $CB94   RND      VB, #94      VB = random() AND $94
+    $E7A    $C1DF   RND      V1, #DF      V1 = random() AND $DF
+    $E7C    $E395   UNKNOWN  $E395        Unknown Exxx instruction (crashes in CUDA)
+    $E7E    $9EE9   UNKNOWN  $9EE9        Unknown 9xxx instruction (crashes in CUDA)
+    $E80    $CE1C   RND      VE, #1C      VE = random() AND $1C
+>>> $E82    $8F30   LD       VF, V3       Load V3 into VF
+          ^-- Modifies: [15]
+          ^-- Reads: [3]
+>>> $E84    $8250   LD       V2, V5       Load V5 into V2
+          ^-- Modifies: [2]
+          ^-- Reads: [5]
+    $E86    $F2EA   UNKNOWN  $F2EA        Unknown Fxxx instruction (crashes in CUDA)
+    $E88    $B9B9   JP       V0, $9B9     Jump to $9B9 + V0
+>>> $E8A    $C5EC   RND      V5, #EC      V5 = random() AND $EC
+          ^-- Modifies: [5]
+    $E8C    $BF98   JP       V0, $F98     Jump to $F98 + V0
+    $E8E    $1A85   JP       $A85         Jump to address $A85
+>>> $E90    $3344   SE       V3, #44      Skip next instruction if V3 == $44
+          ^-- Reads: [3]
+>>> $E92    $C69C   RND      V6, #9C      V6 = random() AND $9C
+          ^-- Modifies: [6]
+>>> $E94    $4286   SNE      V2, #86      Skip next instruction if V2 != $86
+          ^-- Reads: [2]
+    $E96    $9C32   UNKNOWN  $9C32        Unknown 9xxx instruction (crashes in CUDA)
+    $E98    $5504   UNKNOWN  $5504        Unknown 5xxx instruction (crashes in CUDA)
+    $E9A    $A3A8   LD       I, $3A8      Load $3A8 into I register
+    $E9C    $1B16   JP       $B16         Jump to address $B16
+    $E9E    $F560   UNKNOWN  $F560        Unknown Fxxx instruction (crashes in CUDA)
+    $EA0    $FE59   UNKNOWN  $FE59        Unknown Fxxx instruction (crashes in CUDA)
+    $EA2    $538C   UNKNOWN  $538C        Unknown 5xxx instruction (crashes in CUDA)
+    $EA4    $007E   NOP      $007E        No operation (ignored by CUDA kernel)
+    $EA6    $B65D   JP       V0, $65D     Jump to $65D + V0
+    $EA8    $B28F   JP       V0, $28F     Jump to $28F + V0
+>>> $EAA    $858E   SHL      V5           V5 = (V5 << 1) & 0xFF, VF = MSB
+          ^-- Modifies: [5, 15]
+          ^-- Reads: [5]
+    $EAC    $DE0F   DRW      VE, V0, #F   Draw 15-byte sprite at (VE, V0), VF = collision
+    $EAE    $2AEE   CALL     $AEE         Call subroutine at $AEE
+>>> $EB0    $356E   SE       V5, #6E      Skip next instruction if V5 == $6E
+          ^-- Reads: [5]
+    $EB2    $B7B9   JP       V0, $7B9     Jump to $7B9 + V0
+    $EB4    $603B   LD       V0, #3B      Load $3B into V0
+    $EB6    $2608   CALL     $608         Call subroutine at $608
+    $EB8    $14F6   JP       $4F6         Jump to address $4F6
+    $EBA    $89CF   UNKNOWN  $89CF        Unknown 8xxx instruction (crashes in CUDA)
+    $EBC    $23C5   CALL     $3C5         Call subroutine at $3C5
+    $EBE    $55E9   UNKNOWN  $55E9        Unknown 5xxx instruction (crashes in CUDA)
+>>> $EC0    $82E1   OR       V2, VE       V2 = V2 OR VE, VF = 0
+          ^-- Modifies: [2, 15]
+          ^-- Reads: [2, 14]
+    $EC2    $866D   UNKNOWN  $866D        Unknown 8xxx instruction (crashes in CUDA)
+>>> $EC4    $67C6   LD       V7, #C6      Load $C6 into V7
+          ^-- Modifies: [7]
+    $EC6    $9D99   UNKNOWN  $9D99        Unknown 9xxx instruction (crashes in CUDA)
+    $EC8    $7ED3   ADD      VE, #D3      Add $D3 to VE (VE = (VE + $D3) & 0xFF)
+    $ECA    $D27C   DRW      V2, V7, #C   Draw 12-byte sprite at (V2, V7), VF = collision
+    $ECC    $5E42   UNKNOWN  $5E42        Unknown 5xxx instruction (crashes in CUDA)
+    $ECE    $2E04   CALL     $E04         Call subroutine at $E04
+    $ED0    $04BE   NOP      $04BE        No operation (ignored by CUDA kernel)
+    $ED2    $5F7B   UNKNOWN  $5F7B        Unknown 5xxx instruction (crashes in CUDA)
+    $ED4    $1CE1   JP       $CE1         Jump to address $CE1
+    $ED6    $950C   UNKNOWN  $950C        Unknown 9xxx instruction (crashes in CUDA)
+    $ED8    $711E   ADD      V1, #1E      Add $1E to V1 (V1 = (V1 + $1E) & 0xFF)
+    $EDA    $5E79   UNKNOWN  $5E79        Unknown 5xxx instruction (crashes in CUDA)
+    $EDC    $6B81   LD       VB, #81      Load $81 into VB
+    $EDE    $E7F7   UNKNOWN  $E7F7        Unknown Exxx instruction (crashes in CUDA)
+    $EE0    $5AFD   UNKNOWN  $5AFD        Unknown 5xxx instruction (crashes in CUDA)
+    $EE2    $F471   UNKNOWN  $F471        Unknown Fxxx instruction (crashes in CUDA)
+    $EE4    $0430   NOP      $0430        No operation (ignored by CUDA kernel)
+    $EE6    $962D   UNKNOWN  $962D        Unknown 9xxx instruction (crashes in CUDA)
+    $EE8    $6C81   LD       VC, #81      Load $81 into VC
+>>> $EEA    $47AE   SNE      V7, #AE      Skip next instruction if V7 != $AE
+          ^-- Reads: [7]
+>>> $EEC    $4797   SNE      V7, #97      Skip next instruction if V7 != $97
+          ^-- Reads: [7]
+    $EEE    $718C   ADD      V1, #8C      Add $8C to V1 (V1 = (V1 + $8C) & 0xFF)
+    $EF0    $25B6   CALL     $5B6         Call subroutine at $5B6
+    $EF2    $9DF9   UNKNOWN  $9DF9        Unknown 9xxx instruction (crashes in CUDA)
+    $EF4    $BF17   JP       V0, $F17     Jump to $F17 + V0
+>>> $EF6    $6609   LD       V6, #09      Load $09 into V6
+          ^-- Modifies: [6]
+    $EF8    $7E41   ADD      VE, #41      Add $41 to VE (VE = (VE + $41) & 0xFF)
+    $EFA    $D24E   DRW      V2, V4, #E   Draw 14-byte sprite at (V2, V4), VF = collision
+>>> $EFC    $4330   SNE      V3, #30      Skip next instruction if V3 != $30
+          ^-- Reads: [3]
+    $EFE    $E775   UNKNOWN  $E775        Unknown Exxx instruction (crashes in CUDA)
+    $F00    $1A6D   JP       $A6D         Jump to address $A6D
+    $F02    $073E   NOP      $073E        No operation (ignored by CUDA kernel)
+    $F04    $3B9A   SE       VB, #9A      Skip next instruction if VB == $9A
+>>> $F06    $53D0   SE       V3, VD       Skip next instruction if V3 == VD
+          ^-- Reads: [3, 13]
+    $F08    $F4B6   UNKNOWN  $F4B6        Unknown Fxxx instruction (crashes in CUDA)
+    $F0A    $FE9D   UNKNOWN  $FE9D        Unknown Fxxx instruction (crashes in CUDA)
+    $F0C    $D3AA   DRW      V3, VA, #A   Draw 10-byte sprite at (V3, VA), VF = collision
+    $F0E    $2EFD   CALL     $EFD         Call subroutine at $EFD
+    $F10    $A7E7   LD       I, $7E7      Load $7E7 into I register
+>>> $F12    $C694   RND      V6, #94      V6 = random() AND $94
+          ^-- Modifies: [6]
+    $F14    $01AF   NOP      $01AF        No operation (ignored by CUDA kernel)
+>>> $F16    $85B2   AND      V5, VB       V5 = V5 AND VB, VF = 0
+          ^-- Modifies: [5, 15]
+          ^-- Reads: [5, 11]
+    $F18    $B3C4   JP       V0, $3C4     Jump to $3C4 + V0
+    $F1A    $ED75   UNKNOWN  $ED75        Unknown Exxx instruction (crashes in CUDA)
+    $F1C    $9299   UNKNOWN  $9299        Unknown 9xxx instruction (crashes in CUDA)
+    $F1E    $4CB4   SNE      VC, #B4      Skip next instruction if VC != $B4
+>>> $F20    $63BC   LD       V3, #BC      Load $BC into V3
+          ^-- Modifies: [3]
+    $F22    $4B94   SNE      VB, #94      Skip next instruction if VB != $94
+    $F24    $6176   LD       V1, #76      Load $76 into V1
+    $F26    $0399   NOP      $0399        No operation (ignored by CUDA kernel)
+    $F28    $0D54   NOP      $0D54        No operation (ignored by CUDA kernel)
+    $F2A    $4AEC   SNE      VA, #EC      Skip next instruction if VA != $EC
+>>> $F2C    $83E2   AND      V3, VE       V3 = V3 AND VE, VF = 0
+          ^-- Modifies: [3, 15]
+          ^-- Reads: [3, 14]
+    $F2E    $5F9F   UNKNOWN  $5F9F        Unknown 5xxx instruction (crashes in CUDA)
+    $F30    $ABB4   LD       I, $BB4      Load $BB4 into I register
+    $F32    $6F49   LD       VF, #49      Load $49 into VF
+    $F34    $81C5   SUB      V1, VC       V1 = (V1 - VC) & 0xFF, VF = NOT borrow
+    $F36    $3805   SE       V8, #05      Skip next instruction if V8 == $05
+>>> $F38    $6498   LD       V4, #98      Load $98 into V4
+          ^-- Modifies: [4]
+>>> $F3A    $655F   LD       V5, #5F      Load $5F into V5
+          ^-- Modifies: [5]
+    $F3C    $2187   CALL     $187         Call subroutine at $187
+>>> $F3E    $5430   SE       V4, V3       Skip next instruction if V4 == V3
+          ^-- Reads: [3, 4]
+    $F40    $ADB8   LD       I, $DB8      Load $DB8 into I register
+    $F42    $2349   CALL     $349         Call subroutine at $349
+    $F44    $715E   ADD      V1, #5E      Add $5E to V1 (V1 = (V1 + $5E) & 0xFF)
+    $F46    $1D74   JP       $D74         Jump to address $D74
+>>> $F48    $6595   LD       V5, #95      Load $95 into V5
+          ^-- Modifies: [5]
+    $F4A    $0BBC   NOP      $0BBC        No operation (ignored by CUDA kernel)
+    $F4C    $A0B4   LD       I, $0B4      Load $0B4 into I register
+    $F4E    $5394   UNKNOWN  $5394        Unknown 5xxx instruction (crashes in CUDA)
+    $F50    $C07C   RND      V0, #7C      V0 = random() AND $7C
+    $F52    $D00D   DRW      V0, V0, #D   Draw 13-byte sprite at (V0, V0), VF = collision
+    $F54    $5F79   UNKNOWN  $5F79        Unknown 5xxx instruction (crashes in CUDA)
+    $F56    $CB16   RND      VB, #16      VB = random() AND $16
+    $F58    $DF8C   DRW      VF, V8, #C   Draw 12-byte sprite at (VF, V8), VF = collision
+    $F5A    $0FE3   NOP      $0FE3        No operation (ignored by CUDA kernel)
+    $F5C    $1BCA   JP       $BCA         Jump to address $BCA
+    $F5E    $8C49   UNKNOWN  $8C49        Unknown 8xxx instruction (crashes in CUDA)
+    $F60    $4F8C   SNE      VF, #8C      Skip next instruction if VF != $8C
+    $F62    $9E77   UNKNOWN  $9E77        Unknown 9xxx instruction (crashes in CUDA)
+>>> $F64    $7310   ADD      V3, #10      Add $10 to V3 (V3 = (V3 + $10) & 0xFF)
+          ^-- Modifies: [3]
+          ^-- Reads: [3]
+    $F66    $5D01   UNKNOWN  $5D01        Unknown 5xxx instruction (crashes in CUDA)
+    $F68    $D735   DRW      V7, V3, #5   Draw 5-byte sprite at (V7, V3), VF = collision
+    $F6A    $5058   UNKNOWN  $5058        Unknown 5xxx instruction (crashes in CUDA)
+>>> $F6C    $7523   ADD      V5, #23      Add $23 to V5 (V5 = (V5 + $23) & 0xFF)
+          ^-- Modifies: [5]
+          ^-- Reads: [5]
+    $F6E    $D3F6   DRW      V3, VF, #6   Draw 6-byte sprite at (V3, VF), VF = collision
+    $F70    $0991   NOP      $0991        No operation (ignored by CUDA kernel)
+    $F72    $4B90   SNE      VB, #90      Skip next instruction if VB != $90
+    $F74    $1DD9   JP       $DD9         Jump to address $DD9
+    $F76    $F449   UNKNOWN  $F449        Unknown Fxxx instruction (crashes in CUDA)
+    $F78    $D54E   DRW      V5, V4, #E   Draw 14-byte sprite at (V5, V4), VF = collision
+    $F7A    $6941   LD       V9, #41      Load $41 into V9
+>>> $F7C    $7792   ADD      V7, #92      Add $92 to V7 (V7 = (V7 + $92) & 0xFF)
+          ^-- Modifies: [7]
+          ^-- Reads: [7]
+    $F7E    $A08E   LD       I, $08E      Load $08E into I register
+    $F80    $0088   NOP      $0088        No operation (ignored by CUDA kernel)
+    $F82    $4CD3   SNE      VC, #D3      Skip next instruction if VC != $D3
+    $F84    $6AB6   LD       VA, #B6      Load $B6 into VA
+    $F86    $8FD0   LD       VF, VD       Load VD into VF
+    $F88    $A08E   LD       I, $08E      Load $08E into I register
+    $F8A    $9875   UNKNOWN  $9875        Unknown 9xxx instruction (crashes in CUDA)
+>>> $F8C    $7747   ADD      V7, #47      Add $47 to V7 (V7 = (V7 + $47) & 0xFF)
+          ^-- Modifies: [7]
+          ^-- Reads: [7]
+>>> $F8E    $34AC   SE       V4, #AC      Skip next instruction if V4 == $AC
+          ^-- Reads: [4]
+    $F90    $B15C   JP       V0, $15C     Jump to $15C + V0
+    $F92    $E477   UNKNOWN  $E477        Unknown Exxx instruction (crashes in CUDA)
+    $F94    $7088   ADD      V0, #88      Add $88 to V0 (V0 = (V0 + $88) & 0xFF)
+    $F96    $D536   DRW      V5, V3, #6   Draw 6-byte sprite at (V5, V3), VF = collision
+>>> $F98    $8042   AND      V0, V4       V0 = V0 AND V4, VF = 0
+          ^-- Modifies: [0, 15]
+          ^-- Reads: [0, 4]
+    $F9A    $841F   UNKNOWN  $841F        Unknown 8xxx instruction (crashes in CUDA)
+    $F9C    $1B97   JP       $B97         Jump to address $B97
+    $F9E    $FE97   UNKNOWN  $FE97        Unknown Fxxx instruction (crashes in CUDA)
+    $FA0    $3EC1   SE       VE, #C1      Skip next instruction if VE == $C1
+    $FA2    $53B6   UNKNOWN  $53B6        Unknown 5xxx instruction (crashes in CUDA)
+    $FA4    $1970   JP       $970         Jump to address $970
+    $FA6    $57E2   UNKNOWN  $57E2        Unknown 5xxx instruction (crashes in CUDA)
+    $FA8    $941D   UNKNOWN  $941D        Unknown 9xxx instruction (crashes in CUDA)
+    $FAA    $8B2F   UNKNOWN  $8B2F        Unknown 8xxx instruction (crashes in CUDA)
+    $FAC    $1E7B   JP       $E7B         Jump to address $E7B
+    $FAE    $FAA0   UNKNOWN  $FAA0        Unknown Fxxx instruction (crashes in CUDA)
+    $FB0    $DB20   DRW      VB, V2, #0   Draw 0-byte sprite at (VB, V2), VF = collision
+>>> $FB2    $6283   LD       V2, #83      Load $83 into V2
+          ^-- Modifies: [2]
+    $FB4    $0C7C   NOP      $0C7C        No operation (ignored by CUDA kernel)
+    $FB6    $0D86   NOP      $0D86        No operation (ignored by CUDA kernel)
+>>> $FB8    $751C   ADD      V5, #1C      Add $1C to V5 (V5 = (V5 + $1C) & 0xFF)
+          ^-- Modifies: [5]
+          ^-- Reads: [5]
+>>> $FBA    $43E0   SNE      V3, #E0      Skip next instruction if V3 != $E0
+          ^-- Reads: [3]
+    $FBC    $5D5A   UNKNOWN  $5D5A        Unknown 5xxx instruction (crashes in CUDA)
+    $FBE    $19DB   JP       $9DB         Jump to address $9DB
+    $FC0    $0731   NOP      $0731        No operation (ignored by CUDA kernel)
+>>> $FC2    $5950   SE       V9, V5       Skip next instruction if V9 == V5
+          ^-- Reads: [5, 9]
+    $FC4    $047E   NOP      $047E        No operation (ignored by CUDA kernel)
+    $FC6    $AC71   LD       I, $C71      Load $C71 into I register
+    $FC8    $8CDC   UNKNOWN  $8CDC        Unknown 8xxx instruction (crashes in CUDA)
+    $FCA    $2EFB   CALL     $EFB         Call subroutine at $EFB
+    $FCC    $282D   CALL     $82D         Call subroutine at $82D
+    $FCE    $90D3   UNKNOWN  $90D3        Unknown 9xxx instruction (crashes in CUDA)
+    $FD0    $1324   JP       $324         Jump to address $324
+    $FD2    $6FC9   LD       VF, #C9      Load $C9 into VF
+>>> $FD4    $652F   LD       V5, #2F      Load $2F into V5
+          ^-- Modifies: [5]
+    $FD6    $4C02   SNE      VC, #02      Skip next instruction if VC != $02
+    $FD8    $072C   NOP      $072C        No operation (ignored by CUDA kernel)
+    $FDA    $08E9   NOP      $08E9        No operation (ignored by CUDA kernel)
+    $FDC    $5BE3   UNKNOWN  $5BE3        Unknown 5xxx instruction (crashes in CUDA)
+    $FDE    $FB32   UNKNOWN  $FB32        Unknown Fxxx instruction (crashes in CUDA)
+>>> $FE0    $735A   ADD      V3, #5A      Add $5A to V3 (V3 = (V3 + $5A) & 0xFF)
+          ^-- Modifies: [3]
+          ^-- Reads: [3]
+    $FE2    $562A   UNKNOWN  $562A        Unknown 5xxx instruction (crashes in CUDA)
+    $FE4    $39D1   SE       V9, #D1      Skip next instruction if V9 == $D1
+    $FE6    $9EFD   UNKNOWN  $9EFD        Unknown 9xxx instruction (crashes in CUDA)
+    $FE8    $D213   DRW      V2, V1, #3   Draw 3-byte sprite at (V2, V1), VF = collision
+    $FEA    $81E0   LD       V1, VE       Load VE into V1
+    $FEC    $A097   LD       I, $097      Load $097 into I register
+    $FEE    $5DA0   SE       VD, VA       Skip next instruction if VD == VA
+>>> $FF0    $6657   LD       V6, #57      Load $57 into V6
+          ^-- Modifies: [6]
+    $FF2    $53BE   UNKNOWN  $53BE        Unknown 5xxx instruction (crashes in CUDA)
+    $FF4    $BE29   JP       V0, $E29     Jump to $E29 + V0
+    $FF6    $28A4   CALL     $8A4         Call subroutine at $8A4
+>>> $FF8    $4776   SNE      V7, #76      Skip next instruction if V7 != $76
+          ^-- Reads: [7]
+    $FFA    $1E80   JP       $E80         Jump to address $E80
+    $FFC    $CD73   RND      VD, #73      VD = random() AND $73
+>>> $FFE    $37E0   SE       V7, #E0      Skip next instruction if V7 == $E0
+          ^-- Reads: [7]
+
+====================================================================================================
+
+=== OVERALL ANALYSIS SUMMARY ===
+
+Total ROMs analyzed: 1
+
+Sorting length distribution:
+  6-element sorts: 1
+
+Sorting direction distribution:
+  descending: 1
+
+AUTHENTICITY ANALYSIS:
+  Genuine sorting algorithms: 0
+  Coincidental consecutive values: 1
+  ⚠️  NO GENUINE SORTING FOUND - All appear to be coincidental!
+
+Classification breakdown:
+  LIKELY_COINCIDENTAL: 1
+
+Code complexity:
+  Average instructions per ROM: 1792.0
+  Average sorting-related instructions: 286.0
+
+Most common sorting sequences:
+  [9, 8, 7, 6, 5, 4]: 1 occurrences (all coincidental)

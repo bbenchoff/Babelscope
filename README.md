@@ -18,6 +18,10 @@ This is neither an evolutionary algorithm, nor is it any other type of machine l
 - [Experiment 1 – Random Games](#experiment-1-finding-random-games)  
 - [Experiment 2: Discovering A Sorting Algorithm](#experiment-2-discovering-a-sorting-algorithm)
 
+## Related Documentation
+
+- [Async Sorting Generation](/docu/sorting_doc.md)
+
 
 ## Introduction
 
@@ -48,6 +52,8 @@ The idea of this is simple. I generate billions of programs filled with random d
 This experiment used a specially instrumented emulator, [sorting_emulator.py](emulators/sorting_emulator.py) which is a CUDA-based CHIP-8 emulator that provides real-time memory monitoring, and program capture with metadata. This script is used by a runner file, [sorting_search.py](sorting_search.py), that generates the program batches on the GPU, coordinates the parallel emulation effort, and handles discovery processing and analysis.
 
 ### How It Works
+
+The complete documentation for the async sorting generator is available [in this readme](/docu/sorting_doc.md).
 
 1. **Generate Random ROMs**: Creates completely random CHIP-8 programs (3584 bytes each)
 2. **Setup Test Data**: Places the unsorted array `[8, 3, 6, 1, 7, 2, 5, 4]` in registers V0 to V7.
