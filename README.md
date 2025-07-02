@@ -21,6 +21,7 @@ This is neither an evolutionary algorithm, nor is it any other type of machine l
 ## Related Documentation
 
 - [Async Sorting Generation](/docu/sorting_doc.md)
+- [Sorting ROM Decompiler](/docu/sorting_decomp.md)
 
 
 ## Introduction

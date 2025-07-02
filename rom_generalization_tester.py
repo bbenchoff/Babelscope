@@ -58,7 +58,7 @@ class ROMGeneralizationTester:
         """Generate diverse test patterns to validate sorting algorithms"""
         patterns = []
         
-        # Pattern 1: Your suggested 22-29 range
+        # Pattern 1: 22-29 range
         patterns.append([22, 25, 21, 28, 24, 27, 23, 26])
         
         # Pattern 2: Different permutation of 1-8
