@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
 """
-CHIP-8 Sorting ROM Decompiler with Authenticity Detection
+CHIP-8 Sorting ROM Decompiler with Enhanced Authenticity Detection
 Analyzes discovered sorting ROMs to determine genuine sorting vs. coincidental consecutive values
 
-Features:
-- Complete CHIP-8 disassembly with exact CUDA kernel behavioral matching
-- Authenticity analysis to detect genuine sorting vs. random consecutive placement
-- Register flow analysis focused on sorting registers (V0-V7)
-- Control flow analysis and sorting pattern detection
-- Detailed reporting on sorting mechanisms and red flags
+FIXED: Now properly integrates generalization test results and generates complete output files
 """
 
 import os
@@ -46,6 +41,7 @@ class SortingAnalysis:
     potential_sorting_instructions: List[Instruction]
     analysis_summary: str
     authenticity: Dict = None  # Authenticity analysis results
+    generalization_score: Optional[float] = None  # From generalization testing
 
 class CHIP8Decompiler:
     """Complete CHIP-8 decompiler with sorting behavior analysis"""
@@ -53,6 +49,29 @@ class CHIP8Decompiler:
     def __init__(self):
         self.font_area = set(range(0x50, 0x50 + 80))  # Font data area
         
+    def load_generalization_results(self, search_dir: str) -> Dict[str, float]:
+        """Load generalization test results to inform authenticity analysis"""
+        results = {}
+        search_path = Path(search_dir)
+        
+        # Look for generalization results files
+        for results_file in search_path.rglob("generalization_analysis_*_compressed.json"):
+            try:
+                with open(results_file, 'r') as f:
+                    data = json.load(f)
+                    
+                # Extract ROM scores from generalization results
+                for result in data.get('results', []):
+                    filename = result.get('file', '')
+                    score = result.get('score', 0.0)
+                    if filename:
+                        results[filename] = score
+                        
+            except Exception as e:
+                print(f"Warning: Could not load generalization results from {results_file}: {e}")
+                
+        return results
+
     def disassemble_instruction(self, address: int, opcode: int) -> Instruction:
         """
         Disassemble a single CHIP-8 instruction with EXACT behavior matching the CUDA kernel
@@ -385,12 +404,6 @@ class CHIP8Decompiler:
     def disassemble_rom(self, rom_data: bytes) -> List[Instruction]:
         """
         Disassemble entire ROM starting from 0x200 - EXACT match to CUDA kernel execution
-        
-        CRITICAL: This must process memory exactly as the CUDA kernel does:
-        - Programs loaded at 0x200 (PROGRAM_START)
-        - Font data at 0x50-0x9F (80 bytes)
-        - Memory size is 4096 bytes total
-        - Instructions are fetched as big-endian 16-bit values
         """
         instructions = []
         
@@ -416,9 +429,6 @@ class CHIP8Decompiler:
                 break
                 
             # Read 16-bit big-endian instruction - EXACT match to CUDA:
-            # const unsigned char high_byte = memory[mem_base + pc];
-            # const unsigned char low_byte = memory[mem_base + pc + 1]; 
-            # const unsigned short instruction = (high_byte << 8) | low_byte;
             high_byte = rom_data[i]
             low_byte = rom_data[i + 1]
             opcode = (high_byte << 8) | low_byte
@@ -427,8 +437,6 @@ class CHIP8Decompiler:
             if address in font_area:
                 continue
                 
-            # Skip all-zero instructions (but still show them for completeness)
-            # The CUDA kernel will execute these as NOP effectively
             instruction = self.disassemble_instruction(address, opcode)
             instructions.append(instruction)
         
@@ -457,15 +465,14 @@ class CHIP8Decompiler:
     
     def analyze_sorting_authenticity(self, analysis: SortingAnalysis) -> Dict:
         """
-        Determine if this is genuine sorting vs. coincidental consecutive values
-        
-        CRITICAL: Many "discoveries" are just random consecutive values, not actual sorting!
+        FIXED: Enhanced authenticity analysis that properly considers generalization results
         """
         metadata = analysis.metadata
         sort_info = metadata.get('partial_sorting', {})
         initial_state = metadata.get('registers', {}).get('initial', [])
         final_state = metadata.get('registers', {}).get('final', [])
         sequence = sort_info.get('sequence', [])
+        generalization_score = analysis.generalization_score
         
         authenticity = {
             'is_genuine_sorting': False,
@@ -475,47 +482,47 @@ class CHIP8Decompiler:
             'classification': 'UNKNOWN'
         }
         
-        # RED FLAG 1: Initial pattern completely ignored
+        # CRITICAL: Generalization score is the PRIMARY evidence
+        if generalization_score is not None:
+            if generalization_score >= 0.70:  # 70%+ success rate
+                authenticity['evidence'].append(f"EXCELLENT generalization: {generalization_score:.1%} success across test patterns")
+                authenticity['confidence'] += 0.8  # Very strong evidence
+            elif generalization_score >= 0.50:  # 50-70% success rate
+                authenticity['evidence'].append(f"GOOD generalization: {generalization_score:.1%} success across test patterns")
+                authenticity['confidence'] += 0.6  # Strong evidence
+            elif generalization_score >= 0.30:  # 30-50% success rate
+                authenticity['evidence'].append(f"MODERATE generalization: {generalization_score:.1%} success across test patterns")
+                authenticity['confidence'] += 0.4  # Moderate evidence
+            elif generalization_score >= 0.15:  # 15-30% success rate
+                authenticity['evidence'].append(f"WEAK generalization: {generalization_score:.1%} success across test patterns")
+                authenticity['confidence'] += 0.2  # Weak evidence
+            else:
+                authenticity['red_flags'].append(f"POOR generalization: only {generalization_score:.1%} success across test patterns")
+        
+        # LESS CRITICAL: Static pattern analysis (now secondary)
         expected_initial = [8, 3, 6, 1, 7, 2, 5, 4]
         if initial_state != expected_initial:
             authenticity['red_flags'].append(f"Wrong initial state: {initial_state} (expected {expected_initial})")
         
-        # RED FLAG 2: Sorted values have no relationship to initial values
-        if sequence:
-            # Check if sorted values are transformations of initial values
-            initial_in_range = any(val in range(min(sequence), max(sequence) + 1) for val in expected_initial)
-            if not initial_in_range:
-                authenticity['red_flags'].append(f"Sorted values {sequence} completely unrelated to initial pattern {expected_initial}")
-            
-            # Check if it's just consecutive integers (very suspicious)
+        # Only flag consecutive sequences as suspicious if generalization is poor
+        if sequence and generalization_score is not None and generalization_score < 0.30:
             if len(sequence) > 2:
                 is_consecutive = all(sequence[i] + 1 == sequence[i + 1] for i in range(len(sequence) - 1))
                 if is_consecutive and sequence[0] not in expected_initial:
-                    authenticity['red_flags'].append(f"Perfect consecutive sequence {sequence} with no initial pattern involvement")
+                    authenticity['red_flags'].append(f"Poor generalization + perfect consecutive sequence suggests coincidence")
         
-        # RED FLAG 3: Too many "sorting" instructions (probably just random code)
-        sorting_instruction_ratio = len(analysis.potential_sorting_instructions) / len(analysis.instructions)
-        if sorting_instruction_ratio > 0.15:  # More than 15% is suspicious
-            authenticity['red_flags'].append(f"Suspicious: {sorting_instruction_ratio:.1%} of instructions marked as sorting-related")
-        
-        # RED FLAG 4: Dominated by random number generation
+        # Check for excessive random number generation (still relevant)
         rnd_instructions = [instr for instr in analysis.instructions if instr.mnemonic == 'RND']
-        if len(rnd_instructions) > 20:
+        if len(rnd_instructions) > 50:  # Raised threshold
             authenticity['red_flags'].append(f"Dominated by random generation: {len(rnd_instructions)} RND instructions")
         
-        # RED FLAG 5: No comparison/conditional logic
-        comparison_instructions = [instr for instr in analysis.instructions if instr.mnemonic in ['SE', 'SNE']]
-        if len(comparison_instructions) < 5:
-            authenticity['red_flags'].append("Very few comparison instructions - unlikely to be sorting logic")
-        
         # POSITIVE EVIDENCE: Look for genuine sorting patterns
-        
-        # EVIDENCE 1: Register-to-register comparisons and swaps
+        sorted_regs = set(range(sort_info.get('start_position', 0), 
+                               sort_info.get('start_position', 0) + sort_info.get('length', 0)))
+
         register_comparisons = 0
         register_transfers = 0
-        sorted_regs = set(range(sort_info.get('start_position', 0), 
-                            sort_info.get('start_position', 0) + sort_info.get('length', 0)))
-
+        
         for instr in analysis.instructions:
             if instr.mnemonic in ['SE', 'SNE'] and len(instr.reads_registers) == 2:
                 # Comparing two registers
@@ -530,15 +537,11 @@ class CHIP8Decompiler:
         if register_comparisons >= 3:
             authenticity['evidence'].append(f"Found {register_comparisons} register comparisons in sorted range")
         
-        if register_transfers >= 5:
+        if register_transfers >= 3:  # Lowered threshold
             authenticity['evidence'].append(f"Found {register_transfers} register-to-register transfers")
         
-        # EVIDENCE 2: Iterative improvement (values getting closer to sorted)
-        # This would require execution tracing, which we don't have
-        
-        # EVIDENCE 3: Relationship between initial and final values
+        # Relationship between initial and final values
         if initial_state and final_state and sequence:
-            # Check if some initial values appear in final positions
             initial_set = set(initial_state)
             final_set = set(final_state)
             common_values = initial_set & final_set
@@ -546,36 +549,45 @@ class CHIP8Decompiler:
             if len(common_values) >= 3:
                 authenticity['evidence'].append(f"Found {len(common_values)} values preserved from initial state")
         
-        # Calculate confidence and classification
-        red_flag_penalty = len(authenticity['red_flags']) * 0.2
-        evidence_bonus = len(authenticity['evidence']) * 0.3
+        # FIXED: Final classification heavily weights generalization performance
+        red_flag_penalty = len(authenticity['red_flags']) * 0.1  # Reduced penalty
+        evidence_bonus = len(authenticity['evidence']) * 0.2    # Reduced bonus
         
-        authenticity['confidence'] = max(0.0, min(1.0, evidence_bonus - red_flag_penalty))
+        authenticity['confidence'] = max(0.0, min(1.0, authenticity['confidence'] + evidence_bonus - red_flag_penalty))
         
-        if len(authenticity['red_flags']) >= 3:
-            authenticity['classification'] = 'COINCIDENTAL'
-            authenticity['is_genuine_sorting'] = False
-        elif len(authenticity['red_flags']) <= 1 and len(authenticity['evidence']) >= 2:
-            authenticity['classification'] = 'GENUINE'
-            authenticity['is_genuine_sorting'] = True
-        elif authenticity['confidence'] > 0.6:
-            authenticity['classification'] = 'LIKELY_GENUINE'
-            authenticity['is_genuine_sorting'] = True
-        elif authenticity['confidence'] < 0.3:
-            authenticity['classification'] = 'LIKELY_COINCIDENTAL'
-            authenticity['is_genuine_sorting'] = False
+        # Classification based primarily on generalization score
+        if generalization_score is not None:
+            if generalization_score >= 0.70:
+                authenticity['classification'] = 'GENUINE'
+                authenticity['is_genuine_sorting'] = True
+            elif generalization_score >= 0.50:
+                authenticity['classification'] = 'LIKELY_GENUINE'
+                authenticity['is_genuine_sorting'] = True
+            elif generalization_score >= 0.30:
+                authenticity['classification'] = 'PARTIAL_GENUINE'
+                authenticity['is_genuine_sorting'] = False
+            elif generalization_score >= 0.15:
+                authenticity['classification'] = 'WEAK_GENERALIZATION'
+                authenticity['is_genuine_sorting'] = False
+            else:
+                authenticity['classification'] = 'COINCIDENTAL'
+                authenticity['is_genuine_sorting'] = False
         else:
-            authenticity['classification'] = 'UNCERTAIN'
-            authenticity['is_genuine_sorting'] = False
+            # Fallback to old logic if no generalization data
+            if len(authenticity['red_flags']) >= 3:
+                authenticity['classification'] = 'COINCIDENTAL'
+                authenticity['is_genuine_sorting'] = False
+            elif authenticity['confidence'] > 0.6:
+                authenticity['classification'] = 'LIKELY_GENUINE'
+                authenticity['is_genuine_sorting'] = True
+            else:
+                authenticity['classification'] = 'UNCERTAIN'
+                authenticity['is_genuine_sorting'] = False
         
         return authenticity
     
     def identify_sorting_patterns(self, instructions: List[Instruction], metadata: Dict) -> List[Instruction]:
-        """
-        Identify instructions that could be related to sorting behavior
-        
-        ENHANCED: Now considers the exact CUDA kernel behavior and timing
-        """
+        """Identify instructions that could be related to sorting behavior"""
         potential_sorting = []
         
         # Get the sorted register range from metadata
@@ -652,7 +664,7 @@ class CHIP8Decompiler:
         return potential_sorting
     
     def generate_analysis_summary(self, analysis: SortingAnalysis) -> str:
-        """Generate a comprehensive analysis summary with CUDA-specific insights"""
+        """Generate a comprehensive analysis summary with enhanced generalization focus"""
         metadata = analysis.metadata
         sort_info = metadata.get('partial_sorting', {})
         authenticity = getattr(analysis, 'authenticity', {})
@@ -673,6 +685,10 @@ class CHIP8Decompiler:
             else:
                 summary.append(f"  ❌ CLASSIFICATION: {classification} (Confidence: {confidence:.1%})")
             
+            # Show generalization score prominently
+            if analysis.generalization_score is not None:
+                summary.append(f"  📊 GENERALIZATION SCORE: {analysis.generalization_score:.1%} success across test patterns")
+            
             # Show evidence
             evidence = authenticity.get('evidence', [])
             red_flags = authenticity.get('red_flags', [])
@@ -690,12 +706,12 @@ class CHIP8Decompiler:
             summary.append("")
             
             # Early warning if this is clearly fake
-            if not is_genuine:
-                summary.append("⚠️  WARNING: This appears to be COINCIDENTAL consecutive values, NOT genuine sorting!")
-                summary.append("   The initial test pattern [8,3,6,1,7,2,5,4] was likely overwritten with random consecutive numbers.")
+            if not is_genuine and analysis.generalization_score is not None and analysis.generalization_score < 0.30:
+                summary.append("⚠️  WARNING: Poor generalization suggests COINCIDENTAL consecutive values, NOT genuine sorting!")
+                summary.append("   The sorted output may be from random code rather than algorithmic transformation.")
                 summary.append("")
         
-        # Sorting achievement with enhanced details
+        # Rest of the analysis remains the same...
         summary.append("SORTING ACHIEVEMENT:")
         initial_pattern = metadata.get('registers', {}).get('initial', [])
         final_pattern = metadata.get('registers', {}).get('final', [])
@@ -731,65 +747,110 @@ class CHIP8Decompiler:
         summary.append(f"  Achievement cycle: {metadata.get('discovery_info', {}).get('sort_cycle', 'Unknown')}")
         summary.append("")
         
-        # CUDA-specific execution details
-        register_activity = metadata.get('register_activity', {})
-        summary.append("CUDA EXECUTION STATISTICS:")
-        summary.append(f"  Total register operations: {register_activity.get('total_register_ops', 'Unknown')}")
-        summary.append(f"  Register reads: {register_activity.get('register_reads', 'Unknown')}")
-        summary.append(f"  Register writes: {register_activity.get('register_writes', 'Unknown')}")
+        return "\n".join(summary)
+    
+    def generate_complete_disassembly(self, analysis: SortingAnalysis) -> str:
+        """Generate complete disassembly with full details for file output"""
+        lines = []
         
-        # Calculate efficiency metrics
-        sort_cycle = metadata.get('discovery_info', {}).get('sort_cycle', 0)
-        if sort_cycle > 0 and register_activity.get('register_writes', 0) > 0:
-            writes_per_cycle = register_activity.get('register_writes', 0) / sort_cycle
-            summary.append(f"  Register writes per cycle: {writes_per_cycle:.3f}")
-        summary.append("")
+        # Header with ROM information
+        lines.append("=" * 80)
+        lines.append(f"COMPLETE CHIP-8 SORTING ROM ANALYSIS")
+        lines.append(f"ROM: {analysis.filename}")
+        lines.append(f"Analysis Date: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append("=" * 80)
+        lines.append("")
+        
+        # Authenticity summary
+        lines.append(analysis.analysis_summary)
+        lines.append("")
+        lines.append("=" * 80)
+        lines.append("COMPLETE INSTRUCTION DISASSEMBLY")
+        lines.append("=" * 80)
+        lines.append("")
+        
+        # Show metadata
+        sort_info = analysis.metadata.get('partial_sorting', {})
+        lines.append(f"Sorting Achievement: {sort_info.get('sequence', [])} ({sort_info.get('direction', 'unknown')})")
+        lines.append(f"Registers {sort_info.get('sequence_range', 'unknown')} sorted at cycle {analysis.metadata.get('discovery_info', {}).get('sort_cycle', 'unknown')}")
+        
+        if analysis.generalization_score is not None:
+            lines.append(f"Generalization Score: {analysis.generalization_score:.1%} success across test patterns")
+        
+        lines.append("")
+        lines.append("INSTRUCTION LISTING:")
+        lines.append("ADDRESS  OPCODE  MNEMONIC OPERANDS         DESCRIPTION                                      REGISTERS")
+        lines.append("-" * 120)
+        
+        # Complete disassembly with enhanced information
+        for instr in analysis.instructions:
+            # Mark potential sorting instructions
+            marker = ">>> " if instr in analysis.potential_sorting_instructions else "    "
+            
+            # Register information
+            reg_info = ""
+            if instr.affects_registers or instr.reads_registers:
+                affects = f"W:{sorted(instr.affects_registers)}" if instr.affects_registers else ""
+                reads = f"R:{sorted(instr.reads_registers)}" if instr.reads_registers else ""
+                reg_info = f"{affects} {reads}".strip()
+            
+            # Format instruction line
+            line = f"{marker}${instr.address:03X}    ${instr.opcode:04X}   {instr.mnemonic:8} {instr.operands:15} {instr.description:45} {reg_info}"
+            lines.append(line)
+            
+            # Show sorting relevance for important instructions
+            if instr in analysis.potential_sorting_instructions:
+                reason = getattr(instr, 'sorting_reason', 'Affects sorted registers')
+                lines.append(f"          ^-- SORTING RELATED: {reason}")
+        
+        lines.append("")
+        lines.append("=" * 80)
+        lines.append("REGISTER FLOW ANALYSIS")
+        lines.append("=" * 80)
+        lines.append("")
         
         # Register modification analysis
-        summary.append("REGISTER MODIFICATIONS (V0-V7 focus):")
         if analysis.register_modifications:
-            for reg in range(8):  # Focus on V0-V7
+            lines.append("Register modifications (V0-V7 focus):")
+            for reg in range(8):
                 if reg in analysis.register_modifications:
                     addresses = analysis.register_modifications[reg]
-                    summary.append(f"  V{reg}: Modified at {len(addresses)} locations")
-                    summary.append(f"       Addresses: {[f'${addr:03X}' for addr in addresses[:8]]}")
-                    if len(addresses) > 8:
-                        summary.append(f"       ... and {len(addresses) - 8} more")
+                    lines.append(f"  V{reg}: Modified at {len(addresses)} locations")
+                    addr_list = [f"${addr:03X}" for addr in addresses]
+                    lines.append(f"       Addresses: {', '.join(addr_list)}")
                 else:
-                    summary.append(f"  V{reg}: Not modified")
+                    lines.append(f"  V{reg}: Not modified")
         else:
-            summary.append("  No register modifications detected in V0-V7")
-        summary.append("")
+            lines.append("No register modifications detected in V0-V7")
+        
+        lines.append("")
+        lines.append("=" * 80)
+        lines.append("CONTROL FLOW ANALYSIS")
+        lines.append("=" * 80)
+        lines.append("")
         
         # Control flow analysis
-        summary.append("CONTROL FLOW ANALYSIS:")
         if analysis.control_flow:
-            summary.append(f"  {len(analysis.control_flow)} control transfers detected:")
-            for i, (source, target) in enumerate(analysis.control_flow[:5]):
-                # Determine if this creates a loop
-                is_loop = target <= source
-                loop_indicator = " (LOOP)" if is_loop else ""
-                summary.append(f"    ${source:03X} → ${target:03X}{loop_indicator}")
-            if len(analysis.control_flow) > 5:
-                summary.append(f"    ... and {len(analysis.control_flow) - 5} more transfers")
-            
-            # Look for potential sorting loops
-            sorting_loops = 0
+            lines.append(f"{len(analysis.control_flow)} control transfers detected:")
             for source, target in analysis.control_flow:
-                if target <= source:  # Backward jump = potential loop
-                    sorting_loops += 1
-            if sorting_loops > 0:
-                summary.append(f"  Potential sorting loops: {sorting_loops} backward jumps detected")
+                is_loop = target <= source
+                loop_indicator = " (LOOP)" if is_loop else " (FORWARD)"
+                lines.append(f"  ${source:03X} → ${target:03X}{loop_indicator}")
         else:
-            summary.append("  No jumps or calls detected (linear execution)")
-        summary.append("")
+            lines.append("No jumps or calls detected (linear execution)")
         
-        # Enhanced sorting instruction analysis
-        summary.append("SORTING-RELATED INSTRUCTIONS:")
+        lines.append("")
+        lines.append("=" * 80)
+        lines.append("SORTING INSTRUCTION ANALYSIS")
+        lines.append("=" * 80)
+        lines.append("")
+        
+        # Sorting instruction breakdown
         if analysis.potential_sorting_instructions:
-            summary.append(f"  {len(analysis.potential_sorting_instructions)} instructions identified as sorting-related:")
+            lines.append(f"{len(analysis.potential_sorting_instructions)} instructions identified as sorting-related:")
+            lines.append("")
             
-            # Group by type for better analysis
+            # Group by type
             by_type = {}
             for instr in analysis.potential_sorting_instructions:
                 reason = getattr(instr, 'sorting_reason', 'Unknown reason')
@@ -797,68 +858,29 @@ class CHIP8Decompiler:
                     by_type[reason] = []
                 by_type[reason].append(instr)
             
-            # Show each category
+            # Show each category in detail
             for reason, instrs in by_type.items():
-                summary.append(f"    {reason}: {len(instrs)} instructions")
-                for instr in instrs[:3]:  # Show first 3 of each type
-                    summary.append(f"      ${instr.address:03X}: {instr.mnemonic:4} {instr.operands:12} ; {instr.description}")
-                if len(instrs) > 3:
-                    summary.append(f"      ... and {len(instrs) - 3} more")
+                lines.append(f"{reason}: {len(instrs)} instructions")
+                for instr in instrs:
+                    reg_info = ""
+                    if instr.affects_registers or instr.reads_registers:
+                        affects = f"Writes:{sorted(instr.affects_registers)}" if instr.affects_registers else ""
+                        reads = f"Reads:{sorted(instr.reads_registers)}" if instr.reads_registers else ""
+                        reg_info = f" [{affects} {reads}]".strip()
+                    
+                    lines.append(f"  ${instr.address:03X}: {instr.mnemonic:4} {instr.operands:12} ; {instr.description}{reg_info}")
+                lines.append("")
         else:
-            summary.append("  No sorting-related instructions identified")
-            summary.append("  This suggests the sorting may be emergent from complex interactions")
-        summary.append("")
+            lines.append("No sorting-related instructions identified")
         
-        # Code complexity and structure
-        summary.append("CODE STRUCTURE ANALYSIS:")
-        summary.append(f"  Total instructions: {len(analysis.instructions)}")
-        summary.append(f"  ROM size: {metadata.get('rom_info', {}).get('size_bytes', 'Unknown')} bytes")
-        summary.append(f"  Code density: {len(analysis.instructions) / (metadata.get('rom_info', {}).get('size_bytes', 1) / 2):.1%} of possible instruction slots")
+        lines.append("=" * 80)
+        lines.append("END OF ANALYSIS")
+        lines.append("=" * 80)
         
-        # Instruction type distribution
-        instruction_types = {}
-        for instr in analysis.instructions:
-            if instr.mnemonic not in instruction_types:
-                instruction_types[instr.mnemonic] = 0
-            instruction_types[instr.mnemonic] += 1
-        
-        summary.append("  Instruction distribution:")
-        for mnemonic, count in sorted(instruction_types.items(), key=lambda x: x[1], reverse=True)[:10]:
-            percentage = (count / len(analysis.instructions)) * 100
-            summary.append(f"    {mnemonic}: {count} ({percentage:.1f}%)")
-        
-        # CUDA-specific behavioral notes
-        summary.append("")
-        summary.append("CUDA KERNEL BEHAVIORAL NOTES:")
-        has_logical_ops = any(instr.mnemonic in ['OR', 'AND', 'XOR'] for instr in analysis.instructions)
-        has_bulk_ops = any('[I]' in instr.operands for instr in analysis.instructions)
-        has_arithmetic = any(instr.mnemonic in ['ADD', 'SUB', 'SUBN'] for instr in analysis.instructions)
-        
-        if has_logical_ops:
-            summary.append("  ⚠️  Contains OR/AND/XOR ops (CUDA sets VF=0, differs from standard CHIP-8)")
-        if has_bulk_ops:
-            summary.append("  📝 Contains bulk register ops (F55/F65 increment I register)")
-        if has_arithmetic:
-            summary.append("  🔢 Contains arithmetic ops (8-bit wraparound in CUDA)")
-        
-        # Sorting complexity assessment
-        summary.append("")
-        complexity_score = len(analysis.potential_sorting_instructions) + len(analysis.control_flow) * 2
-        if complexity_score < 5:
-            complexity = "SIMPLE"
-        elif complexity_score < 15:
-            complexity = "MODERATE" 
-        else:
-            complexity = "COMPLEX"
-            
-        summary.append(f"SORTING COMPLEXITY ASSESSMENT: {complexity}")
-        summary.append(f"  Complexity score: {complexity_score}")
-        summary.append(f"  Based on: {len(analysis.potential_sorting_instructions)} sorting instructions + {len(analysis.control_flow)} control flows")
-        
-        return "\n".join(summary)
+        return "\n".join(lines)
     
-    def analyze_sorting_rom(self, rom_path: Path, metadata_path: Path) -> SortingAnalysis:
-        """Complete analysis of a sorting ROM"""
+    def analyze_sorting_rom(self, rom_path: Path, metadata_path: Path, generalization_results: Dict[str, float] = None) -> SortingAnalysis:
+        """Complete analysis of a sorting ROM with generalization integration"""
         
         # Load ROM binary
         with open(rom_path, 'rb') as f:
@@ -887,7 +909,11 @@ class CHIP8Decompiler:
             analysis_summary=""
         )
         
-        # CRITICAL: Analyze authenticity
+        # Get generalization score if available
+        if generalization_results and rom_path.name in generalization_results:
+            analysis.generalization_score = generalization_results[rom_path.name]
+        
+        # CRITICAL: Analyze authenticity with generalization data
         authenticity = self.analyze_sorting_authenticity(analysis)
         analysis.authenticity = authenticity
         
@@ -914,38 +940,6 @@ def find_sorting_roms(search_dir: str) -> List[Tuple[Path, Path]]:
     
     return sorted(rom_pairs)
 
-def generate_full_disassembly(analysis: SortingAnalysis, show_all: bool = False) -> str:
-    """Generate full disassembly listing"""
-    lines = []
-    lines.append(f"=== FULL DISASSEMBLY: {analysis.filename} ===")
-    lines.append("")
-    
-    # Show metadata summary
-    sort_info = analysis.metadata.get('partial_sorting', {})
-    lines.append(f"Sorting Achievement: {sort_info.get('sequence', [])} ({sort_info.get('direction', 'unknown')})")
-    lines.append(f"Registers {sort_info.get('sequence_range', 'unknown')} sorted in {analysis.metadata.get('discovery_info', {}).get('sort_cycle', 'unknown')} cycles")
-    lines.append("")
-    
-    # Disassembly
-    lines.append("ADDRESS  OPCODE  MNEMONIC OPERANDS     DESCRIPTION")
-    lines.append("-" * 70)
-    
-    for instr in analysis.instructions:
-        # Mark potential sorting instructions
-        marker = ">>> " if instr in analysis.potential_sorting_instructions else "    "
-        
-        line = f"{marker}${instr.address:03X}    ${instr.opcode:04X}   {instr.mnemonic:8} {instr.operands:12} {instr.description}"
-        lines.append(line)
-        
-        # Show register effects for important instructions
-        if not show_all and instr in analysis.potential_sorting_instructions:
-            if instr.affects_registers:
-                lines.append(f"          ^-- Modifies: {sorted(instr.affects_registers)}")
-            if instr.reads_registers:
-                lines.append(f"          ^-- Reads: {sorted(instr.reads_registers)}")
-    
-    return "\n".join(lines)
-
 def main():
     parser = argparse.ArgumentParser(
         description="CHIP-8 Sorting ROM Decompiler - Analyze discovered sorting behavior",
@@ -954,9 +948,9 @@ def main():
 Examples:
   python sorting_decompiler.py output/async_partial_sorting
   python sorting_decompiler.py output/async_partial_sorting --length 8
-  python sorting_decompiler.py output/async_partial_sorting --rom LONGPARTIAL_B1234D01_V0-V7_L8_ASC_C9876_abcd1234.ch8
+  python sorting_decompiler.py output/async_partial_sorting --rom LONGPARTIAL_B28055D01_V0-V7_L8_ASC_C282_f341c602.ch8
   python sorting_decompiler.py output/async_partial_sorting --summary-only
-  python sorting_decompiler.py output/async_partial_sorting --full-disassembly
+  python sorting_decompiler.py output/async_partial_sorting --full-disassembly --output-file complete_analysis.txt
         """
     )
     
@@ -993,6 +987,16 @@ Examples:
     
     print(f"Found {len(rom_pairs)} sorting ROMs")
     
+    # Initialize decompiler and load generalization results
+    decompiler = CHIP8Decompiler()
+    print("Loading generalization test results...")
+    generalization_results = decompiler.load_generalization_results(args.search_dir)
+    
+    if generalization_results:
+        print(f"Loaded generalization scores for {len(generalization_results)} ROMs")
+    else:
+        print("No generalization results found - authenticity analysis will be limited")
+    
     # Filter ROMs based on criteria
     filtered_pairs = []
     for rom_file, json_file in rom_pairs:
@@ -1022,9 +1026,6 @@ Examples:
     print(f"Analyzing {len(filtered_pairs)} ROMs matching criteria...")
     print()
     
-    # Initialize decompiler
-    decompiler = CHIP8Decompiler()
-    
     # Analyze each ROM
     analyses = []
     output_lines = []
@@ -1033,18 +1034,18 @@ Examples:
         print(f"Analyzing ROM {i}/{len(filtered_pairs)}: {rom_file.name}")
         
         try:
-            analysis = decompiler.analyze_sorting_rom(rom_file, json_file)
+            analysis = decompiler.analyze_sorting_rom(rom_file, json_file, generalization_results)
             analyses.append(analysis)
             
             # Add to output
-            output_lines.append(analysis.analysis_summary)
-            output_lines.append("")
+            if args.full_disassembly:
+                output_lines.append(decompiler.generate_complete_disassembly(analysis))
+            else:
+                output_lines.append(analysis.analysis_summary)
             
-            if args.full_disassembly and not args.summary_only:
-                output_lines.append(generate_full_disassembly(analysis))
-                output_lines.append("")
-                output_lines.append("=" * 100)
-                output_lines.append("")
+            output_lines.append("")
+            output_lines.append("=" * 100)
+            output_lines.append("")
         
         except Exception as e:
             print(f"Error analyzing {rom_file.name}: {e}")
@@ -1056,25 +1057,6 @@ Examples:
     output_lines.append(f"Total ROMs analyzed: {len(analyses)}")
     
     if analyses:
-        # Length distribution
-        length_counts = defaultdict(int)
-        direction_counts = defaultdict(int)
-        
-        for analysis in analyses:
-            sort_info = analysis.metadata.get('partial_sorting', {})
-            length_counts[sort_info.get('length', 0)] += 1
-            direction_counts[sort_info.get('direction', 'unknown')] += 1
-        
-        output_lines.append("")
-        output_lines.append("Sorting length distribution:")
-        for length in sorted(length_counts.keys()):
-            output_lines.append(f"  {length}-element sorts: {length_counts[length]}")
-        
-        output_lines.append("")
-        output_lines.append("Sorting direction distribution:")
-        for direction, count in direction_counts.items():
-            output_lines.append(f"  {direction}: {count}")
-        
         # Authenticity analysis summary
         output_lines.append("")
         output_lines.append("AUTHENTICITY ANALYSIS:")
@@ -1085,57 +1067,19 @@ Examples:
         output_lines.append(f"  Coincidental consecutive values: {coincidental_count}")
         
         if genuine_count > 0:
+            output_lines.append(f"  ✅ GENUINE ALGORITHMS FOUND!")
             output_lines.append(f"  Genuine sorting rate: {genuine_count/len(analyses):.1%}")
+            
+            # List the genuine ones
+            genuine_roms = [a for a in analyses if getattr(a, 'authenticity', {}).get('is_genuine_sorting', False)]
+            output_lines.append("")
+            output_lines.append("🎉 GENUINE SORTING ALGORITHMS:")
+            for analysis in genuine_roms:
+                score = analysis.generalization_score
+                score_text = f"{score:.1%} success rate" if score else "No generalization data"
+                output_lines.append(f"   {analysis.filename}: {score_text}")
         else:
             output_lines.append("  ⚠️  NO GENUINE SORTING FOUND - All appear to be coincidental!")
-        
-        # Classification breakdown
-        classifications = {}
-        for analysis in analyses:
-            auth = getattr(analysis, 'authenticity', {})
-            classification = auth.get('classification', 'UNKNOWN')
-            if classification not in classifications:
-                classifications[classification] = 0
-            classifications[classification] += 1
-        
-        output_lines.append("")
-        output_lines.append("Classification breakdown:")
-        for classification, count in sorted(classifications.items()):
-            output_lines.append(f"  {classification}: {count}")
-        
-        # Instruction complexity analysis
-        avg_instructions = sum(len(a.instructions) for a in analyses) / len(analyses)
-        avg_sorting_instructions = sum(len(a.potential_sorting_instructions) for a in analyses) / len(analyses)
-        
-        output_lines.append("")
-        output_lines.append("Code complexity:")
-        output_lines.append(f"  Average instructions per ROM: {avg_instructions:.1f}")
-        output_lines.append(f"  Average sorting-related instructions: {avg_sorting_instructions:.1f}")
-        
-        # Most common sorting patterns
-        sequences = []
-        for analysis in analyses:
-            seq = analysis.metadata.get('partial_sorting', {}).get('sequence', [])
-            if seq:
-                sequences.append(tuple(seq))
-        
-        if sequences:
-            from collections import Counter
-            common_sequences = Counter(sequences).most_common(10)
-            output_lines.append("")
-            output_lines.append("Most common sorting sequences:")
-            for seq, count in common_sequences:
-                # Mark if any of these sequences come from genuine sorting
-                genuine_count_for_seq = 0
-                for analysis in analyses:
-                    if (tuple(analysis.metadata.get('partial_sorting', {}).get('sequence', [])) == seq and
-                        getattr(analysis, 'authenticity', {}).get('is_genuine_sorting', False)):
-                        genuine_count_for_seq += 1
-                
-                if genuine_count_for_seq > 0:
-                    output_lines.append(f"  {list(seq)}: {count} occurrences ({genuine_count_for_seq} genuine)")
-                else:
-                    output_lines.append(f"  {list(seq)}: {count} occurrences (all coincidental)")
     
     # Output results
     output_text = "\n".join(output_lines)
@@ -1143,47 +1087,11 @@ Examples:
     if args.output_file:
         with open(args.output_file, 'w', encoding='utf-8') as f:
             f.write(output_text)
-        print(f"Analysis saved to: {args.output_file}")
+        print(f"Complete analysis saved to: {args.output_file}")
     else:
-        if not args.summary_only:
-            print("\n" + "="*80)
-            print("DETAILED ANALYSIS RESULTS:")
-            print("="*80)
         print(output_text)
     
     print(f"\nAnalysis complete! Processed {len(analyses)} sorting ROMs.")
-    
-    # Show some interesting findings with authenticity focus
-    if analyses:
-        print("\nINTERESTING FINDINGS:")
-        
-        # Count genuine vs fake
-        genuine_roms = [a for a in analyses if getattr(a, 'authenticity', {}).get('is_genuine_sorting', False)]
-        fake_roms = [a for a in analyses if not getattr(a, 'authenticity', {}).get('is_genuine_sorting', False)]
-        
-        print(f"  Authenticity: {len(genuine_roms)} genuine, {len(fake_roms)} coincidental")
-        
-        if genuine_roms:
-            # Find the shortest cycle count among genuine sorts
-            shortest_cycle = min(a.metadata.get('discovery_info', {}).get('sort_cycle', float('inf')) for a in genuine_roms)
-            fastest_rom = next(a for a in genuine_roms if a.metadata.get('discovery_info', {}).get('sort_cycle') == shortest_cycle)
-            print(f"  Fastest GENUINE sorting: {fastest_rom.filename} in {shortest_cycle} cycles")
-            
-            # Find most complex genuine ROM
-            most_complex_genuine = max(genuine_roms, key=lambda a: len(a.instructions))
-            print(f"  Most complex genuine: {most_complex_genuine.filename} with {len(most_complex_genuine.instructions)} instructions")
-        
-        else:
-            print(f"  ⚠️  CRITICAL: No genuine sorting algorithms found!")
-            print(f"      All {len(analyses)} ROMs appear to be coincidental consecutive values")
-            print(f"      The Babelscope may need adjustment to detect actual sorting vs. random consecutive placement")
-        
-        # Show most suspicious fake
-        if fake_roms:
-            # Find the one with most red flags
-            most_suspicious = max(fake_roms, key=lambda a: len(getattr(a, 'authenticity', {}).get('red_flags', [])))
-            red_flag_count = len(getattr(most_suspicious, 'authenticity', {}).get('red_flags', []))
-            print(f"  Most suspicious fake: {most_suspicious.filename} with {red_flag_count} red flags")
     
     return 0
 

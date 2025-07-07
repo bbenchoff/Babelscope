@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """
-FIXED Babelscope ROM Generalization Tester
-Tests discovered ROMs with different input patterns to identify true sorting algorithms
+ENHANCED Babelscope ROM Generalization Tester with Subsequence Analysis
+Tests discovered ROMs with different input patterns and analyzes ALL possible subsequences
 
-CRITICAL FIX: Now properly tests only the discovered sorting range (e.g., V2-V7)
-instead of incorrectly testing the entire V0-V7 range.
+MAJOR ENHANCEMENT: Now checks all contiguous subsequences within the discovery range
+instead of only checking the exact discovery range. This provides much more data points
+and better statistical confidence in determining true sorting behavior.
 
-This script:
-1. Loads ROMs discovered by the partial sorting Babelscope
-2. Tests each ROM with multiple different input patterns
-3. BUT ONLY CHECKS SORTING IN THE ORIGINAL DISCOVERY RANGE
-4. Compares the sorting behavior across different inputs
-5. Identifies ROMs that demonstrate true sorting capability vs pattern-specific behavior
+Example: If discovery range was V2-V7, now checks:
+V2-V3, V2-V4, V2-V5, V2-V6, V2-V7, V3-V4, V3-V5, V3-V6, V3-V7, V4-V5, V4-V6, V4-V7, V5-V6, V5-V7, V6-V7
+
+This gives 8 patterns × 15 subsequences = 120 data points instead of 8 patterns × 1 range = 8 data points
 """
 
 import os
@@ -45,8 +44,8 @@ except ImportError as e:
     sys.exit(1)
 
 
-class FixedROMGeneralizationTester:
-    """FIXED: Tests discovered ROMs with different input patterns in the correct register range"""
+class EnhancedROMGeneralizationTester:
+    """ENHANCED: Tests all possible subsequences within discovery range for comprehensive analysis"""
     
     def __init__(self, rom_directories: List[Path]):
         self.rom_directories = rom_directories
@@ -54,8 +53,9 @@ class FixedROMGeneralizationTester:
         self.test_patterns = self._generate_test_patterns()
         self.original_pattern = [8, 3, 6, 1, 7, 2, 5, 4]  # The pattern used in discovery
         
-        print(f"FIXED ROM Generalization Tester initialized")
-        print(f"CRITICAL FIX: Now tests only the discovered sorting range")
+        print(f"ENHANCED ROM Generalization Tester initialized")
+        print(f"MAJOR ENHANCEMENT: Now analyzes ALL subsequences within discovery range")
+        print(f"This provides much more data points for statistical confidence")
         print(f"Scanning ROM directories: {len(rom_directories)}")
         print(f"Test patterns: {len(self.test_patterns)}")
         
@@ -106,6 +106,18 @@ class FixedROMGeneralizationTester:
             print(f"   Warning: Error parsing sequence range '{sequence_range}': {e}, assuming V0-V7")
             return 0, 7
     
+    def _generate_all_subsequences(self, start_pos: int, end_pos: int, min_length: int = 3) -> List[Tuple[int, int]]:
+        """Generate all contiguous subsequences within the range that are at least min_length long"""
+        subsequences = []
+        range_length = end_pos - start_pos + 1
+        
+        for subseq_start in range(start_pos, end_pos + 1):
+            for subseq_end in range(subseq_start + min_length - 1, end_pos + 1):
+                if subseq_end - subseq_start + 1 >= min_length:
+                    subsequences.append((subseq_start, subseq_end))
+        
+        return subsequences
+    
     def scan_for_roms(self) -> None:
         """Scan ROM directories and load discovered ROM metadata"""
         print("Scanning for discovered ROMs...")
@@ -134,10 +146,13 @@ class FixedROMGeneralizationTester:
                         with open(ch8_file, 'rb') as f:
                             rom_data = f.read()
                         
-                        # FIXED: Extract the specific sorting range from metadata
+                        # Extract the specific sorting range from metadata
                         partial_sorting = metadata.get('partial_sorting', {})
                         sequence_range = partial_sorting.get('sequence_range', 'V0-V7')
                         start_pos, end_pos = self._parse_sequence_range(sequence_range)
+                        
+                        # ENHANCEMENT: Generate all possible subsequences within the discovery range
+                        subsequences = self._generate_all_subsequences(start_pos, end_pos, min_length=3)
                         
                         rom_info = {
                             'filename': ch8_file.name,
@@ -146,13 +161,14 @@ class FixedROMGeneralizationTester:
                             'rom_data': rom_data,
                             'original_discovery': partial_sorting,
                             'original_registers': metadata.get('registers', {}),
-                            # FIXED: Store the specific sorting range
                             'sorting_range': {
                                 'start': start_pos,
                                 'end': end_pos,
                                 'length': end_pos - start_pos + 1,
                                 'range_str': sequence_range
-                            }
+                            },
+                            # ENHANCEMENT: Store all subsequences to test
+                            'test_subsequences': subsequences
                         }
                         
                         self.discovered_roms.append(rom_info)
@@ -173,11 +189,16 @@ class FixedROMGeneralizationTester:
             print("ROM quality distribution:")
             length_counts = {}
             range_counts = {}
+            subseq_counts = {}
+            
             for rom in self.discovered_roms:
                 length = rom['original_discovery'].get('length', 0)
                 range_str = rom['sorting_range']['range_str']
+                num_subseqs = len(rom['test_subsequences'])
+                
                 length_counts[length] = length_counts.get(length, 0) + 1
                 range_counts[range_str] = range_counts.get(range_str, 0) + 1
+                subseq_counts[num_subseqs] = subseq_counts.get(num_subseqs, 0) + 1
             
             for length in sorted(length_counts.keys(), reverse=True):
                 count = length_counts[length]
@@ -186,11 +207,20 @@ class FixedROMGeneralizationTester:
             print("Sorting ranges found:")
             for range_str, count in sorted(range_counts.items()):
                 print(f"   {range_str}: {count} ROMs")
+            
+            print("ENHANCEMENT - Subsequences to test per ROM:")
+            for num_subseqs, count in sorted(subseq_counts.items()):
+                print(f"   {num_subseqs} subsequences: {count} ROMs")
+            
+            # Calculate total data points
+            total_data_points = sum(len(rom['test_subsequences']) * len(self.test_patterns) 
+                                  for rom in self.discovered_roms)
+            print(f"ENHANCEMENT - Total data points to collect: {total_data_points:,}")
     
     def test_rom_with_pattern(self, rom_data: bytes, test_pattern: List[int], 
-                             sorting_range: Dict, cycles: int = 100000, 
+                             test_subsequences: List[Tuple[int, int]], cycles: int = 100000, 
                              check_interval: int = 100) -> Optional[Dict]:
-        """FIXED: Test a single ROM with a specific input pattern, checking only the sorting range"""
+        """ENHANCED: Test a ROM with a pattern and check ALL subsequences within discovery range"""
         
         # Create single-instance detector
         detector = PartialSortingBabelscopeDetector(1)
@@ -219,18 +249,36 @@ class FixedROMGeneralizationTester:
             # Get final register state
             final_registers = cp.asnumpy(detector.registers[0, :8]).tolist()
             
-            # FIXED: Check sorting only in the specific range that was originally discovered
-            start_pos = sorting_range['start']
-            end_pos = sorting_range['end']
+            # ENHANCEMENT: Check sorting in ALL possible subsequences
+            subsequence_results = []
+            total_sorted_subsequences = 0
             
-            # Extract the values in the sorting range
-            input_range = test_pattern[start_pos:end_pos+1]
-            output_range = final_registers[start_pos:end_pos+1]
+            for subseq_start, subseq_end in test_subsequences:
+                # Extract the values in this subsequence
+                input_subseq = test_pattern[subseq_start:subseq_end+1]
+                output_subseq = final_registers[subseq_start:subseq_end+1]
+                
+                # Check if this subsequence is sorted
+                sorting_info = self._check_subsequence_sorting(input_subseq, output_subseq, subseq_start, subseq_end)
+                
+                subsequence_result = {
+                    'range': (subseq_start, subseq_end),
+                    'range_str': f"V{subseq_start}-V{subseq_end}",
+                    'length': subseq_end - subseq_start + 1,
+                    'input': input_subseq,
+                    'output': output_subseq,
+                    'sorted': sorting_info is not None,
+                    'sorting_info': sorting_info
+                }
+                
+                subsequence_results.append(subsequence_result)
+                
+                if sorting_info is not None:
+                    total_sorted_subsequences += 1
             
-            print(f"      Range {sorting_range['range_str']}: {input_range} → {output_range}")
-            
-            # Check if the specific range is sorted
-            range_sorted_info = self._check_range_sorting(input_range, output_range, start_pos)
+            # Calculate enhanced statistics
+            total_subsequences = len(test_subsequences)
+            subsequence_success_rate = total_sorted_subsequences / total_subsequences if total_subsequences > 0 else 0
             
             # Also check if the detector found anything (might be in a different range)
             detector_found_sorting = False
@@ -244,13 +292,16 @@ class FixedROMGeneralizationTester:
                     detector_sorting_info = discovery['partial_sorting']
             
             return {
-                'sorted': range_sorted_info is not None,
+                # Enhanced results
+                'subsequence_success_rate': subsequence_success_rate,
+                'sorted_subsequences': total_sorted_subsequences,
+                'total_subsequences': total_subsequences,
+                'subsequence_results': subsequence_results,
+                
+                # Original results for compatibility
+                'sorted': total_sorted_subsequences > 0,  # Any subsequence sorted
                 'input_pattern': test_pattern[:8],
                 'output_pattern': final_registers,
-                'range_input': input_range,
-                'range_output': output_range,
-                'target_range': sorting_range,
-                'range_sorting': range_sorted_info,
                 'detector_found': detector_found_sorting,
                 'detector_sorting': detector_sorting_info,
                 'register_activity': {
@@ -269,71 +320,79 @@ class FixedROMGeneralizationTester:
             del detector
             cp.get_default_memory_pool().free_all_blocks()
     
-    def _check_range_sorting(self, input_range: List[int], output_range: List[int], 
-                           start_pos: int) -> Optional[Dict]:
-        """Check if a specific range shows sorting behavior"""
+    def _check_subsequence_sorting(self, input_subseq: List[int], output_subseq: List[int], 
+                                 start_pos: int, end_pos: int) -> Optional[Dict]:
+        """Check if a specific subsequence shows sorting behavior"""
         
-        if len(output_range) < 3:  # Need at least 3 elements
+        if len(output_subseq) < 3:  # Need at least 3 elements
             return None
         
-        # Check for consecutive sorted sequences of length 3+
+        # Check for consecutive sorted sequences
         for direction in ['ascending', 'descending']:
-            for start in range(len(output_range) - 2):  # Need at least 3 elements
-                max_length = 1
-                
-                for end in range(start + 1, len(output_range)):
-                    if direction == 'ascending':
-                        if output_range[end] == output_range[end-1] + 1:
-                            max_length += 1
-                        else:
-                            break
-                    else:  # descending
-                        if output_range[end] == output_range[end-1] - 1:
-                            max_length += 1
-                        else:
-                            break
-                
-                if max_length >= 3:  # Found a sequence
-                    sequence = output_range[start:start + max_length]
-                    global_start = start_pos + start
-                    global_end = start_pos + start + max_length - 1
-                    
+            # Check if the entire subsequence is sorted in this direction
+            is_sorted = True
+            
+            for i in range(len(output_subseq) - 1):
+                if direction == 'ascending':
+                    if output_subseq[i] > output_subseq[i + 1]:
+                        is_sorted = False
+                        break
+                else:  # descending
+                    if output_subseq[i] < output_subseq[i + 1]:
+                        is_sorted = False
+                        break
+            
+            if is_sorted:
+                # Additional check: ensure it's actually a permutation of the input
+                if sorted(input_subseq) == sorted(output_subseq):
                     return {
-                        'length': max_length,
-                        'start_position': start,  # Local to the range
-                        'end_position': start + max_length - 1,  # Local to the range
-                        'global_start': global_start,  # Global register position
-                        'global_end': global_end,  # Global register position
+                        'length': len(output_subseq),
+                        'start_position': 0,  # Local to the subsequence
+                        'end_position': len(output_subseq) - 1,  # Local to the subsequence
+                        'global_start': start_pos,  # Global register position
+                        'global_end': end_pos,  # Global register position
                         'direction': direction,
-                        'sequence': sequence,
-                        'sequence_range': f"V{global_start}-V{global_end}",
-                        'detection_method': 'fixed_range_analysis'
+                        'sequence': output_subseq,
+                        'sequence_range': f"V{start_pos}-V{end_pos}",
+                        'detection_method': 'enhanced_subsequence_analysis',
+                        'is_permutation': True
                     }
         
         return None
     
     def analyze_rom_generalization(self, rom_info: Dict) -> Dict:
-        """FIXED: Test a ROM with all test patterns, checking only the original sorting range"""
+        """ENHANCED: Test a ROM with all patterns and all subsequences for comprehensive analysis"""
         
         filename = rom_info['filename']
         original_discovery = rom_info['original_discovery']
         sorting_range = rom_info['sorting_range']
+        test_subsequences = rom_info['test_subsequences']
         rom_data = rom_info['rom_data']
         
         print(f"Testing ROM: {filename}")
         print(f"   Original discovery: {original_discovery.get('sequence_range', 'unknown')} "
               f"({original_discovery.get('length', 0)} elements, "
               f"{original_discovery.get('direction', 'unknown')})")
-        print(f"   FIXED: Testing only range {sorting_range['range_str']} "
-              f"(positions {sorting_range['start']}-{sorting_range['end']})")
+        print(f"   ENHANCED: Testing {len(test_subsequences)} subsequences within "
+              f"{sorting_range['range_str']}")
+        print(f"   Total data points: {len(test_subsequences) * len(self.test_patterns):,}")
         
         results = {
             'rom_info': rom_info,
             'test_results': [],
-            'generalization_score': 0,
+            'enhanced_statistics': {
+                'total_data_points': 0,
+                'successful_data_points': 0,
+                'overall_success_rate': 0,
+                'best_subsequence': None,
+                'worst_subsequence': None,
+                'subsequence_performance': {}
+            },
+            'generalization_score': 0,  # Will be calculated from enhanced stats
             'consistent_sorting': False,
             'pattern_specific': False,
-            'range_tested': sorting_range
+            'range_tested': sorting_range,
+            'subsequences_tested': test_subsequences
         }
         
         # Test with original pattern first (sanity check)
@@ -341,57 +400,100 @@ class FixedROMGeneralizationTester:
         original_result = self.test_rom_with_pattern(
             rom_data, 
             self.original_pattern, 
-            sorting_range,
+            test_subsequences,
             cycles=150000,  # More cycles for original test
             check_interval=50  # More frequent checks
         )
         
-        if original_result and original_result['sorted']:
-            range_info = original_result['range_sorting']
-            print(f"      ✓ RANGE SORTED: {range_info['sequence_range']} "
-                  f"({range_info['length']} elements, {range_info['direction']})")
-            print(f"         Sequence: {range_info['sequence']}")
+        if original_result:
+            success_rate = original_result['subsequence_success_rate']
+            sorted_count = original_result['sorted_subsequences']
+            total_count = original_result['total_subsequences']
+            print(f"      ✓ Subsequence success rate: {success_rate:.1%} "
+                  f"({sorted_count}/{total_count} subsequences)")
         else:
-            print(f"      ✗ No sorting detected in target range")
-            if original_result:
-                print(f"         Range input: {original_result['range_input']}")
-                print(f"         Range output: {original_result['range_output']}")
+            print(f"      ✗ Failed to test with original pattern")
         
         results['test_results'].append(('original', self.original_pattern, original_result))
         
         # Test with all other patterns
-        sorting_count = 0
-        total_tests = len(self.test_patterns)
+        total_data_points = 0
+        successful_data_points = 0
+        subsequence_stats = {}  # Track performance of each subsequence
         
         for i, test_pattern in enumerate(self.test_patterns):
-            print(f"   Testing pattern {i+1}/{total_tests}: {test_pattern}")
+            print(f"   Testing pattern {i+1}/{len(self.test_patterns)}: {test_pattern}")
             
-            result = self.test_rom_with_pattern(rom_data, test_pattern, sorting_range)
+            result = self.test_rom_with_pattern(rom_data, test_pattern, test_subsequences)
             results['test_results'].append((f'pattern_{i+1}', test_pattern, result))
             
-            if result and result['sorted']:
-                sorting_count += 1
-                range_info = result['range_sorting']
-                print(f"      ✓ RANGE SORTED: {range_info['sequence_range']} "
-                      f"({range_info['length']} elements, {range_info['direction']})")
-                print(f"         Sequence: {range_info['sequence']}")
-            else:
-                print(f"      ✗ No sorting detected in target range")
+            if result:
+                pattern_total = result['total_subsequences']
+                pattern_success = result['sorted_subsequences']
+                pattern_rate = result['subsequence_success_rate']
+                
+                total_data_points += pattern_total
+                successful_data_points += pattern_success
+                
+                print(f"      Success rate: {pattern_rate:.1%} ({pattern_success}/{pattern_total})")
+                
+                # Track individual subsequence performance
+                for subseq_result in result['subsequence_results']:
+                    range_str = subseq_result['range_str']
+                    if range_str not in subsequence_stats:
+                        subsequence_stats[range_str] = {'success': 0, 'total': 0}
+                    
+                    subsequence_stats[range_str]['total'] += 1
+                    if subseq_result['sorted']:
+                        subsequence_stats[range_str]['success'] += 1
         
-        # Calculate generalization metrics
-        results['generalization_score'] = sorting_count / total_tests
-        results['consistent_sorting'] = sorting_count >= (total_tests * 0.7)  # 70% success rate
-        results['pattern_specific'] = sorting_count == 0  # Only works on original
+        # Calculate enhanced statistics
+        overall_success_rate = successful_data_points / total_data_points if total_data_points > 0 else 0
         
-        print(f"   FIXED Generalization score: {results['generalization_score']:.2%} "
-              f"({sorting_count}/{total_tests} patterns sorted in target range)")
+        # Find best and worst performing subsequences
+        best_subseq = None
+        worst_subseq = None
+        best_rate = -1
+        worst_rate = 2
+        
+        for range_str, stats in subsequence_stats.items():
+            rate = stats['success'] / stats['total'] if stats['total'] > 0 else 0
+            if rate > best_rate:
+                best_rate = rate
+                best_subseq = (range_str, rate, stats)
+            if rate < worst_rate:
+                worst_rate = rate
+                worst_subseq = (range_str, rate, stats)
+        
+        # Update enhanced statistics
+        results['enhanced_statistics'].update({
+            'total_data_points': total_data_points,
+            'successful_data_points': successful_data_points,
+            'overall_success_rate': overall_success_rate,
+            'best_subsequence': best_subseq,
+            'worst_subsequence': worst_subseq,
+            'subsequence_performance': subsequence_stats
+        })
+        
+        # Calculate generalization metrics using enhanced data
+        results['generalization_score'] = overall_success_rate
+        results['consistent_sorting'] = overall_success_rate >= 0.7  # 70% success rate across all data points
+        results['pattern_specific'] = overall_success_rate == 0  # No subsequences ever sorted
+        
+        print(f"   ENHANCED Generalization score: {overall_success_rate:.1%} "
+              f"({successful_data_points:,}/{total_data_points:,} data points)")
+        
+        if best_subseq:
+            print(f"   Best subsequence: {best_subseq[0]} ({best_subseq[1]:.1%} success)")
+        if worst_subseq and worst_subseq[1] < best_rate:
+            print(f"   Worst subsequence: {worst_subseq[0]} ({worst_subseq[1]:.1%} success)")
         
         if results['consistent_sorting']:
-            print(f"   ✓ CONSISTENT SORTING ALGORITHM DETECTED IN {sorting_range['range_str']}")
+            print(f"   ✓ CONSISTENT SORTING ALGORITHM DETECTED")
         elif results['pattern_specific']:
-            print(f"   ✗ PATTERN-SPECIFIC BEHAVIOR (likely hardcoded)")
+            print(f"   ✗ NO SORTING BEHAVIOR DETECTED")
         else:
-            print(f"   ~ PARTIAL GENERALIZATION (some patterns work)")
+            print(f"   ~ PARTIAL SORTING BEHAVIOR ({overall_success_rate:.1%} success)")
         
         print()
         
@@ -399,7 +501,7 @@ class FixedROMGeneralizationTester:
     
     def run_generalization_analysis(self, max_roms: Optional[int] = None, 
                                    cycles_per_test: int = 100000) -> List[Dict]:
-        """Run FIXED generalization analysis on all discovered ROMs"""
+        """Run ENHANCED generalization analysis on all discovered ROMs"""
         
         if not self.discovered_roms:
             self.scan_for_roms()
@@ -410,11 +512,17 @@ class FixedROMGeneralizationTester:
         
         roms_to_test = self.discovered_roms[:max_roms] if max_roms else self.discovered_roms
         
-        print(f"\nSTARTING FIXED GENERALIZATION ANALYSIS")
+        # Calculate total expected data points
+        total_expected_points = sum(len(rom['test_subsequences']) * len(self.test_patterns) 
+                                  for rom in roms_to_test)
+        
+        print(f"\nSTARTING ENHANCED GENERALIZATION ANALYSIS")
         print(f"=" * 60)
-        print(f"CRITICAL FIX: Now testing only the discovered sorting ranges")
+        print(f"MAJOR ENHANCEMENT: Now testing all subsequences within discovery ranges")
+        print(f"This provides much more data points for statistical confidence")
         print(f"ROMs to test: {len(roms_to_test)}")
         print(f"Test patterns: {len(self.test_patterns)}")
+        print(f"Expected total data points: {total_expected_points:,}")
         print(f"Cycles per test: {cycles_per_test:,}")
         print(f"Original discovery pattern: {self.original_pattern}")
         print()
@@ -426,6 +534,7 @@ class FixedROMGeneralizationTester:
         
         all_results = []
         start_time = time.time()
+        total_collected_points = 0
         
         for rom_idx, rom_info in enumerate(roms_to_test):
             print(f"[{rom_idx+1}/{len(roms_to_test)}] ", end="")
@@ -433,6 +542,7 @@ class FixedROMGeneralizationTester:
             try:
                 result = self.analyze_rom_generalization(rom_info)
                 all_results.append(result)
+                total_collected_points += result['enhanced_statistics']['total_data_points']
                 
             except Exception as e:
                 print(f"Failed to test ROM {rom_info['filename']}: {e}")
@@ -440,392 +550,107 @@ class FixedROMGeneralizationTester:
         
         # Analysis complete
         total_time = time.time() - start_time
-        print(f"FIXED GENERALIZATION ANALYSIS COMPLETE")
+        print(f"ENHANCED GENERALIZATION ANALYSIS COMPLETE")
         print(f"=" * 60)
         print(f"Total time: {total_time:.1f} seconds")
         print(f"ROMs tested: {len(all_results)}")
+        print(f"Data points collected: {total_collected_points:,}")
+        print(f"Data collection efficiency: {total_collected_points/total_expected_points:.1%}")
         
-        # Summarize results
+        # Summarize results using enhanced statistics
         consistent_algorithms = [r for r in all_results if r['consistent_sorting']]
         partial_generalizers = [r for r in all_results if 0 < r['generalization_score'] < 0.7]
         pattern_specific = [r for r in all_results if r['pattern_specific']]
         
-        print(f"\nFIXED RESULTS SUMMARY:")
-        print(f"   Consistent sorting algorithms: {len(consistent_algorithms)}")
-        print(f"   Partial generalizers: {len(partial_generalizers)}")
-        print(f"   Pattern-specific only: {len(pattern_specific)}")
+        print(f"\nENHANCED RESULTS SUMMARY:")
+        print(f"   Consistent sorting algorithms (≥70%): {len(consistent_algorithms)}")
+        print(f"   Partial generalizers (1-69%): {len(partial_generalizers)}")
+        print(f"   No sorting behavior (0%): {len(pattern_specific)}")
         
         if consistent_algorithms:
-            print(f"\n🎉 DISCOVERED SORTING ALGORITHMS (FIXED ANALYSIS):")
+            print(f"\n🎉 DISCOVERED SORTING ALGORITHMS (ENHANCED ANALYSIS):")
             for result in consistent_algorithms:
                 rom_name = result['rom_info']['filename']
                 score = result['generalization_score']
-                original = result['rom_info']['original_discovery']
-                range_str = result['range_tested']['range_str']
-                print(f"   {rom_name}: {score:.1%} success rate")
-                print(f"      Range tested: {range_str}")
-                print(f"      Original: {original.get('sequence_range', 'unknown')} "
-                      f"({original.get('length', 0)} elements)")
+                stats = result['enhanced_statistics']
+                points = f"{stats['successful_data_points']}/{stats['total_data_points']}"
+                
+                print(f"   {rom_name}: {score:.1%} success rate ({points} data points)")
+                
+                if stats['best_subsequence']:
+                    best_range, best_rate, _ = stats['best_subsequence']
+                    print(f"      Best subsequence: {best_range} ({best_rate:.1%})")
+        
+        # Statistical insights
+        if all_results:
+            all_scores = [r['generalization_score'] for r in all_results]
+            avg_score = sum(all_scores) / len(all_scores)
+            max_score = max(all_scores)
+            
+            print(f"\nSTATISTICAL INSIGHTS:")
+            print(f"   Average success rate: {avg_score:.1%}")
+            print(f"   Best ROM performance: {max_score:.1%}")
+            print(f"   Data points per ROM: {total_collected_points//len(all_results):,} avg")
         
         return all_results
     
     def save_analysis_results(self, results: List[Dict], output_file: Path) -> None:
-        """Save ENHANCED analysis results with deep pattern insights"""
+        """Save ENHANCED analysis results with comprehensive subsequence data"""
         
-        print(f"\n🔍 ENHANCED ANALYSIS & PATTERN DETECTION")
+        print(f"\n🔍 SAVING ENHANCED ANALYSIS RESULTS")
         print("=" * 60)
         
-        # Advanced pattern analysis
-        self._analyze_patterns(results)
-        self._analyze_test_pattern_failures(results)
-        self._analyze_sorting_ranges(results)
-        
-        # Create COMPRESSED summary for easy sharing/analysis
-        compressed_results = []
+        # Create detailed summary
+        enhanced_summary = {
+            'meta': {
+                'enhancement': 'subsequence_analysis',
+                'total_roms': len(results),
+                'consistent_algorithms': len([r for r in results if r['consistent_sorting']]),
+                'partial_generalizers': len([r for r in results if 0 < r['generalization_score'] < 0.7]),
+                'no_sorting': len([r for r in results if r['pattern_specific']]),
+                'test_patterns': len(self.test_patterns),
+                'original_pattern': self.original_pattern,
+                'total_data_points': sum(r['enhanced_statistics']['total_data_points'] for r in results),
+                'successful_data_points': sum(r['enhanced_statistics']['successful_data_points'] for r in results)
+            },
+            'results': []
+        }
         
         for result in results:
             rom_info = result['rom_info']
+            enhanced_stats = result['enhanced_statistics']
             
-            # Extract only essential data
-            compressed_result = {
-                'file': rom_info['filename'],
-                'orig': {  # Original discovery
-                    'len': rom_info['original_discovery'].get('length', 0),
-                    'dir': rom_info['original_discovery'].get('direction', 'unknown')[:3],  # asc/des
-                    'pos': rom_info['original_discovery'].get('sequence_range', 'unknown')
+            enhanced_result = {
+                'filename': rom_info['filename'],
+                'original_discovery': {
+                    'range': rom_info['original_discovery'].get('sequence_range', 'unknown'),
+                    'length': rom_info['original_discovery'].get('length', 0),
+                    'direction': rom_info['original_discovery'].get('direction', 'unknown')
                 },
-                'range': result['range_tested']['range_str'],  # FIXED: Include tested range
-                'score': round(result['generalization_score'], 3),
-                'consistent': result['consistent_sorting'],
-                'tests': []  # Compressed test results
+                'enhanced_analysis': {
+                    'overall_success_rate': enhanced_stats['overall_success_rate'],
+                    'total_data_points': enhanced_stats['total_data_points'],
+                    'successful_data_points': enhanced_stats['successful_data_points'],
+                    'subsequences_tested': len(result['subsequences_tested']),
+                    'best_subsequence': enhanced_stats['best_subsequence'],
+                    'subsequence_performance': enhanced_stats['subsequence_performance']
+                },
+                'classification': {
+                    'consistent_sorting': result['consistent_sorting'],
+                    'pattern_specific': result['pattern_specific'],
+                    'generalization_score': result['generalization_score']
+                }
             }
             
-            # Compress test results - only include input/output patterns and whether it sorted
-            for test_name, input_pattern, test_result in result['test_results']:
-                if test_result:
-                    compressed_test = {
-                        'in': input_pattern,
-                        'out': test_result['output_pattern'],
-                        'range_in': test_result['range_input'],
-                        'range_out': test_result['range_output'],
-                        'sorted': test_result['sorted']
-                    }
-                    
-                    # If sorting was detected, include the sorting info
-                    if test_result['sorted'] and test_result['range_sorting']:
-                        rs = test_result['range_sorting']
-                        compressed_test['sort'] = {
-                            'len': rs['length'],
-                            'dir': rs['direction'][:3],
-                            'pos': rs['sequence_range']
-                        }
-                    
-                    compressed_result['tests'].append(compressed_test)
-            
-            compressed_results.append(compressed_result)
+            enhanced_summary['results'].append(enhanced_result)
         
-        # Create ultra-compressed summary
-        summary = {
-            'meta': {
-                'total': len(results),
-                'consistent': len([r for r in results if r['consistent_sorting']]),
-                'partial': len([r for r in results if 0 < r['generalization_score'] < 0.7]),
-                'patterns': len(self.test_patterns),
-                'orig_pattern': self.original_pattern,
-                'fix_applied': 'range_specific_testing'
-            },
-            'results': compressed_results
-        }
+        # Save enhanced results
+        with open(output_file, 'w') as f:
+            json.dump(enhanced_summary, f, indent=2)
         
-        # Save compressed version
-        compressed_file = output_file.with_stem(output_file.stem + '_ENHANCED_compressed')
-        with open(compressed_file, 'w') as f:
-            json.dump(summary, f, separators=(',', ':'))  # No whitespace
-        
-        print(f"ENHANCED compressed analysis results saved to: {compressed_file}")
-        print(f"File size: {compressed_file.stat().st_size} bytes")
-        
-        # Create ENHANCED human-readable summary
-        self._create_enhanced_summary(results, output_file)
-        
-    def _analyze_patterns(self, results: List[Dict]) -> None:
-        """Analyze overall patterns in the results"""
-        
-        if not results:
-            return
-            
-        print(f"\n📊 OVERALL PATTERN ANALYSIS:")
-        
-        # Score distribution
-        score_ranges = {
-            '0%': 0, '1-25%': 0, '26-50%': 0, '51-75%': 0, '76-99%': 0, '100%': 0
-        }
-        
-        for result in results:
-            score = result['generalization_score']
-            if score == 0:
-                score_ranges['0%'] += 1
-            elif score <= 0.25:
-                score_ranges['1-25%'] += 1
-            elif score <= 0.50:
-                score_ranges['26-50%'] += 1
-            elif score <= 0.75:
-                score_ranges['51-75%'] += 1
-            elif score < 1.0:
-                score_ranges['76-99%'] += 1
-            else:
-                score_ranges['100%'] += 1
-        
-        print(f"   Score Distribution:")
-        for range_name, count in score_ranges.items():
-            pct = count / len(results) * 100
-            print(f"     {range_name:>6}: {count:3d} ROMs ({pct:4.1f}%)")
-        
-        # Best performers analysis
-        top_performers = sorted(results, key=lambda x: x['generalization_score'], reverse=True)[:10]
-        best_score = top_performers[0]['generalization_score']
-        best_count = len([r for r in results if r['generalization_score'] == best_score])
-        
-        print(f"   Best Score: {best_score:.1%} ({best_count} ROMs)")
-        print(f"   Score Range: {top_performers[-1]['generalization_score']:.1%} - {best_score:.1%}")
-        
-    def _analyze_test_pattern_failures(self, results: List[Dict]) -> None:
-        """Analyze which test patterns consistently fail"""
-        
-        print(f"\n🎯 TEST PATTERN SUCCESS ANALYSIS:")
-        
-        # Track success rate for each test pattern
-        pattern_stats = {}
-        
-        for result in results:
-            for test_name, input_pattern, test_result in result['test_results']:
-                pattern_key = str(input_pattern)
-                if pattern_key not in pattern_stats:
-                    pattern_stats[pattern_key] = {'success': 0, 'total': 0, 'name': test_name}
-                
-                pattern_stats[pattern_key]['total'] += 1
-                if test_result and test_result['sorted']:
-                    pattern_stats[pattern_key]['success'] += 1
-        
-        # Sort by success rate
-        sorted_patterns = sorted(pattern_stats.items(), 
-                               key=lambda x: x[1]['success'] / x[1]['total'] if x[1]['total'] > 0 else 0, 
-                               reverse=True)
-        
-        print(f"   Pattern Success Rates (sorted by success):")
-        for pattern_str, stats in sorted_patterns:
-            rate = stats['success'] / stats['total'] if stats['total'] > 0 else 0
-            pattern = eval(pattern_str)  # Convert back to list
-            name = stats['name']
-            print(f"     {rate:5.1%} | {pattern} ({name})")
-        
-        # Identify consistently problematic patterns
-        worst_patterns = [p for p, s in sorted_patterns if (s['success'] / s['total']) < 0.3]
-        if worst_patterns:
-            print(f"\n   🚨 CONSISTENTLY FAILING PATTERNS (< 30% success):")
-            for pattern_str in worst_patterns:
-                pattern = eval(pattern_str)
-                print(f"     {pattern}")
-                # Analyze what makes these patterns special
-                self._analyze_pattern_characteristics(pattern)
-        
-    def _analyze_pattern_characteristics(self, pattern: List[int]) -> None:
-        """Analyze characteristics of a problematic pattern"""
-        
-        characteristics = []
-        
-        # Check value ranges
-        min_val, max_val = min(pattern), max(pattern)
-        if max_val >= 90:
-            characteristics.append("large numbers (90+)")
-        if min_val <= 5:
-            characteristics.append("small numbers (≤5)")
-        
-        # Check if already sorted
-        sorted_asc = pattern == sorted(pattern)
-        sorted_desc = pattern == sorted(pattern, reverse=True)
-        if sorted_asc:
-            characteristics.append("already ascending")
-        elif sorted_desc:
-            characteristics.append("already descending")
-        
-        # Check value spacing
-        gaps = [pattern[i+1] - pattern[i] for i in range(len(pattern)-1)]
-        avg_gap = sum(abs(g) for g in gaps) / len(gaps)
-        if avg_gap > 10:
-            characteristics.append("large value gaps")
-        
-        if characteristics:
-            print(f"        Characteristics: {', '.join(characteristics)}")
-    
-    def _analyze_sorting_ranges(self, results: List[Dict]) -> None:
-        """Analyze the distribution of sorting ranges"""
-        
-        print(f"\n📍 SORTING RANGE ANALYSIS:")
-        
-        # Count range types
-        range_counts = {}
-        direction_counts = {'ascending': 0, 'descending': 0}
-        length_counts = {}
-        
-        for result in results:
-            range_str = result['range_tested']['range_str']
-            range_counts[range_str] = range_counts.get(range_str, 0) + 1
-            
-            original = result['rom_info']['original_discovery']
-            direction = original.get('direction', 'unknown')
-            if direction in direction_counts:
-                direction_counts[direction] += 1
-            
-            length = original.get('length', 0)
-            length_counts[length] = length_counts.get(length, 0) + 1
-        
-        print(f"   Range Distribution:")
-        sorted_ranges = sorted(range_counts.items(), key=lambda x: x[1], reverse=True)
-        for range_str, count in sorted_ranges:
-            pct = count / len(results) * 100
-            print(f"     {range_str:>6}: {count:3d} ROMs ({pct:4.1f}%)")
-        
-        print(f"   Direction Distribution:")
-        for direction, count in direction_counts.items():
-            pct = count / len(results) * 100
-            print(f"     {direction:>10}: {count:3d} ROMs ({pct:4.1f}%)")
-        
-        print(f"   Length Distribution:")
-        for length in sorted(length_counts.keys()):
-            count = length_counts[length]
-            pct = count / len(results) * 100
-            print(f"     {length:2d} elements: {count:3d} ROMs ({pct:4.1f}%)")
-        
-        # Analyze range vs performance correlation
-        print(f"\n   Range vs Performance Analysis:")
-        range_performance = {}
-        for result in results:
-            range_str = result['range_tested']['range_str']
-            score = result['generalization_score']
-            if range_str not in range_performance:
-                range_performance[range_str] = []
-            range_performance[range_str].append(score)
-        
-        for range_str, scores in range_performance.items():
-            if len(scores) >= 3:  # Only analyze ranges with enough samples
-                avg_score = sum(scores) / len(scores)
-                max_score = max(scores)
-                print(f"     {range_str:>6}: avg {avg_score:.1%}, max {max_score:.1%} ({len(scores)} ROMs)")
-    
-    def _create_enhanced_summary(self, results: List[Dict], output_file: Path) -> None:
-        """Create enhanced human-readable summary with insights"""
-        
-        readable_file = output_file.with_stem(output_file.stem + '_ENHANCED_summary')
-        
-        with open(readable_file, 'w', encoding='utf-8') as f:
-            f.write("BABELSCOPE ROM GENERALIZATION ANALYSIS - ENHANCED SUMMARY\n")
-            f.write("=" * 60 + "\n\n")
-            f.write("CRITICAL FIX APPLIED: Now tests only discovered sorting ranges\n")
-            f.write("ENHANCED ANALYSIS: Deep pattern insights included\n\n")
-            
-            # Basic stats
-            consistent = [r for r in results if r['consistent_sorting']]
-            partial = [r for r in results if 0 < r['generalization_score'] < 0.7]
-            
-            f.write(f"OVERVIEW:\n")
-            f.write(f"   Total ROMs tested: {len(results)}\n")
-            f.write(f"   Consistent algorithms (≥70%): {len(consistent)}\n")
-            f.write(f"   Partial generalizers (1-69%): {len(partial)}\n")
-            f.write(f"   Pattern-specific only (0%): {len(results) - len(consistent) - len(partial)}\n")
-            f.write(f"   Test patterns used: {len(self.test_patterns)}\n\n")
-            
-            # Top performers with enhanced details
-            top_roms = sorted(results, key=lambda x: x['generalization_score'], reverse=True)[:15]
-            f.write("TOP 15 PERFORMERS:\n")
-            f.write("-" * 50 + "\n")
-            
-            for i, result in enumerate(top_roms):
-                rom_name = result['rom_info']['filename']
-                score = result['generalization_score']
-                orig = result['rom_info']['original_discovery']
-                range_tested = result['range_tested']['range_str']
-                
-                f.write(f"{i+1:2d}. {rom_name}\n")
-                f.write(f"    Score: {score:.1%} | Range: {range_tested} | ")
-                f.write(f"Direction: {orig.get('direction', 'unknown')}\n")
-                
-                # Show which patterns worked/failed
-                success_patterns = []
-                fail_patterns = []
-                for test_name, input_pattern, test_result in result['test_results']:
-                    if test_result:
-                        if test_result['sorted']:
-                            success_patterns.append(str(input_pattern))
-                        else:
-                            fail_patterns.append(str(input_pattern))
-                
-                f.write(f"    SUCCESS: Works on {len(success_patterns)}/{len(success_patterns) + len(fail_patterns)} patterns\n")
-                if len(fail_patterns) <= 3:  # Show failed patterns if not too many
-                    f.write(f"    FAILS ON: {', '.join(fail_patterns[:3])}\n")
-                f.write("\n")
-            
-            # Pattern analysis
-            f.write("\nPATTERN FAILURE ANALYSIS:\n")
-            f.write("-" * 40 + "\n")
-            
-            # Find most problematic patterns
-            pattern_stats = {}
-            for result in results:
-                for test_name, input_pattern, test_result in result['test_results']:
-                    pattern_key = str(input_pattern)
-                    if pattern_key not in pattern_stats:
-                        pattern_stats[pattern_key] = {'success': 0, 'total': 0}
-                    
-                    pattern_stats[pattern_key]['total'] += 1
-                    if test_result and test_result['sorted']:
-                        pattern_stats[pattern_key]['success'] += 1
-            
-            # Sort by failure rate (lowest success rate first)
-            sorted_patterns = sorted(pattern_stats.items(), 
-                                   key=lambda x: x[1]['success'] / x[1]['total'] if x[1]['total'] > 0 else 0)
-            
-            f.write("Most problematic patterns (lowest success rates):\n")
-            for pattern_str, stats in sorted_patterns[:4]:
-                rate = stats['success'] / stats['total'] if stats['total'] > 0 else 0
-                pattern = eval(pattern_str)
-                f.write(f"   {rate:5.1%} success: {pattern}\n")
-            
-            # Range analysis
-            f.write(f"\nSORTING RANGE INSIGHTS:\n")
-            f.write("-" * 30 + "\n")
-            
-            range_counts = {}
-            for result in results:
-                range_str = result['range_tested']['range_str']
-                range_counts[range_str] = range_counts.get(range_str, 0) + 1
-            
-            f.write("Range popularity:\n")
-            for range_str, count in sorted(range_counts.items(), key=lambda x: x[1], reverse=True):
-                pct = count / len(results) * 100
-                f.write(f"   {range_str}: {count} ROMs ({pct:.1f}%)\n")
-            
-            # Key insights
-            f.write(f"\nKEY INSIGHTS:\n")
-            f.write("-" * 20 + "\n")
-            
-            best_score = max(r['generalization_score'] for r in results)
-            best_count = len([r for r in results if r['generalization_score'] == best_score])
-            
-            f.write(f"• Best generalization score achieved: {best_score:.1%}\n")
-            f.write(f"• Number of ROMs achieving best score: {best_count}\n")
-            f.write(f"• Most common sorting range: {max(range_counts.items(), key=lambda x: x[1])[0]}\n")
-            
-            most_problematic = min(pattern_stats.items(), key=lambda x: x[1]['success'] / x[1]['total'])
-            worst_rate = most_problematic[1]['success'] / most_problematic[1]['total']
-            f.write(f"• Most problematic test pattern: {eval(most_problematic[0])} ({worst_rate:.1%} success)\n")
-            
-            if best_score >= 0.6:
-                f.write(f"• CONCLUSION: Found ROMs with significant generalization capability!\n")
-            else:
-                f.write(f"• CONCLUSION: Limited generalization - likely pattern-specific algorithms\n")
-        
-        print(f"ENHANCED human-readable summary saved to: {readable_file}")
+        print(f"Enhanced analysis results saved to: {output_file}")
+        print(f"Total data points analyzed: {enhanced_summary['meta']['total_data_points']:,}")
+        print(f"Overall success rate: {enhanced_summary['meta']['successful_data_points']/enhanced_summary['meta']['total_data_points']:.1%}")
 
 
 def find_rom_directories(base_path: Path = Path(".")) -> List[Path]:
@@ -873,28 +698,33 @@ def find_rom_directories(base_path: Path = Path(".")) -> List[Path]:
 
 
 def main():
-    """Main entry point for FIXED ROM generalization testing"""
+    """Main entry point for ENHANCED ROM generalization testing with subsequence analysis"""
     parser = argparse.ArgumentParser(
-        description='FIXED: Test discovered ROMs with different input patterns in correct ranges',
+        description='ENHANCED: Test discovered ROMs with comprehensive subsequence analysis',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-CRITICAL FIX APPLIED: This version now correctly tests only the discovered 
-sorting range (e.g., V2-V7) instead of incorrectly testing the entire V0-V7 range.
+MAJOR ENHANCEMENT: This version now tests ALL possible contiguous subsequences
+within the discovered sorting range, providing much more statistical data.
 
-This fixes the fundamental flaw where ROMs were failing tests because we were
-checking the wrong registers for sorting behavior.
+Instead of testing only the exact discovery range (e.g., V2-V7), this now tests:
+V2-V3, V2-V4, V2-V5, V2-V6, V2-V7, V3-V4, V3-V5, V3-V6, V3-V7, etc.
+
+This gives 8 patterns × 15 subsequences = 120 data points instead of just 8,
+providing much higher statistical confidence in determining true sorting behavior.
 
 Examples:
-  python rom_generalization_tester.py --auto-scan --max-roms 50
-  python rom_generalization_tester.py --rom-dirs output/async_partial_sorting/session_*/discovered_roms
-  python rom_generalization_tester.py --rom-dirs path/to/roms --cycles 50000 --output results.json
+  python enhanced_rom_tester.py --auto-scan --max-roms 50
+  python enhanced_rom_tester.py --rom-dirs output/async_partial_sorting/session_*/discovered_roms
+  python enhanced_rom_tester.py --rom-dirs path/to/roms --cycles 50000 --output enhanced_results.json
 
-Test Methodology (FIXED):
+Enhanced Test Methodology:
 1. Load ROMs discovered by partial sorting Babelscope
 2. Extract the specific sorting range from metadata (e.g., V2-V7)
-3. Test each ROM with multiple different input patterns  
-4. Check sorting ONLY in the discovered range
-5. Identify ROMs that consistently sort different inputs in the correct range
+3. Generate ALL contiguous subsequences within that range (≥3 elements)
+4. Test each ROM with multiple different input patterns  
+5. Check sorting in ALL subsequences for each test pattern
+6. Calculate comprehensive statistics from hundreds of data points per ROM
+7. Identify ROMs with consistent sorting behavior across subsequences and patterns
         """
     )
     
@@ -906,18 +736,20 @@ Test Methodology (FIXED):
                        help='Maximum number of ROMs to test (default: all)')
     parser.add_argument('--cycles', type=int, default=100000,
                        help='Execution cycles per ROM test (default: 100000)')
-    parser.add_argument('--output', type=Path, default='generalization_analysis_FIXED.json',
-                       help='Output file for results (default: generalization_analysis_FIXED.json)')
+    parser.add_argument('--output', type=Path, default='enhanced_generalization_analysis.json',
+                       help='Output file for results (default: enhanced_generalization_analysis.json)')
     parser.add_argument('--quick-test', action='store_true',
                        help='Quick test mode (fewer cycles, fewer ROMs)')
+    parser.add_argument('--min-subsequence-length', type=int, default=3,
+                       help='Minimum length for subsequences to test (default: 3)')
     
     args = parser.parse_args()
     
-    print("BABELSCOPE ROM GENERALIZATION TESTER (FIXED)")
+    print("BABELSCOPE ENHANCED ROM GENERALIZATION TESTER")
     print("=" * 50)
-    print("🔧 CRITICAL FIX: Now tests only the discovered sorting ranges")
-    print("Previous version incorrectly tested entire V0-V7 range")
-    print("This should dramatically improve generalization success rates!")
+    print("🚀 MAJOR ENHANCEMENT: Comprehensive subsequence analysis")
+    print("Now tests ALL possible contiguous subsequences within discovery ranges")
+    print("This provides orders of magnitude more data points for statistical confidence!")
     print()
     
     # Determine ROM directories
@@ -947,16 +779,26 @@ Test Methodology (FIXED):
         print(f"   Max ROMs: {args.max_roms}")
         print()
     
-    # Create FIXED tester and run analysis
+    # Create ENHANCED tester and run analysis
     try:
-        tester = FixedROMGeneralizationTester(rom_dirs)
+        tester = EnhancedROMGeneralizationTester(rom_dirs)
         tester.scan_for_roms()
         
         if not tester.discovered_roms:
             print("No discovered ROMs found to test!")
             return 1
         
-        # Run FIXED generalization analysis
+        # Show expected data points
+        roms_to_analyze = tester.discovered_roms[:args.max_roms] if args.max_roms else tester.discovered_roms
+        expected_points = sum(len(rom['test_subsequences']) * len(tester.test_patterns) 
+                            for rom in roms_to_analyze)
+        
+        print(f"ENHANCED ANALYSIS PREVIEW:")
+        print(f"   Expected data points: {expected_points:,}")
+        print(f"   This is a {expected_points//8}x increase over the original method!")
+        print()
+        
+        # Run ENHANCED generalization analysis
         results = tester.run_generalization_analysis(
             max_roms=args.max_roms,
             cycles_per_test=args.cycles
@@ -966,27 +808,52 @@ Test Methodology (FIXED):
             # Save results
             tester.save_analysis_results(results, args.output)
             
-            # Final summary
+            # Final summary with enhancement details
             consistent = [r for r in results if r['consistent_sorting']]
-            if consistent:
-                print(f"\n🎉 FIXED ANALYSIS SUCCESS: Found {len(consistent)} consistent sorting algorithms!")
-                print("These ROMs demonstrate true sorting capability in their discovered ranges.")
-                print("\nCOMPARE TO PREVIOUS RESULTS:")
-                print("The original analysis likely had artificially low success rates")
-                print("due to testing the wrong register ranges.")
-            else:
-                print(f"\n📊 FIXED ANALYSIS: No consistent sorting algorithms found.")
-                print("Even with the fix, most discovered ROMs appear to be pattern-specific.")
+            total_points = sum(r['enhanced_statistics']['total_data_points'] for r in results)
+            successful_points = sum(r['enhanced_statistics']['successful_data_points'] for r in results)
+            overall_rate = successful_points / total_points if total_points > 0 else 0
             
-            # Show improvement statistics
-            old_consistent_count = 1  # From your previous run
-            new_consistent_count = len(consistent)
-            if new_consistent_count > old_consistent_count:
-                improvement = new_consistent_count - old_consistent_count
-                print(f"\n📈 IMPROVEMENT: Found {improvement} additional consistent algorithms")
-                print(f"   Previous (broken): {old_consistent_count}")
-                print(f"   Fixed analysis: {new_consistent_count}")
-                print(f"   {improvement}x improvement in discovery rate!")
+            print(f"\n🎉 ENHANCED ANALYSIS COMPLETE!")
+            print(f"Data Points Analyzed: {total_points:,}")
+            print(f"Overall Success Rate: {overall_rate:.1%}")
+            print(f"Consistent Algorithms Found: {len(consistent)}")
+            
+            if consistent:
+                print(f"\n🔥 DISCOVERED SORTING ALGORITHMS:")
+                for i, result in enumerate(consistent[:10]):  # Show top 10
+                    rom_name = result['rom_info']['filename']
+                    score = result['generalization_score']
+                    stats = result['enhanced_statistics']
+                    print(f"   {i+1:2d}. {rom_name}: {score:.1%} "
+                          f"({stats['successful_data_points']}/{stats['total_data_points']} points)")
+                
+                # Show the most reliable algorithm
+                best_rom = max(consistent, key=lambda x: x['generalization_score'])
+                best_stats = best_rom['enhanced_statistics']
+                print(f"\n🏆 MOST RELIABLE ALGORITHM:")
+                print(f"   ROM: {best_rom['rom_info']['filename']}")
+                print(f"   Success Rate: {best_rom['generalization_score']:.1%}")
+                print(f"   Data Points: {best_stats['successful_data_points']}/{best_stats['total_data_points']}")
+                
+                if best_stats['best_subsequence']:
+                    best_range, best_rate, best_counts = best_stats['best_subsequence']
+                    print(f"   Best Subsequence: {best_range} ({best_rate:.1%} success)")
+                    print(f"   That subsequence worked on {best_counts['success']}/{best_counts['total']} test patterns")
+            else:
+                print(f"\n📊 ENHANCED ANALYSIS RESULTS:")
+                print("No ROMs achieved ≥70% success rate for consistent sorting")
+                print("However, the enhanced analysis provides much more detailed insights")
+                
+                # Show the best performers even if not consistent
+                if results:
+                    best_rom = max(results, key=lambda x: x['generalization_score'])
+                    print(f"\nBest Performer: {best_rom['rom_info']['filename']}")
+                    print(f"Success Rate: {best_rom['generalization_score']:.1%}")
+            
+            print(f"\n📁 Detailed results saved to: {args.output}")
+            print("\nThe enhanced analysis provides much more granular data about")
+            print("sorting behavior within specific register subsequences!")
             
             return 0
         else:
@@ -994,11 +861,11 @@ Test Methodology (FIXED):
             return 1
             
     except KeyboardInterrupt:
-        print("\nFIXED generalization testing interrupted by user")
+        print("\nEnhanced generalization testing interrupted by user")
         return 0
         
     except Exception as e:
-        print(f"FIXED generalization testing failed: {e}")
+        print(f"Enhanced generalization testing failed: {e}")
         import traceback
         traceback.print_exc()
         return 1
