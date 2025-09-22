@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 ENHANCED Babelscope ROM Generalization Tester with Subsequence Analysis
 Tests discovered ROMs with different input patterns and analyzes ALL possible subsequences
